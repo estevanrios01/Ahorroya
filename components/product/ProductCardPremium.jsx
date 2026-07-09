@@ -71,7 +71,7 @@ export default function ProductCardPremium({ product }) {
         </Link>
 
         {product.presentation && (
-          <p className="text-xs text-zinc-500">{product.presentation}</p>
+          <p className="text-xs text-zinc-500">{typeof product.presentation === 'object' ? `${product.presentation.quantity || ''}${product.presentation.unit || ''}`.trim() : product.presentation}</p>
         )}
 
         <div className="flex items-baseline gap-2 pt-1">

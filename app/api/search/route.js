@@ -66,9 +66,13 @@ const datosSemilla = [
 
 buildIndex(datosSemilla);
 
+function serialize(obj) {
+  return JSON.parse(JSON.stringify(obj, (_, v) => typeof v === 'bigint' ? Number(v) : v));
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') ?? '';
   const results = search(q);
-  return NextResponse.json({ query: q, results, total: results.length });
+  return NextResponse.json({ query: q, results: serialize(results), total: results.length });
 }
