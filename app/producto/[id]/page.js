@@ -1,119 +1,218 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, TrendingDown, TrendingUp, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, MapPin, TrendingDown, TrendingUp, AlertCircle, Store, ShoppingBag, Heart, Share2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
+import Header from '../../../components/layout/Header';
+import Footer from '../../../components/layout/Footer';
+import { Badge, DiscountBadge } from '../../../packages/ui/src/components/badge';
+import { Button } from '../../../packages/ui/src/components/button';
 
 export default function DetalleProducto() {
   const params = useParams();
   const router = useRouter();
 
-  const producto = {
+  const product = {
     id: params.id,
-    nombre: 'Arroz Diana Premium',
-    categoria: 'Despensa',
-    precioOptimo: 3800,
-    tiendaOptima: 'Tiendas D1',
-    historial: [
-      { fecha: '1 Jul', precio: 4500 },
-      { fecha: '3 Jul', precio: 4500 },
-      { fecha: '5 Jul', precio: 4200 },
-      { fecha: '7 Jul', precio: 3900 },
-      { fecha: '8 Jul', precio: 3800 },
+    name: 'Arroz Diana Premium 1kg',
+    brand: 'Diana',
+    category: 'Despensa',
+    presentation: 'Bolsa 1kg',
+    barcode: '7701001234567',
+    description: 'Arroz blanco premium 100% colombiano. Ideal para preparar arroces de grano largo y suelto.',
+    image: null,
+    bestPrice: 3800,
+    bestStore: 'Tiendas D1',
+    prices: [
+      { store: 'Tiendas D1', logo: null, price: 3800, oldPrice: 4500, distance: 0.5, stock: true, address: 'Carrera 100 # 11-60' },
+      { store: 'Almacenes Éxito', logo: null, price: 4200, oldPrice: 4800, distance: 1.2, stock: true, address: 'Calle 5 # 38D-35' },
+      { store: 'Supermercados Olímpica', logo: null, price: 4500, distance: 2.1, stock: false, address: 'Av Pasoancho # 50-12' },
+      { store: 'Jumbo', logo: null, price: 4100, oldPrice: 4700, distance: 3.0, stock: true, address: 'Carrera 98 # 42-30' },
     ],
-    sucursales: [
-      { id: 1, nombre: 'Tiendas D1', direccion: 'Carrera 100 # 11-60', precio: 3800, distancia: 0.5, stock: true },
-      { id: 2, nombre: 'Almacenes Éxito', direccion: 'Calle 5 # 38D-35', precio: 4200, distancia: 1.2, stock: true },
-      { id: 3, nombre: 'Supermercados Olímpica', direccion: 'Avenida Pasoancho # 50-12', precio: 4500, distancia: 2.1, stock: false },
-    ]
+    history: [
+      { date: '1 Jul', price: 4500 },
+      { date: '3 Jul', price: 4500 },
+      { date: '5 Jul', price: 4200 },
+      { date: '7 Jul', price: 3900 },
+      { date: '9 Jul', price: 3800 },
+    ],
   };
 
-  const tendenciaBaja = producto.historial[0].precio > producto.historial[producto.historial.length - 1].precio;
+  const trendingDown = product.history[0].price > product.history[product.history.length - 1].price;
+  const formatPrice = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
 
   return (
-    <div className="w-full max-w-4xl mx-auto pb-20 pt-8">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors mb-8"
-      >
-        <ArrowLeft size={20} /> Volver a resultados
-      </button>
+    <div className="min-h-screen bg-zinc-950">
+      <Header />
 
-      <div className="bg-[#1e293b] border border-slate-700 rounded-3xl p-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <span className="bg-slate-800 text-slate-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">
-            {producto.categoria}
-          </span>
-          <h1 className="text-4xl font-bold text-white mb-2">{producto.nombre}</h1>
-          <p className="text-slate-400 flex items-center gap-2">
-            Mejor precio detectado en: <span className="text-cyan-400 font-semibold">{producto.tiendaOptima}</span>
-          </p>
-        </div>
-        <div className="text-right bg-[#0f172a] p-6 rounded-2xl border border-slate-800">
-          <p className="text-slate-500 text-sm mb-1">Precio Óptimo Actual</p>
-          <span className="text-4xl font-bold text-emerald-400">
-            ${producto.precioOptimo.toLocaleString('es-CO')}
-          </span>
-        </div>
-      </div>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-zinc-500 hover:text-zinc-100 transition-colors mb-6 text-sm"
+        >
+          <ArrowLeft size={18} /> Volver
+        </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-[#1e293b] border border-slate-700 rounded-3xl p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">Historial de Precios (7 días)</h2>
-            {tendenciaBaja ? (
-              <span className="flex items-center gap-1 text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full text-sm">
-                <TrendingDown size={16} /> En bajada
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-red-400 bg-red-400/10 px-3 py-1 rounded-full text-sm">
-                <TrendingUp size={16} /> En subida
-              </span>
-            )}
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={producto.historial}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
-                  itemStyle={{ color: '#22d3ee' }}
-                />
-                <Line type="monotone" dataKey="precio" stroke="#22d3ee" strokeWidth={3} dot={{ fill: '#0f172a', stroke: '#22d3ee', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+          {/* Image Gallery */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="lg:col-span-2"
+          >
+            <div className="aspect-square bg-zinc-900 rounded-2xl border border-zinc-800 flex items-center justify-center">
+              {product.image ? (
+                <Image src={product.image} alt={product.name} width={400} height={400} className="w-full h-full object-cover rounded-2xl" />
+              ) : (
+                <Store size={80} className="text-zinc-700" />
+              )}
+            </div>
+          </motion.div>
 
-        <div className="bg-[#1e293b] border border-slate-700 rounded-3xl p-6">
-          <h2 className="text-xl font-semibold text-white mb-6">Comparativa Local</h2>
-          <div className="space-y-4">
-            {producto.sucursales.map((sucursal) => (
-              <div key={sucursal.id} className="flex items-center justify-between p-4 bg-[#0f172a] rounded-2xl border border-slate-800">
-                <div className="flex-1">
-                  <h3 className="text-white font-medium flex items-center gap-2">
-                    {sucursal.nombre}
-                    {!sucursal.stock && <AlertCircle size={14} className="text-red-400" title="Posible falta de inventario" />}
-                  </h3>
-                  <p className="text-slate-500 text-sm flex items-center gap-1 mt-1">
-                    <MapPin size={12} /> {sucursal.direccion} • {sucursal.distancia} km
-                  </p>
+          {/* Product Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-3 space-y-5"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="info" size="sm">{product.category}</Badge>
+                  {product.barcode && <Badge variant="default" size="sm">EAN {product.barcode}</Badge>}
                 </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100 leading-tight">{product.name}</h1>
+                <p className="text-zinc-500 mt-1">{product.brand} • {product.presentation}</p>
+              </div>
+              <div className="flex gap-1">
+                <button className="p-2 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-all" aria-label="Favorito">
+                  <Heart size={20} />
+                </button>
+                <button className="p-2 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all" aria-label="Compartir">
+                  <Share2 size={20} />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-sm text-zinc-400 leading-relaxed">{product.description}</p>
+
+            <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-zinc-500 text-sm">Mejor precio</span>
                 <div className="text-right">
-                  <span className={`text-lg font-bold ${sucursal.precio === producto.precioOptimo ? 'text-emerald-400' : 'text-slate-300'}`}>
-                    ${sucursal.precio.toLocaleString('es-CO')}
-                  </span>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {sucursal.stock ? 'En stock' : <span className="text-red-400">Agotado</span>}
-                  </p>
+                  <span className="text-3xl font-bold text-emerald-400">{formatPrice(product.bestPrice)}</span>
+                  {product.prices[0].oldPrice && (
+                    <span className="text-sm text-zinc-500 line-through ml-2">{formatPrice(product.prices[0].oldPrice)}</span>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-500">Disponible en</span>
+                <span className="text-zinc-300 font-medium">{product.prices.filter(p => p.stock).length} comercios</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-500">Mejor tienda</span>
+                <span className="text-emerald-400 font-medium">{product.bestStore}</span>
+              </div>
+              {product.prices[0].oldPrice && (
+                <DiscountBadge percent={Math.round(((product.prices[0].oldPrice - product.bestPrice) / product.prices[0].oldPrice) * 100)} />
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="primary" size="lg" icon={<ShoppingBag size={18} />} className="flex-1">
+                Comparar precios
+              </Button>
+              <Button variant="secondary" size="lg" icon={<Heart size={18} />}>
+                Favorito
+              </Button>
+            </div>
+          </motion.div>
         </div>
-      </div>
+
+        {/* Price History & Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 sm:p-6"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-zinc-100">Historial de precios</h2>
+              <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${trendingDown ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                {trendingDown ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                {trendingDown ? 'En bajada' : 'En subida'}
+              </div>
+            </div>
+            <div className="h-[220px] sm:h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={product.history}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="date" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }}
+                    itemStyle={{ color: '#34d399' }}
+                    labelStyle={{ color: '#a1a1aa' }}
+                  />
+                  <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={3} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 sm:p-6"
+          >
+            <h2 className="text-lg font-semibold text-zinc-100 mb-5">Comparativa de precios</h2>
+            <div className="space-y-3">
+              {product.prices.map((p, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * i }}
+                  className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                    p.price === product.bestPrice
+                      ? 'bg-emerald-500/5 border-emerald-500/20'
+                      : 'bg-zinc-900/50 border-zinc-800'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-zinc-100 truncate">{p.store}</h3>
+                      {p.price === product.bestPrice && (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">MEJOR</span>
+                      )}
+                      {!p.stock && <AlertCircle size={14} className="text-red-400 flex-shrink-0" title="Sin stock" />}
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
+                      <MapPin size={10} /> {p.address} • {p.distance} km
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <div className={`text-base font-bold ${p.price === product.bestPrice ? 'text-emerald-400' : 'text-zinc-100'}`}>
+                      {formatPrice(p.price)}
+                    </div>
+                    {p.oldPrice && (
+                      <div className="text-xs text-zinc-500 line-through">{formatPrice(p.oldPrice)}</div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

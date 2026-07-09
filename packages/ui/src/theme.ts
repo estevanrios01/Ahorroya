@@ -1,0 +1,98 @@
+export const theme = {
+  colors: {
+    primary: '#059669',
+    primaryLight: '#34d399',
+    primaryDark: '#047857',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    neutral: {
+      50: '#fafafa',
+      100: '#f4f4f5',
+      200: '#e4e4e7',
+      300: '#d4d4d8',
+      400: '#a1a1aa',
+      500: '#71717a',
+      600: '#52525b',
+      700: '#3f3f46',
+      800: '#27272a',
+      900: '#18181b',
+      950: '#09090b',
+    },
+    surface: '#18181b',
+    background: '#09090b',
+    text: {
+      primary: '#fafafa',
+      secondary: '#a1a1aa',
+      muted: '#52525b',
+    },
+    border: '#27272a',
+    borderLight: '#3f3f46',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+    '2xl': '3rem',
+    '3xl': '4rem',
+  },
+  radius: {
+    sm: '0.5rem',
+    md: '0.75rem',
+    lg: '1rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    full: '9999px',
+  },
+  typography: {
+    fontFamily: "'Inter', system-ui, sans-serif",
+    heading: {
+      fontSize: {
+        xs: '0.75rem',
+        sm: '0.875rem',
+        base: '1rem',
+        lg: '1.125rem',
+        xl: '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '1.875rem',
+        '4xl': '2.25rem',
+        '5xl': '3rem',
+        '6xl': '3.75rem',
+      },
+      fontWeight: {
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+        extrabold: '800',
+      },
+      lineHeight: {
+        tight: '1.1',
+        normal: '1.3',
+        relaxed: '1.5',
+      },
+    },
+  },
+  elevation: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+    '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+  },
+  animation: {
+    duration: {
+      fast: '150ms',
+      normal: '300ms',
+      slow: '500ms',
+    },
+    easing: {
+      easeOut: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easeInOut: 'cubic-bezier(0.87, 0, 0.13, 1)',
+    },
+  },
+} as const;
+
+export type Theme = typeof theme;
