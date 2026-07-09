@@ -294,6 +294,7 @@ export async function getProductBySlug(slug) {
       ? Math.round(((bestPrice.oldPrice - bestPrice.price) / bestPrice.oldPrice) * 100)
       : 0,
     prices,
+    storesCount: prices.length,
     totalStores: prices.length,
     synonyms: expandSynonyms(product.name),
     aliases: expandSynonyms(product.name),

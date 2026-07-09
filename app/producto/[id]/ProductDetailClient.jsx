@@ -107,7 +107,7 @@ export default function ProductDetailClient({ product }) {
                 )}
               </div>
               {product.presentation?.weight && (
-                <p className="text-xs text-zinc-500 mt-2">Precio referente: {formatPrice(Math.round(bestPrice / parseInt(product.presentation.weight) * 1000))} / kg</p>
+                <p className="text-xs text-zinc-500 mt-2">Precio referente: {formatPrice(Math.round(bestPrice / (parseFloat(product.presentation.weight) || 1) * (product.presentation.weight.includes('g') && !product.presentation.weight.includes('kg') ? 1000 : 1)))} / kg</p>
               )}
             </div>
 
