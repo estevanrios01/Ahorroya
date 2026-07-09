@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env.local
+.env
+*.md
+__tests__
+docs
+coverage

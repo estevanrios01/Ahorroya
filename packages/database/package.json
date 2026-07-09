@@ -1,0 +1,11 @@
+{
+  "name": "@ahorroya/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "drizzle-orm": "^0.38",
+    "postgres": "^3"
+  }
+}

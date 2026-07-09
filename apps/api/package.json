@@ -1,0 +1,16 @@
+{
+  "name": "@ahorroya/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build"
+  },
+  "dependencies": {
+    "@ahorroya/database": "workspace:*",
+    "@ahorroya/shared": "workspace:*",
+    "@ahorroya/pricing-engine": "workspace:*",
+    "next": "^16",
+    "zod": "^4"
+  }
+}

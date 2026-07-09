@@ -1,0 +1,16 @@
+{
+  "name": "@ahorroya/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build"
+  },
+  "dependencies": {
+    "@ahorroya/database": "workspace:*",
+    "@ahorroya/shared": "workspace:*",
+    "next": "^16",
+    "react": "^19",
+    "react-dom": "^19"
+  }
+}
