@@ -1,0 +1,90 @@
+'use client';
+
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { MapPin, Store, Package, ShoppingBag, ChevronRight } from 'lucide-react';
+import Header from '../../../components/layout/Header';
+import Footer from '../../../components/layout/Footer';
+import { Badge } from '../../../packages/ui/src/components/badge';
+import { Container } from '../../../packages/ui/src/components/container';
+
+const STORE_LIST = [
+  { name: 'Éxito', slug: 'exito', type: 'supermercado' },
+  { name: 'D1', slug: 'd1', type: 'supermercado' },
+  { name: 'Jumbo', slug: 'jumbo', type: 'supermercado' },
+  { name: 'Olímpica', slug: 'olimpica', type: 'supermercado' },
+  { name: 'Ara', slug: 'ara', type: 'supermercado' },
+  { name: 'Carulla', slug: 'carulla', type: 'supermercado' },
+  { name: 'Cruz Verde', slug: 'cruz-verde', type: 'farmacia' },
+  { name: 'Farmatodo', slug: 'farmatodo', type: 'farmacia' },
+  { name: 'La Rebaja', slug: 'la-rebaja', type: 'farmacia' },
+];
+
+export default function CityClient({ city }) {
+  return (
+    <div className="min-h-screen bg-zinc-950">
+      <Header />
+      <Container className="py-8 pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-16 w-16 rounded-2xl bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center">
+              <MapPin size={28} className="text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Inicio</Link>
+                <span className="text-xs text-zinc-600">/</span>
+                <span className="text-xs text-zinc-400">Ciudades</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">{city.name}</h1>
+              <p className="text-zinc-500 mt-1 max-w-xl">{city.description}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="default" size="md"><Store size={12} className="mr-1" />{city.stores} comercios</Badge>
+            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{city.products.toLocaleString('es-CO')} productos</Badge>
+            <Badge variant="success" size="md">{city.department}</Badge>
+          </div>
+        </motion.div>
+
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold text-zinc-200 mb-4">Comercios disponibles en {city.name}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {STORE_LIST.map((store, i) => (
+              <motion.div key={store.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                <Link href={`/${store.type}/${store.slug}`}
+                  className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 hover:bg-zinc-900 transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-zinc-800 flex items-center justify-center">
+                      <ShoppingBag size={18} className="text-zinc-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200 group-hover:text-emerald-400 transition-colors">{store.name}</p>
+                      <p className="text-xs text-zinc-500 capitalize">{store.type}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-zinc-200">Departamento</h2>
+          </div>
+          <Link href={`/departamento/${city.departmentSlug}`}
+            className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 hover:bg-zinc-900 transition-all group max-w-sm">
+            <div>
+              <p className="text-sm font-medium text-zinc-200 group-hover:text-emerald-400 transition-colors">{city.department}</p>
+              <p className="text-xs text-zinc-500">Ver más ciudades del departamento</p>
+            </div>
+            <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+          </Link>
+        </section>
+      </Container>
+      <Footer />
+    </div>
+  );
+}

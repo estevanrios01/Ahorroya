@@ -82,6 +82,16 @@ export default function Footer() {
               <li><Link href="/ciudades" className="text-sm text-emerald-500 hover:text-emerald-400 transition-colors">Ver todas →</Link></li>
             </ul>
           </div>
+
+          <div>
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Plataforma</h3>
+            <ul className="space-y-2.5">
+              <li><Link href="/marcas" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Marcas</Link></li>
+              <li><Link href="/dashboard-ejecutivo" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Dashboard KPIs</Link></li>
+              <li><Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Panel Admin</Link></li>
+              <li><a href="https://ahorroya.vercel.app/api/health" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors" target="_blank">API Health</a></li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-zinc-800/50 flex flex-col sm:flex-row items-center justify-between gap-4">

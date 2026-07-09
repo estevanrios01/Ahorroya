@@ -378,4 +378,54 @@ export async function getAllCategories() {
   return CATEGORY_DB;
 }
 
-export { PRODUCT_DB, STORE_DB, CATEGORY_DB, slugify, buildPresentationInfo, expandSynonyms };
+const CITIES_DB = [
+  { name: 'Cali', slug: 'cali', department: 'Valle del Cauca', departmentSlug: 'valle-del-cauca', stores: 45, products: 12500, description: 'Encuentra los mejores precios en supermercados y farmacias de Cali.' },
+  { name: 'Bogotá', slug: 'bogota', department: 'Cundinamarca', departmentSlug: 'cundinamarca', stores: 120, products: 35000, description: 'Compara precios en supermercados y farmacias de Bogotá.' },
+  { name: 'Medellín', slug: 'medellin', department: 'Antioquia', departmentSlug: 'antioquia', stores: 85, products: 28000, description: 'Encuentra los mejores precios en Medellín.' },
+  { name: 'Barranquilla', slug: 'barranquilla', department: 'Atlántico', departmentSlug: 'atlantico', stores: 35, products: 8900, description: 'Compara precios en supermercados y farmacias de Barranquilla.' },
+  { name: 'Cartagena', slug: 'cartagena', department: 'Bolívar', departmentSlug: 'bolivar', stores: 28, products: 7200, description: 'Encuentra los mejores precios en Cartagena.' },
+  { name: 'Bucaramanga', slug: 'bucaramanga', department: 'Santander', departmentSlug: 'santander', stores: 30, products: 8100, description: 'Compara precios en Bucaramanga.' },
+  { name: 'Pereira', slug: 'pereira', department: 'Risaralda', departmentSlug: 'risaralda', stores: 20, products: 5400, description: 'Encuentra los mejores precios en Pereira.' },
+  { name: 'Manizales', slug: 'manizales', department: 'Caldas', departmentSlug: 'caldas', stores: 18, products: 4800, description: 'Compara precios en Manizales.' },
+  { name: 'Ibagué', slug: 'ibague', department: 'Tolima', departmentSlug: 'tolima', stores: 22, products: 5600, description: 'Encuentra los mejores precios en Ibagué.' },
+  { name: 'Cúcuta', slug: 'cucuta', department: 'Norte de Santander', departmentSlug: 'norte-de-santander', stores: 15, products: 3900, description: 'Compara precios en Cúcuta.' },
+  { name: 'Villavicencio', slug: 'villavicencio', department: 'Meta', departmentSlug: 'meta', stores: 12, products: 3100, description: 'Encuentra los mejores precios en Villavicencio.' },
+  { name: 'Santa Marta', slug: 'santa-marta', department: 'Magdalena', departmentSlug: 'magdalena', stores: 14, products: 3600, description: 'Compara precios en Santa Marta.' },
+  { name: 'Neiva', slug: 'neiva', department: 'Huila', departmentSlug: 'huila', stores: 10, products: 2600, description: 'Encuentra los mejores precios en Neiva.' },
+  { name: 'Pasto', slug: 'pasto', department: 'Nariño', departmentSlug: 'narnio', stores: 11, products: 2800, description: 'Compara precios en Pasto.' },
+  { name: 'Armenia', slug: 'armenia', department: 'Quindío', departmentSlug: 'quindio', stores: 9, products: 2300, description: 'Encuentra los mejores precios en Armenia.' },
+];
+
+const DEPARTMENTS_DB = [
+  { name: 'Valle del Cauca', slug: 'valle-del-cauca', cities: ['Cali', 'Buenaventura', 'Palmira', 'Tuluá', 'Yumbo'], stores: 65, products: 18000, description: 'Compara precios en supermercados y farmacias del Valle del Cauca.' },
+  { name: 'Cundinamarca', slug: 'cundinamarca', cities: ['Bogotá', 'Soacha', 'Zipaquirá', 'Chía', 'Facatativá'], stores: 140, products: 40000, description: 'Encuentra los mejores precios en Cundinamarca.' },
+  { name: 'Antioquia', slug: 'antioquia', cities: ['Medellín', 'Envigado', 'Itagüí', 'Bello', 'Rionegro'], stores: 95, products: 31000, description: 'Compara precios en supermercados y farmacias de Antioquia.' },
+  { name: 'Atlántico', slug: 'atlantico', cities: ['Barranquilla', 'Soledad', 'Malambo', 'Puerto Colombia'], stores: 40, products: 10000, description: 'Encuentra los mejores precios en el Atlántico.' },
+  { name: 'Bolívar', slug: 'bolivar', cities: ['Cartagena', 'Magangué', 'Turbaco', 'El Carmen'], stores: 32, products: 8500, description: 'Compara precios en Bolívar.' },
+  { name: 'Santander', slug: 'santander', cities: ['Bucaramanga', 'Floridablanca', 'Girón', 'Piedecuesta'], stores: 35, products: 9500, description: 'Encuentra los mejores precios en Santander.' },
+];
+
+const BRANDS_DB = [
+  { name: 'Diana', slug: 'diana', products: 45, categories: ['Despensa'], country: 'Colombia', description: 'Arroz Diana, la marca líder en arroz de Colombia.' },
+  { name: 'Colanta', slug: 'colanta', products: 120, categories: ['Lácteos', 'Despensa'], country: 'Colombia', description: 'Cooperativa colombiana de productos lácteos y alimentos.' },
+  { name: 'Gourmet', slug: 'gourmet', products: 30, categories: ['Despensa'], country: 'Colombia', description: 'Aceites vegetales Gourmet de la Familia.' },
+  { name: 'Bimbo', slug: 'bimbo', products: 80, categories: ['Panadería'], country: 'México', description: 'Pan Bimbo, frescura y calidad en cada rebanada.' },
+  { name: 'MK', slug: 'mk', products: 60, categories: ['Medicamentos OTC'], country: 'Colombia', description: 'Medicamentos MK de Laboratorios MK.' },
+  { name: 'Roa', slug: 'roa', products: 35, categories: ['Despensa'], country: 'Colombia', description: 'Arroz Roa, fortificado para tu familia.' },
+  { name: 'Sello Rojo', slug: 'sello-rojo', products: 25, categories: ['Despensa', 'Bebidas'], country: 'Colombia', description: 'Café Sello Rojo 100% colombiano.' },
+  { name: 'Coca-Cola', slug: 'coca-cola', products: 50, categories: ['Bebidas'], country: 'Estados Unidos', description: 'La gaseosa más famosa del mundo.' },
+  { name: 'Rey', slug: 'rey', products: 20, categories: ['Aseo'], country: 'Colombia', description: 'Jabones y detergentes Rey.' },
+  { name: 'FAB', slug: 'fab', products: 15, categories: ['Aseo'], country: 'Colombia', description: 'Detergente FAB, la limpieza que tu ropa merece.' },
+  { name: 'Santa Reyes', slug: 'santa-reyes', products: 10, categories: ['Despensa'], country: 'Colombia', description: 'Huevos frescos Santa Reyes.' },
+  { name: 'Familia', slug: 'familia', products: 40, categories: ['Aseo'], country: 'Colombia', description: 'Productos de higiene y cuidado familiar.' },
+];
+
+export async function getBrand(slug) { return BRANDS_DB.find(b => b.slug === slug) || null; }
+export async function getAllBrands() { return BRANDS_DB; }
+export async function getProductsByBrand(brandName) { const products = await getAllProducts(); return products.filter(p => p.brand?.toLowerCase() === brandName?.toLowerCase()); }
+export async function getCity(slug) { return CITIES_DB.find(c => c.slug === slug) || null; }
+export async function getAllCities() { return CITIES_DB; }
+export async function getDepartment(slug) { return DEPARTMENTS_DB.find(d => d.slug === slug) || null; }
+export async function getAllDepartments() { return DEPARTMENTS_DB; }
+
+export { PRODUCT_DB, STORE_DB, CATEGORY_DB, BRANDS_DB, CITIES_DB, DEPARTMENTS_DB, slugify, buildPresentationInfo, expandSynonyms };

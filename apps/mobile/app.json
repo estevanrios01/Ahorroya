@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "AhorroYa",
+    "slug": "ahorroya",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "ahorroya",
+    "userInterfaceStyle": "dark",
+    "splash": { "backgroundColor": "#09090b", "resizeMode": "contain" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.ahorroya.app" },
+    "android": { "package": "com.ahorroya.app", "adaptiveIcon": { "backgroundColor": "#09090b" } },
+    "plugins": [
+      "expo-router",
+      ["expo-camera", { "cameraPermission": "Permitir acceso a la cámara para escanear códigos de barras." }],
+      ["expo-barcode-scanner", { "cameraPermission": "Permitir acceso a la cámara para escanear códigos de barras." }],
+      ["expo-notifications", { "icon": "./assets/notification-icon.png" }],
+      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "Permitir acceso a ubicación para encontrar tiendas cercanas." }]
+    ]
+  }
+}
