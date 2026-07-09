@@ -263,6 +263,10 @@ const CATEGORY_DB = [
   { id: 'aseo', name: 'Aseo', slug: 'aseo', icon: 'Home', productCount: 2, description: 'Jabones, detergentes y productos de limpieza.' },
   { id: 'medicamentos-otc', name: 'Medicamentos OTC', slug: 'medicamentos-otc', icon: 'Pill', productCount: 2, description: 'Acetaminofén, ibuprofeno y más medicamentos de venta libre.' },
   { id: 'bebidas', name: 'Bebidas', slug: 'bebidas', icon: 'Wine', productCount: 1, description: 'Gaseosas, jugos y bebidas refrescantes.' },
+  { id: 'mercado', name: 'Mercado', slug: 'mercado', icon: 'ShoppingCart', productCount: 0, description: 'Todo tu mercado en un solo lugar.' },
+  { id: 'carnes', name: 'Carnes', slug: 'carnes', icon: 'Beef', productCount: 0, description: 'Carnes frías, embutidos y productos cárnicos.' },
+  { id: 'bebes', name: 'Bebés', slug: 'bebes', icon: 'Baby', productCount: 0, description: 'Pañales, leche fórmula y cuidado para bebés.' },
+  { id: 'mascotas', name: 'Mascotas', slug: 'mascotas', icon: 'Dog', productCount: 0, description: 'Alimento y accesorios para tu mascota.' },
 ];
 
 export async function getProductBySlug(slug) {

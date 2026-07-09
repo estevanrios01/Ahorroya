@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Pill, Milk, Beef, Home, Wine } from 'lucide-react';
+import { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
 import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
 
-const iconMap = { ShoppingCart, Pill, Milk, Beef, Home, Wine };
+const iconMap = { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog };
 
 export default function CategoryClient({ category, products }) {
   const Icon = iconMap[category.icon] || ShoppingCart;
