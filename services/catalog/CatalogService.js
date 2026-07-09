@@ -283,6 +283,7 @@ export async function getProductBySlug(slug) {
     ...product,
     normalizedName: normalized.normalized,
     presentation,
+    price: bestPrice.price,
     bestPrice: bestPrice.price,
     bestStore: bestPrice.store,
     avgPrice,
