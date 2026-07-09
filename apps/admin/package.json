@@ -7,8 +7,6 @@
     "build": "next build"
   },
   "dependencies": {
-    "@ahorroya/database": "workspace:*",
-    "@ahorroya/shared": "workspace:*",
     "next": "^16",
     "react": "^19",
     "react-dom": "^19"

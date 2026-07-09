@@ -7,9 +7,6 @@
     "build": "next build"
   },
   "dependencies": {
-    "@ahorroya/database": "workspace:*",
-    "@ahorroya/shared": "workspace:*",
-    "@ahorroya/pricing-engine": "workspace:*",
     "next": "^16",
     "zod": "^4"
   }
