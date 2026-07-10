@@ -2,6 +2,10 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
+Disallow: /auth/
+Disallow: /buscar
+Disallow: /favoritos
 Disallow: /dashboard-ejecutivo/
+Disallow: /legal/
 
 Sitemap: https://ahorroya.vercel.app/sitemap.xml
