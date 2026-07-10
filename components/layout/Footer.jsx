@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Heart, Globe, MessageCircle, Camera, Send, ExternalLink } from 'lucide-react';
+import { Heart, Globe, MessageCircle, Camera, Send } from 'lucide-react';
 
 const categories = [
   { name: 'Mercado', href: '/categoria/mercado' },
@@ -21,8 +21,16 @@ const stores = [
 ];
 
 const cities = [
-  'Cali', 'Bogotá', 'Medellín', 'Barranquilla', 'Cartagena',
-  'Bucaramanga', 'Pereira', 'Manizales', 'Ibagué', 'Cúcuta',
+  { name: 'Cali', slug: 'cali' },
+  { name: 'Bogotá', slug: 'bogota' },
+  { name: 'Medellín', slug: 'medellin' },
+  { name: 'Barranquilla', slug: 'barranquilla' },
+  { name: 'Cartagena', slug: 'cartagena' },
+  { name: 'Bucaramanga', slug: 'bucaramanga' },
+  { name: 'Pereira', slug: 'pereira' },
+  { name: 'Manizales', slug: 'manizales' },
+  { name: 'Ibagué', slug: 'ibague' },
+  { name: 'Cúcuta', slug: 'cucuta' },
 ];
 
 export default function Footer() {
@@ -75,8 +83,8 @@ export default function Footer() {
             <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Cobertura</h3>
             <ul className="space-y-2.5">
               {cities.slice(0, 6).map((city) => (
-                <li key={city}>
-                  <Link href={`/ciudad/${city.toLowerCase()}`} className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">{city}</Link>
+                <li key={city.slug}>
+                  <Link href={`/ciudad/${city.slug}`} className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">{city.name}</Link>
                 </li>
               ))}
               <li><Link href="/ciudades" className="text-sm text-emerald-500 hover:text-emerald-400 transition-colors">Ver todas →</Link></li>
@@ -89,7 +97,7 @@ export default function Footer() {
               <li><Link href="/marcas" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Marcas</Link></li>
               <li><Link href="/dashboard-ejecutivo" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Dashboard KPIs</Link></li>
               <li><Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Panel Admin</Link></li>
-              <li><a href="https://ahorroya.vercel.app/api/health" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors" target="_blank">API Health</a></li>
+              <li><a href="https://ahorroya.vercel.app/api/health" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors" target="_blank" rel="noopener noreferrer">API Health</a></li>
             </ul>
           </div>
         </div>

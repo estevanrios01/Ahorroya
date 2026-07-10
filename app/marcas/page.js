@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { getAllBrands } from '../../services/catalog/CatalogService';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
 export async function generateMetadata() {
   return {
+    metadataBase: new URL(SITE_URL),
     title: 'Todas las marcas - Compara precios | AhorroYa',
     description: 'Encuentra productos de todas las marcas en supermercados y farmacias de Colombia. Compara precios y ahorra en tus compras.',
     openGraph: {
@@ -13,7 +16,7 @@ export async function generateMetadata() {
       siteName: 'AhorroYa',
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: 'https://ahorroya.vercel.app/marcas' },
+    alternates: { canonical: `${SITE_URL}/marcas` },
   };
 }
 

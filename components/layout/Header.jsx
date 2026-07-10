@@ -58,6 +58,7 @@ export default function Header() {
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Buscar productos, marcas..."
               className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+              aria-label="Buscar productos"
             />
           </form>
 
@@ -135,6 +136,7 @@ export default function Header() {
                     onChange={(e) => setSearchValue(e.target.value)}
                     placeholder="Buscar productos..."
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50"
+                    aria-label="Buscar productos"
                   />
                 </div>
               </form>

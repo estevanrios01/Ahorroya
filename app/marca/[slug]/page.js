@@ -3,12 +3,15 @@ import { getBrand, getProductsByBrand } from '../../../services/catalog/CatalogS
 import BrandClient from './BrandClient';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
   const brand = await getBrand(slug);
   if (!brand) return { title: 'No encontrado - AhorroYa' };
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${brand.name} - Productos y precios | AhorroYa`,
     description: brand.description,
     openGraph: {
@@ -18,7 +21,7 @@ export async function generateMetadata({ params }) {
       siteName: 'AhorroYa',
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://ahorroya.vercel.app/marca/${brand.slug}` },
+    alternates: { canonical: `${SITE_URL}/marca/${brand.slug}` },
   };
 }
 

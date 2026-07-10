@@ -3,12 +3,15 @@ import { getDepartment } from '../../../services/catalog/CatalogService';
 import DepartmentClient from './DepartmentClient';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
   const department = await getDepartment(slug);
   if (!department) return { title: 'No encontrado - AhorroYa' };
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${department.name} - Compara precios en supermercados y farmacias | AhorroYa`,
     description: department.description,
     openGraph: {
@@ -18,7 +21,7 @@ export async function generateMetadata({ params }) {
       siteName: 'AhorroYa',
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://ahorroya.vercel.app/departamento/${department.slug}` },
+    alternates: { canonical: `${SITE_URL}/departamento/${department.slug}` },
   };
 }
 

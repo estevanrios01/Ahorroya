@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getProductBySlug } from '../../../services/catalog/CatalogService';
 import ProductDetailClient from './ProductDetailClient';
 import { ProductJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 export async function generateMetadata({ params }) {
   const id = (await params).id;
@@ -13,6 +14,7 @@ export async function generateMetadata({ params }) {
   const formatPrice = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${product.name} - Precio en ${product.prices.length} comercios | AhorroYa`,
     description: `Encuentra ${product.name} al mejor precio. Compara precios en ${product.prices.map(p => p.store).join(', ')}. Desde ${formatPrice(bestPrice)}.`,
     openGraph: {
@@ -29,7 +31,7 @@ export async function generateMetadata({ params }) {
       description: `Mejor precio: ${formatPrice(bestPrice)} en ${product.bestStore}`,
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://ahorroya.vercel.app/producto/${product.slug}` },
+    alternates: { canonical: `${SITE_URL}/producto/${product.slug}` },
   };
 }
 

@@ -1,5 +1,6 @@
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
 export function ProductJsonLd({ product }) {
-  const formatPrice = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
   const bestPrice = Math.min(...product.prices.map(p => p.price));
   const highPrice = Math.max(...product.prices.map(p => p.price));
 
@@ -24,20 +25,19 @@ export function ProductJsonLd({ product }) {
         priceCurrency: 'COP',
         seller: { '@type': 'Organization', name: p.store },
         ...(p.available ? {} : { availability: 'https://schema.org/OutOfStock' }),
-        ...(p.oldPrice > p.price ? {
+        ...(p.oldPrice && p.oldPrice > p.price ? {
           priceSpecification: {
             '@type': 'UnitPriceSpecification',
             price: p.price,
             priceCurrency: 'COP',
-            ...(p.oldPrice > p.price ? {
-              discount: Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100),
-              discountType: 'https://schema.org/Discount'
-            } : {})
+            discount: Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100),
+            discountType: 'https://schema.org/Discount'
           }
         } : {}),
       })),
     },
     ...(product.image ? { image: product.image } : {}),
+    url: `${SITE_URL}/producto/${product.slug}`,
   };
 
   return (
@@ -54,7 +54,7 @@ export function StoreJsonLd({ store }) {
     '@type': store.type === 'farmacia' ? 'Pharmacy' : 'GroceryStore',
     name: store.name,
     description: store.description,
-    url: `https://ahorroya.vercel.app/${store.type}/${store.slug}`,
+    url: `${SITE_URL}/${store.type}/${store.slug}`,
     ...(store.phone && { telephone: store.phone }),
     ...(store.schedule && { openingHours: store.schedule }),
   };
@@ -73,13 +73,14 @@ export function CategoryJsonLd({ category, products }) {
     '@type': 'ItemList',
     name: `${category.name} - AhorroYa`,
     description: category.description,
+    url: `${SITE_URL}/categoria/${category.slug}`,
     itemListElement: products.map((p, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       item: {
         '@type': 'Product',
         name: p.name,
-        url: `https://ahorroya.vercel.app/producto/${p.slug}`,
+        url: `${SITE_URL}/producto/${p.slug}`,
       },
     })),
   };
@@ -100,7 +101,7 @@ export function BreadcrumbJsonLd({ items }) {
       '@type': 'ListItem',
       position: i + 1,
       name: item.name,
-      item: item.url ? `https://ahorroya.vercel.app${item.url}` : undefined,
+      item: item.url ? `${SITE_URL}${item.url}` : undefined,
     })),
   };
 
@@ -117,12 +118,12 @@ export function WebSiteJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'AhorroYa',
-    url: 'https://ahorroya.vercel.app',
+    url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://ahorroya.vercel.app/buscar?q={search_term_string}',
+        urlTemplate: `${SITE_URL}/buscar?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },

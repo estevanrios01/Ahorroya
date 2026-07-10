@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getCategory, getProductsByCategory, getAllProducts } from '../../../services/catalog/CatalogService';
+import { getCategory, getProductsByCategory } from '../../../services/catalog/CatalogService';
 import CategoryClient from './CategoryClient';
 import { CategoryJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
-import { slugify } from '../../../services/catalog/CatalogService';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
@@ -11,6 +11,7 @@ export async function generateMetadata({ params }) {
   if (!category) return { title: 'No encontrado - AhorroYa' };
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${category.name} - Compara precios | AhorroYa`,
     description: category.description,
     openGraph: {
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }) {
       siteName: 'AhorroYa',
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://ahorroya.vercel.app/categoria/${category.slug}` },
+    alternates: { canonical: `${SITE_URL}/categoria/${category.slug}` },
   };
 }
 

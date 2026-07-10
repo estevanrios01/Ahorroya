@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getStore, getProductsByStore } from '../../../services/catalog/CatalogService';
 import StoreClient from './StoreClient';
 import { StoreJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
@@ -10,6 +11,7 @@ export async function generateMetadata({ params }) {
   if (!store) return { title: 'No encontrado - AhorroYa' };
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${store.name} - Precios y productos | AhorroYa`,
     description: store.description,
     openGraph: {
@@ -19,7 +21,7 @@ export async function generateMetadata({ params }) {
       siteName: 'AhorroYa',
     },
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://ahorroya.vercel.app/${store.type}/${store.slug}` },
+    alternates: { canonical: `${SITE_URL}/${store.type}/${store.slug}` },
   };
 }
 

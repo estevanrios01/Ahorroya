@@ -30,7 +30,7 @@ export default function CategoryGrid() {
           >
             <Link
               href={`/categoria/${cat.slug}`}
-              className="group block relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${cat.color} min-h-[140px] sm:min-h-[160px]"
+              className={`group block relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${cat.color} min-h-[140px] sm:min-h-[160px]`}
             >
               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
               <div className="relative z-10 flex flex-col items-start justify-between h-full">
