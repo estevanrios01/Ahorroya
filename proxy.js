@@ -10,6 +10,8 @@ const PUBLIC_PATHS = [
   '/api/stores/', '/api/promotions', '/api/categories', '/api/brands', '/api/cities',
   '/api/departments', '/api/barcode/', '/api/ai/suggest', '/api/quality/report',
   '/api/analytics/events', '/api/geo/nearby',
+  '/api/observability/health', '/api/observability/metrics', '/api/observability/dashboard',
+  '/api/scrapers/status', '/dashboard-ejecutivo',
 ];
 
 const AUTH_REQUIRED_PATHS = [
