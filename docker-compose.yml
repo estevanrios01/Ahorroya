@@ -16,7 +16,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ahorroya
-      POSTGRES_PASSWORD: ahorroya_secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       POSTGRES_DB: ahorroya
     ports:
       - "5432:5432"

@@ -1,35 +1,31 @@
 import { NextResponse } from 'next/server';
-
-const favorites = new Map();
+import { db } from '../../../services/database';
 
 export async function GET(request) {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'default';
-    const userFavs = favorites.get(userId) || [];
-    return NextResponse.json({ success: true, data: userFavs });
+  const userId = request.headers.get('x-user-id');
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'Usuario no autenticado' }, { status: 401 });
+  }
+  const { data, error } = await db.favorites.list(userId);
+  if (error) {
+    return NextResponse.json({ success: false, error: 'Error al consultar favoritos' }, { status: 500 });
+  }
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(request) {
-    const body = await request.json();
-    const { userId = 'default', productId, productName, productSlug, brand } = body;
-    const userFavs = favorites.get(userId) || [];
-    const exists = userFavs.find(f => f.productId === productId);
-
-    if (exists) {
-        favorites.set(userId, userFavs.filter(f => f.productId !== productId));
-        return NextResponse.json({ success: true, favorited: false });
-    }
-
-    userFavs.push({
-        id: crypto.randomUUID(),
-        userId,
-        productId,
-        productName,
-        productSlug,
-        brand,
-        createdAt: new Date().toISOString()
-    });
-    favorites.set(userId, userFavs);
-
-    return NextResponse.json({ success: true, favorited: true });
+  const userId = request.headers.get('x-user-id');
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'Usuario no autenticado' }, { status: 401 });
+  }
+  const body = await request.json();
+  const { productId } = body;
+  if (!productId) {
+    return NextResponse.json({ success: false, error: 'productId requerido' }, { status: 400 });
+  }
+  const result = await db.favorites.toggle(userId, productId);
+  if (result.error) {
+    return NextResponse.json({ success: false, error: 'Error al actualizar favorito' }, { status: 500 });
+  }
+  return NextResponse.json({ success: true, favorited: result.favorited });
 }

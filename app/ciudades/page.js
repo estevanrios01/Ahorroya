@@ -22,12 +22,12 @@ export async function generateMetadata() {
 }
 
 export default async function CiudadesPage() {
-  const ciudades = await getAllCities();
+  const { cities: ciudades } = await getAllCities();
 
-  const totalStores = ciudades.reduce((acc, c) => acc + c.stores, 0);
-  const totalProducts = ciudades.reduce((acc, c) => acc + c.products, 0);
-  const supermarketCount = ciudades.reduce((acc, c) => acc + Math.round(c.stores * 0.7), 0);
-  const pharmacyCount = ciudades.reduce((acc, c) => acc + Math.round(c.stores * 0.3), 0);
+  const totalStores = ciudades.reduce((acc, c) => acc + (c.storeCount || 0), 0);
+  const totalProducts = ciudades.reduce((acc, c) => acc + (c.productCount || 0), 0);
+  const supermarketCount = ciudades.reduce((acc, c) => acc + (c.supermarketCount || 0), 0);
+  const pharmacyCount = ciudades.reduce((acc, c) => acc + (c.pharmacyCount || 0), 0);
 
   const jsonLd = {
     '@context': 'https://schema.org',

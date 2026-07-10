@@ -1,0 +1,312 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function getClient() {
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
+
+function getAdminClient() {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+export const supabase = getClient();
+export const supabaseAdmin = getAdminClient();
+
+function handleError(error, context) {
+  if (!error) return null;
+  const msg = `[DB] ${context}: ${error.message}`;
+  if (typeof console !== 'undefined') console.error(msg);
+  return { error: msg };
+}
+
+export const db = {
+  products: {
+    async list({ q, category, page = 1, limit = 20 } = {}) {
+      if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
+      if (q) query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%`);
+      if (category) query = query.eq('category_id', category);
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      const { data, count, error } = await query.range(from, to).order('name');
+      if (error) return handleError(error, 'products.list');
+      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+    },
+
+    async getBySlug(slug) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single();
+      if (error) return handleError(error, 'products.getBySlug');
+      return { data };
+    },
+
+    async getById(id) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase.from('master_products').select('*').eq('id', id).single();
+      if (error) return handleError(error, 'products.getById');
+      return { data };
+    },
+
+    async getByCategory(categorySlug, { page = 1, limit = 20 } = {}) {
+      if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      const { data: cat } = await supabase.from('categories').select('id').eq('slug', categorySlug).single();
+      if (!cat) return { data: [] };
+      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('category_id', cat.id).eq('status', 'active');
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      const { data, count, error } = await query.range(from, to).order('name');
+      if (error) return handleError(error, 'products.getByCategory');
+      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+    },
+
+    async getByBrand(brandSlug, { page = 1, limit = 20 } = {}) {
+      if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      const { data: brand } = await supabase.from('brands').select('id').eq('slug', brandSlug).single();
+      if (!brand) return { data: [] };
+      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('brand_id', brand.id).eq('status', 'active');
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      const { data, count, error } = await query.range(from, to).order('name');
+      if (error) return handleError(error, 'products.getByBrand');
+      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+    },
+
+    async getPrices(productId) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo), branches!left(name, address, city, latitude, longitude)').eq('master_product_id', productId).eq('available', true).order('price');
+      if (error) return handleError(error, 'products.getPrices');
+      return { data: data || [] };
+    },
+
+    async getPriceHistory(storeProductId) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('store_product_history').select('*').eq('store_product_id', storeProductId).order('captured_at', { ascending: true });
+      if (error) return handleError(error, 'products.getPriceHistory');
+      return { data: data || [] };
+    },
+
+    async search(query, { page = 1, limit = 20 } = {}) {
+      if (!supabase) return { data: [], total: 0 };
+      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,brand.ilike.%${query}%,short_name.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      if (error) return handleError(error, 'products.search');
+      return { data: data || [], total: count || 0 };
+    },
+  },
+
+  stores: {
+    async list({ page = 1, limit = 50 } = {}) {
+      if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      const { data, count, error } = await supabase.from('stores').select('*', { count: 'exact' }).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      if (error) return handleError(error, 'stores.list');
+      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+    },
+
+    async getBySlug(slug) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase.from('stores').select('*').eq('slug', slug).single();
+      if (error) return handleError(error, 'stores.getBySlug');
+      return { data };
+    },
+
+    async getBranches(storeId) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('branches').select('*').eq('store_id', storeId).eq('status', 'active');
+      if (error) return handleError(error, 'stores.getBranches');
+      return { data: data || [] };
+    },
+
+    async getPharmacyList() {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('stores').select('*').eq('status', 'active').or('category.eq.Farmacia,category.eq.Droguería').order('name');
+      if (error) return handleError(error, 'stores.getPharmacyList');
+      return { data: data || [] };
+    },
+  },
+
+  categories: {
+    async list() {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('categories').select('*').order('name');
+      if (error) return handleError(error, 'categories.list');
+      return { data: data || [] };
+    },
+
+    async getBySlug(slug) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase.from('categories').select('*').eq('slug', slug).single();
+      if (error) return handleError(error, 'categories.getBySlug');
+      return { data };
+    },
+
+    async getProductCount(categoryId) {
+      if (!supabase) return 0;
+      const { count, error } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('category_id', categoryId).eq('status', 'active');
+      if (error) return 0;
+      return count || 0;
+    },
+  },
+
+  brands: {
+    async list() {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('brands').select('*').order('name');
+      if (error) return handleError(error, 'brands.list');
+      return { data: data || [] };
+    },
+
+    async getBySlug(slug) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase.from('brands').select('*').eq('slug', slug).single();
+      if (error) return handleError(error, 'brands.getBySlug');
+      return { data };
+    },
+
+    async getProductCount(brandId) {
+      if (!supabase) return 0;
+      const { count, error } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('brand_id', brandId).eq('status', 'active');
+      if (error) return 0;
+      return count || 0;
+    },
+  },
+
+  cities: {
+    async list() {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('branches').select('city, department, count:store_id').eq('status', 'active').not('city', 'is', null);
+      if (error) return handleError(error, 'cities.list');
+      const map = new Map();
+      for (const row of data || []) {
+        if (!row.city) continue;
+        const key = row.city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (!map.has(key)) {
+          map.set(key, { name: row.city, slug: key, department: row.department || '', stores: new Set(), products: 0 });
+        }
+        if (row.count) map.get(key).stores.add(row.count);
+      }
+      const cities = [];
+      for (const entry of map.values()) {
+        cities.push({ name: entry.name, slug: entry.slug, department: entry.department, storeCount: entry.stores.size });
+      }
+      return { data: cities.sort((a, b) => a.name.localeCompare(b.name)) };
+    },
+
+    async getBySlug(slug) {
+      const { data: all } = await this.list();
+      if (!all) return { data: null };
+      const found = all.find(c => c.slug === slug);
+      return { data: found || null };
+    },
+
+    async getBranchesByCity(cityName) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('branches').select('*, stores!inner(name, slug, logo, category)').eq('status', 'active').ilike('city', cityName);
+      if (error) return handleError(error, 'cities.getBranchesByCity');
+      return { data: data || [] };
+    },
+  },
+
+  departments: {
+    async list() {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('branches').select('department').eq('status', 'active').not('department', 'is', null);
+      if (error) return handleError(error, 'departments.list');
+      const seen = new Set();
+      const depts = [];
+      for (const row of data || []) {
+        if (!row.department || seen.has(row.department.toLowerCase())) continue;
+        seen.add(row.department.toLowerCase());
+        const slug = row.department.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        depts.push({ name: row.department, slug });
+      }
+      return { data: depts.sort((a, b) => a.name.localeCompare(b.name)) };
+    },
+
+    async getBySlug(slug) {
+      const { data: all } = await this.list();
+      if (!all) return { data: null };
+      const found = all.find(d => d.slug === slug);
+      return { data: found || null };
+    },
+
+    async getBranchesByDepartment(deptName) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('branches').select('*, stores!inner(name, slug, logo, category)').eq('status', 'active').ilike('department', deptName);
+      if (error) return handleError(error, 'departments.getBranchesByDepartment');
+      return { data: data || [] };
+    },
+  },
+
+  favorites: {
+    async list(userId) {
+      if (!supabase || !userId) return { data: [] };
+      const { data, error } = await supabase.from('baskets').select('*, basket_items(*, master_products(*))').eq('user_id', userId).eq('favorite', true);
+      if (error) return handleError(error, 'favorites.list');
+      return { data: data || [] };
+    },
+
+    async toggle(userId, productId) {
+      if (!supabaseAdmin) return { error: 'DB not configured' };
+      const { data: existing } = await supabaseAdmin.from('basket_items').select('id, basket_id').eq('basket_id', userId).eq('master_product_id', productId).maybeSingle();
+      if (existing) {
+        await supabaseAdmin.from('basket_items').delete().eq('id', existing.id);
+        return { favorited: false };
+      }
+      let { data: basket } = await supabaseAdmin.from('baskets').select('id').eq('user_id', userId).eq('favorite', true).maybeSingle();
+      if (!basket) {
+        const { data: newBasket } = await supabaseAdmin.from('baskets').insert({ user_id: userId, name: 'Favoritos', favorite: true }).select().single();
+        basket = newBasket;
+      }
+      await supabaseAdmin.from('basket_items').insert({ basket_id: basket.id, master_product_id: productId, quantity: 1 });
+      return { favorited: true };
+    },
+  },
+
+  scraping: {
+    async listJobs({ limit = 50 } = {}) {
+      if (!supabase) return { data: [] };
+      const { data, error } = await supabase.from('scraping_jobs').select('*').order('created_at', { ascending: false }).limit(limit);
+      if (error) return handleError(error, 'scraping.listJobs');
+      return { data: data || [] };
+    },
+
+    async createJob(store, payload = {}) {
+      if (!supabaseAdmin) return { error: 'DB not configured' };
+      const { data, error } = await supabaseAdmin.from('scraping_jobs').insert({ store, status: 'pending', priority: 100, payload }).select().single();
+      if (error) return handleError(error, 'scraping.createJob');
+      return { data };
+    },
+
+    async updateJob(id, updates) {
+      if (!supabaseAdmin) return { error: 'DB not configured' };
+      const { data, error } = await supabaseAdmin.from('scraping_jobs').update(updates).eq('id', id).select().single();
+      if (error) return handleError(error, 'scraping.updateJob');
+      return { data };
+    },
+
+    async recordRun(runData) {
+      if (!supabaseAdmin) return { error: 'DB not configured' };
+      const { data, error } = await supabaseAdmin.from('scraping_runs').insert(runData).select().single();
+      if (error) return handleError(error, 'scraping.recordRun');
+      return { data };
+    },
+
+    async getLatestRun(store) {
+      if (!supabase) return null;
+      const { data, error } = await supabase.from('scraping_runs').select('*').eq('store', store || '').order('started_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) return null;
+      return data;
+    },
+  },
+
+  analytics: {
+    async track(event) {
+      if (!supabaseAdmin) return;
+      await supabaseAdmin.from('analytics_events').insert(event).select().maybeSingle();
+    },
+  },
+};

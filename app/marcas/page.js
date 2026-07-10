@@ -21,7 +21,7 @@ export async function generateMetadata() {
 }
 
 export default async function MarcasPage() {
-  const brands = await getAllBrands();
+  const { brands } = await getAllBrands();
 
   return (
     <>

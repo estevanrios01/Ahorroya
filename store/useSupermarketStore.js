@@ -27,14 +27,13 @@ export const useSupermarketStore = create((set, get) => ({
   })),
 
   logout: async () => {
-    await supabase.auth.signOut();
+    await supabase?.auth.signOut();
     set({ user: null, carrito: [] });
   },
 
   getResultadosOrdenados: () => {
     const { results, criterioOrden } = get();
     let resultadosCopia = [...results];
-
     if (criterioOrden === 'precio_menor') {
       resultadosCopia.sort((a, b) => a.precio - b.precio);
     } else if (criterioOrden === 'distancia_menor') {
@@ -45,19 +44,31 @@ export const useSupermarketStore = create((set, get) => ({
 
   fetchResults: async () => {
     const { searchQuery } = get();
-    if (!searchQuery) return;
-
+    if (!searchQuery || !supabase) {
+      set({ isLoading: false, results: [] });
+      return;
+    }
     set({ isLoading: true });
-
-    setTimeout(() => {
-      set({
-        results: [
-          { id: 1, producto_nombre: 'Arroz Diana Premium', cadena_nombre: 'Almacenes Éxito', precio: 4200, distancia_metros: 1200, tag: 'Calidad' },
-          { id: 2, producto_nombre: 'Arroz Roa Fortificado', cadena_nombre: 'Tiendas D1', precio: 3800, distancia_metros: 500, tag: 'Más Cercano' },
-          { id: 3, producto_nombre: 'Arroz Supremo Tradicional', cadena_nombre: 'Supermercados Olímpica', precio: 3500, distancia_metros: 2100, tag: 'Mejor Precio' }
-        ],
-        isLoading: false
-      });
-    }, 800);
-  }
+    try {
+      const { data, error } = await supabase
+        .from('store_products')
+        .select('*, master_products!inner(name, slug, brand), stores!inner(name, slug)')
+        .or(`master_products.name.ilike.%${searchQuery}%,master_products.brand.ilike.%${searchQuery}%`)
+        .eq('available', true)
+        .limit(50);
+      if (error) throw error;
+      const mapped = (data || []).map((item, i) => ({
+        id: item.id || i,
+        producto_nombre: item.master_products?.name || searchQuery,
+        cadena_nombre: item.stores?.name || 'Tienda',
+        precio: item.price,
+        distancia_metros: 0,
+        tag: i === 0 ? 'Mejor Precio' : null,
+      }));
+      set({ results: mapped, isLoading: false });
+    } catch (err) {
+      console.error('[Store] fetchResults error:', err);
+      set({ isLoading: false, results: [] });
+    }
+  },
 }));
