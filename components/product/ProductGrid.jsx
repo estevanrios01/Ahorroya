@@ -6,7 +6,7 @@ import { ProductCardSkeleton } from '../../packages/ui/src/components/skeleton';
 export default function ProductGrid({ products, loading = false, columns = 4 }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: columns }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
@@ -17,7 +17,7 @@ export default function ProductGrid({ products, loading = false, columns = 4 }) 
   if (!products || products.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       {products.map((product, i) => (
         <ProductCardPremium key={product.id || i} product={product} />
       ))}

@@ -11,7 +11,7 @@ const PUBLIC_PATHS = [
   '/api/departments', '/api/barcode/', '/api/ai/suggest', '/api/quality/report',
   '/api/analytics/events', '/api/geo/nearby',
   '/api/observability/health', '/api/observability/metrics', '/api/observability/dashboard',
-  '/api/scrapers/status', '/dashboard-ejecutivo',
+  '/api/scrapers/status', '/api/categories/products', '/dashboard-ejecutivo',
 ];
 
 const AUTH_REQUIRED_PATHS = [

@@ -1,56 +1,102 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog } from 'lucide-react';
+import { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog, Package } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
 import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
+import { ProductCardSkeleton } from '../../../packages/ui/src/components/skeleton';
 
 const iconMap = { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog };
 
-export default function CategoryClient({ category, products }) {
+export default function CategoryClient({ category, initialProducts, initialTotal = 0 }) {
+  const [products, setProducts] = useState(initialProducts || []);
+  const [total, setTotal] = useState(initialTotal);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(products.length < initialTotal);
+  const loaderRef = useRef(null);
+
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const nextPage = page + 1;
+      const res = await fetch(`/api/categories/products?slug=${category.slug}&page=${nextPage}&limit=24`);
+      const json = await res.json();
+      if (json.success && json.data?.length > 0) {
+        setProducts(prev => [...prev, ...json.data]);
+        setPage(nextPage);
+        setHasMore(products.length + json.data.length < initialTotal);
+      } else {
+        setHasMore(false);
+      }
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, loading, hasMore, category.slug, initialTotal, products.length]);
+
+  useEffect(() => {
+    if (!loaderRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) loadMore();
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadMore]);
+
   const Icon = iconMap[category.icon] || ShoppingCart;
+  const displayProducts = products.length > 0 ? products : initialProducts;
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
-      <Container className="py-8 pb-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="h-14 w-14 rounded-2xl bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center">
-              <Icon size={28} className="text-emerald-400" />
+      <Container className="py-6 sm:py-8 pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center flex-shrink-0">
+              <Icon size={24} className="text-emerald-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Inicio</Link>
-                <span className="text-xs text-zinc-600">/</span>
-                <span className="text-xs text-zinc-400">Categorías</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">{category.name}</h1>
-              <p className="text-zinc-500 mt-1">{category.description}</p>
+              <nav className="flex items-center gap-1.5 text-xs text-zinc-600 mb-1">
+                <Link href="/" className="hover:text-zinc-400 transition-colors">Inicio</Link>
+                <span>/</span>
+                <span className="text-zinc-400">Categorías</span>
+              </nav>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-100">{category.name}</h1>
+              {category.description && <p className="text-sm text-zinc-500 mt-0.5">{category.description}</p>}
             </div>
           </div>
-          <Badge variant="default" size="md">{products.length} productos</Badge>
+          <Badge variant="default" size="md">{total || displayProducts.length} productos</Badge>
         </motion.div>
 
-        {products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <ProductCardPremium product={p} />
-              </motion.div>
-            ))}
-          </div>
-        ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {displayProducts.map((p, i) => (
+            <motion.div key={p.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
+              <ProductCardPremium product={p} />
+            </motion.div>
+          ))}
+          {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
+        </div>
+
+        {displayProducts.length === 0 && (
           <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800">
             <Icon size={48} className="mx-auto mb-3 text-zinc-600" />
-            <p className="text-lg font-medium text-zinc-400">Próximamente</p>
-            <p className="text-sm mt-1">Estamos agregando productos de esta categoría</p>
+            <p className="text-base font-medium text-zinc-400">Explorando productos</p>
+            <p className="text-sm mt-1">Estamos cargando los productos de esta categoría</p>
           </div>
         )}
+
+        {hasMore && <div ref={loaderRef} className="h-12 mt-4" />}
       </Container>
       <Footer />
     </div>
