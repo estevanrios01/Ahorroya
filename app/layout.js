@@ -30,7 +30,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#09090b',
+  themeColor: '#059669',
 };
 
 export default function RootLayout({ children }) {
@@ -41,7 +41,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
       </head>
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased" style={{ fontFamily: "'Inter', sans-serif" }}>
         {children}
       </body>
     </html>

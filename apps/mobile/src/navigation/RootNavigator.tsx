@@ -18,9 +18,9 @@ const Tab = createBottomTabNavigator();
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Home: '🏠', Search: '🔍', Scanner: '📷', Favorites: '❤️', Profile: '👤',
+    Home: 'AH', Search: 'BU', Scanner: 'SC', Favorites: 'FA', Profile: 'YO',
   };
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{icons[name] || '●'}</Text>;
+  return <Text style={{ fontSize: 12, fontWeight: 'bold', opacity: focused ? 1 : 0.5, color: focused ? '#34d399' : '#71717a' }}>{icons[name] || '--'}</Text>;
 }
 
 function HomeTabs() {

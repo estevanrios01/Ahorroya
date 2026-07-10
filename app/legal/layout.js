@@ -1,13 +1,16 @@
 import Link from 'next/link';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 
 export default function LegalLayout({ children }) {
   return (
     <div className="min-h-screen bg-zinc-950">
+      <Header />
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
         <nav className="flex items-center gap-2 text-xs text-zinc-600 mb-6">
           <Link href="/" className="hover:text-zinc-400 transition-colors">Inicio</Link>
           <span>/</span>
-          <span className="text-zinc-400">Legal</span>
+          <Link href="/legal" className="hover:text-zinc-400 transition-colors">Legal</Link>
         </nav>
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-56 flex-shrink-0">
@@ -23,6 +26,7 @@ export default function LegalLayout({ children }) {
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -23,9 +23,9 @@ export default function ProductDetailClient({ product }) {
   const avgPrice = Math.round(product.prices.reduce((s, p) => s + p.price, 0) / product.prices.length);
 
   const history = product.prices.map((p, i) => ({
-    date: `Día ${i + 1}`,
-    price: p.price - ((i * 47 + 31) % 301) + 150,
-  })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    date: p.store,
+    price: p.price,
+  }));
 
   const trendingDown = history.length > 1 && history[0].price > history[history.length - 1].price;
 
@@ -132,7 +132,7 @@ export default function ProductDetailClient({ product }) {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={history}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis dataKey="date" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} angle={-20} textAnchor="end" height={60} />
                   <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} />
                   <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }} itemStyle={{ color: '#34d399' }} />
                   <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={3} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />

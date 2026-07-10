@@ -6,6 +6,7 @@ export async function generateMetadata() {
   return {
     metadataBase: new URL(SITE_URL),
     title: 'Panel de Administración - AhorroYa',
+    description: 'Panel de administración de AhorroYa. Gestión de productos, precios, scrapers, calidad y configuración.',
     robots: { index: false, follow: false },
   };
 }

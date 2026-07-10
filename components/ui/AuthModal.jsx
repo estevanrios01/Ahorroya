@@ -49,13 +49,13 @@ export default function AuthModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}>
-      <div className="bg-[#0f172a] border border-slate-700 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors" aria-label="Cerrar">
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-100 transition-colors" aria-label="Cerrar">
           <X size={24} />
         </button>
 
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-6 text-center">
             {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
 
@@ -67,12 +67,12 @@ export default function AuthModal({ onClose }) {
             )}
 
             <div className="relative">
-              <Mail className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" aria-hidden="true" />
+              <Mail className="absolute left-3 top-3.5 h-5 w-5 text-zinc-500" aria-hidden="true" />
               <input
                 ref={emailRef}
                 type="email"
                 required
-                className="w-full bg-[#1e293b] border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-colors placeholder:text-zinc-500"
                 placeholder="Correo Electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -81,11 +81,11 @@ export default function AuthModal({ onClose }) {
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" aria-hidden="true" />
+              <Lock className="absolute left-3 top-3.5 h-5 w-5 text-zinc-500" aria-hidden="true" />
               <input
                 type="password"
                 required
-                className="w-full bg-[#1e293b] border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-colors placeholder:text-zinc-500"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -96,19 +96,19 @@ export default function AuthModal({ onClose }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 rounded-xl transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+              className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
               aria-label={loading ? 'Procesando...' : isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
             >
               {loading ? 'Procesando...' : isLogin ? <><LogIn size={20} /> Entrar</> : <><UserPlus size={20} /> Registrarse</>}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-slate-400 text-sm">
+          <p className="mt-6 text-center text-zinc-400 text-sm">
             {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+              className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
               aria-label={isLogin ? 'Ir a registro' : 'Ir a inicio de sesión'}
             >
               {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}

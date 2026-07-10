@@ -25,6 +25,17 @@ export default function DashboardOperacionalPage() {
 
   if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" /></div>;
 
+  if (error) return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="text-xl font-semibold text-zinc-200 mb-2">Error al cargar dashboard</h2>
+        <p className="text-zinc-500 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-colors">Reintentar</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
       <div className="max-w-7xl mx-auto">
