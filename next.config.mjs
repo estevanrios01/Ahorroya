@@ -24,6 +24,8 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.googleusercontent.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'olimpica.vteximg.com.br' },
+      { protocol: 'https', hostname: 'exitocol.vteximg.com.br' },
+      { protocol: 'https', hostname: 'carulla.vteximg.com.br' },
       { protocol: 'https', hostname: '**.vtexassets.com' },
     ],
   },

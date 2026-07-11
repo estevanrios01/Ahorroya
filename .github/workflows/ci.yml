@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 20.19.0
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --include=optional
       - run: npm run lint
 
   test:
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 20.19.0
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --include=optional
       - run: npm test
 
   build:
@@ -48,5 +48,5 @@ jobs:
         with:
           node-version: 20.19.0
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --include=optional
       - run: npm run build

@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "next build",
+    "build": "next build --webpack",
+    "vercel-build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
