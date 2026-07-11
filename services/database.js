@@ -26,7 +26,7 @@ function handleError(error, context) {
 
 export const db = {
   products: {
-    async list({ q, category, page = 1, limit = 20 } = {}) {
+    async list({ q, category, city, page = 1, limit = 20 } = {}) {
       if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       let query = supabase
         .from('master_products')
@@ -34,6 +34,28 @@ export const db = {
         .eq('status', 'active');
       if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
       if (category) query = query.eq('category_id', category);
+      if (city) {
+        const { data: branches } = await supabase
+          .from('branches')
+          .select('id')
+          .eq('status', 'active')
+          .ilike('city', city);
+        const branchIds = (branches || []).map((branch) => branch.id);
+        if (branchIds.length === 0) {
+          return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+        }
+        const { data: listings } = await supabase
+          .from('store_products')
+          .select('master_product_id')
+          .in('branch_id', branchIds)
+          .eq('available', true)
+          .limit(10000);
+        const productIds = [...new Set((listings || []).map((item) => item.master_product_id).filter(Boolean))];
+        if (productIds.length === 0) {
+          return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+        }
+        query = query.in('id', productIds);
+      }
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       const { data, count, error } = await query.range(from, to).order('name');

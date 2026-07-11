@@ -20,6 +20,7 @@
     "db:check": "node scripts/db-check.js",
     "db:link": "npx supabase link --project-ref vnfiqibpgpfsevfplvdp",
     "db:push": "npx supabase db push",
+    "data:populate": "node scripts/populate-national-catalog.js",
     "scrape": "node scripts/actualizador-precios.js",
     "worker": "node apps/worker/src/index.js"
   },
