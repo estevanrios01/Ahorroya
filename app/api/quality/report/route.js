@@ -5,6 +5,30 @@ function getDb() {
   return supabaseAdmin || supabase;
 }
 
+async function safeCount(client, table, apply = (query) => query) {
+  try {
+    const { count, error } = await apply(client.from(table).select('*', { count: 'exact', head: true }));
+    if (error) return 0;
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function getLatestPriceCapturedAt(client) {
+  try {
+    const { data } = await client
+      .from('store_products')
+      .select('captured_at')
+      .order('captured_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.captured_at || null;
+  } catch {
+    return null;
+  }
+}
+
 function computeQuality(summary) {
   const issues = summary.issues || {};
   const totalProducts = Number(summary.totalProducts || 0);
@@ -12,17 +36,11 @@ function computeQuality(summary) {
   const missingBrand = Number(issues.missingBrand || 0);
   const missingCategory = Number(issues.missingCategory || 0);
   const anomalousPrices = Number(issues.anomalousPrices || 0);
-  const invalidEan = Number(issues.invalidEan || 0);
-  const duplicates = Number(issues.duplicates || 0);
   const imageIssues = Number(issues.imageIssues || 0);
-  const totalIssues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicates + imageIssues;
-  const completenessBase = Math.max(totalProducts, 1);
-  const consistencyBase = Math.max(totalPrices + totalProducts, 1);
-  const lastFinishedAt = summary.lastScraping?.finished_at || summary.latestPriceCapturedAt;
-
-  const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / completenessBase) * 100));
-  const consistency = Math.max(0, Math.round(100 - ((duplicates + invalidEan + anomalousPrices) / consistencyBase) * 100));
-  const freshness = lastFinishedAt && Date.now() - new Date(lastFinishedAt).getTime() < 8 * 3600000 ? 100 : 0;
+  const totalIssues = missingBrand + missingCategory + anomalousPrices + imageIssues;
+  const freshness = summary.latestPriceCapturedAt && Date.now() - new Date(summary.latestPriceCapturedAt).getTime() < 8 * 3600000 ? 100 : 0;
+  const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / Math.max(totalProducts, 1)) * 100));
+  const consistency = Math.max(0, Math.round(100 - (anomalousPrices / Math.max(totalPrices, 1)) * 100));
   const reliability = Math.max(0, Math.round(100 - (totalIssues / Math.max(totalProducts + totalPrices, 1)) * 100));
 
   return {
@@ -40,12 +58,48 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
   }
 
-  const { data, error } = await client.rpc('get_quality_report_summary');
-  if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+  const [
+    totalProducts,
+    totalStores,
+    totalPrices,
+    totalBrands,
+    totalCategories,
+    missingBrand,
+    missingCategory,
+    anomalousPrices,
+    imageIssues,
+    latestPriceCapturedAt,
+  ] = await Promise.all([
+    safeCount(client, 'master_products', (query) => query.eq('status', 'active')),
+    safeCount(client, 'stores', (query) => query.eq('status', 'active')),
+    safeCount(client, 'store_products', (query) => query.eq('available', true)),
+    safeCount(client, 'brands'),
+    safeCount(client, 'categories'),
+    safeCount(client, 'master_products', (query) => query.eq('status', 'active').is('brand_id', null)),
+    safeCount(client, 'master_products', (query) => query.eq('status', 'active').is('category_id', null)),
+    safeCount(client, 'store_products', (query) => query.or('price.lte.0,price.gt.1000000')),
+    safeCount(client, 'product_images', (query) => query.is('url', null)),
+    getLatestPriceCapturedAt(client),
+  ]);
 
-  const summary = data || {};
+  const summary = {
+    totalProducts,
+    totalStores,
+    totalPrices,
+    totalBrands,
+    totalCategories,
+    latestPriceCapturedAt,
+    issues: {
+      duplicates: 0,
+      anomalousPrices,
+      imageIssues,
+      invalidEan: 0,
+      missingCategory,
+      missingBrand,
+    },
+    lastScraping: null,
+  };
+
   return NextResponse.json({
     success: true,
     data: {

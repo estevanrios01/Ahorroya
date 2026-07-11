@@ -30,13 +30,21 @@ export const db = {
       if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       if (city) {
         const offset = (page - 1) * limit;
-        const { data, error } = await supabase.rpc('search_products_by_city', {
-          p_q: q || '',
-          p_city: city,
-          p_category_id: category || null,
-          p_limit: limit,
-          p_offset: offset,
-        });
+        let data = null;
+        let error = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          const result = await supabase.rpc('search_products_by_city', {
+            p_q: q || '',
+            p_city: city,
+            p_category_id: category || null,
+            p_limit: limit,
+            p_offset: offset,
+          });
+          data = result.data;
+          error = result.error;
+          if (!error) break;
+          await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+        }
         if (error) return handleError(error, 'products.list.searchProductsByCity');
         const rows = data || [];
         const total = rows.length > 0 ? Number(rows[0].total_count || 0) : 0;
