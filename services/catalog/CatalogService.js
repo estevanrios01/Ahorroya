@@ -150,8 +150,28 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
   const { data: store } = await supabase.from('stores').select('id').eq('slug', storeSlug).single();
   if (!store) return { products: [] };
   const from = (page - 1) * limit;
-  const { data, count, error } = await supabase.from('store_products').select('*, master_products!inner(*)', { count: 'exact' }).eq('store_id', store.id).eq('available', true).range(from, from + limit - 1).order('price');
-  if (error) { handleError(error, 'getProductsByStore'); return { products: [] }; }
+  const query = supabase
+    .from('store_products')
+    .select('*, master_products!inner(*)', { count: 'planned' })
+    .eq('store_id', store.id)
+    .eq('available', true)
+    .range(from, from + limit - 1)
+    .order('price');
+  const { data, count, error } = await query;
+  if (error) {
+    const fallback = await supabase
+      .from('store_products')
+      .select('*, master_products!inner(*)')
+      .eq('store_id', store.id)
+      .eq('available', true)
+      .range(from, from + limit - 1)
+      .order('price');
+    if (fallback.error) {
+      handleError(error, 'getProductsByStore');
+      return { products: [] };
+    }
+    return { products: fallback.data || [], pagination: { page, limit, total: from + (fallback.data || []).length, pages: page } };
+  }
   return { products: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
 
