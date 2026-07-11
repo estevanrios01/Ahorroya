@@ -38,6 +38,7 @@ as $$
     'totalPrices', counts.total_prices,
     'totalBrands', counts.total_brands,
     'totalCategories', counts.total_categories,
+    'latestPriceCapturedAt', (select max(captured_at) from public.store_products),
     'issues', jsonb_build_object(
       'duplicates', counts.duplicate_ean,
       'anomalousPrices', counts.anomalous_prices,

@@ -18,7 +18,7 @@ function computeQuality(summary) {
   const totalIssues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicates + imageIssues;
   const completenessBase = Math.max(totalProducts, 1);
   const consistencyBase = Math.max(totalPrices + totalProducts, 1);
-  const lastFinishedAt = summary.lastScraping?.finished_at;
+  const lastFinishedAt = summary.lastScraping?.finished_at || summary.latestPriceCapturedAt;
 
   const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / completenessBase) * 100));
   const consistency = Math.max(0, Math.round(100 - ((duplicates + invalidEan + anomalousPrices) / consistencyBase) * 100));
