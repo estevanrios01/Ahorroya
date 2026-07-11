@@ -5,39 +5,33 @@ function getDb() {
   return supabaseAdmin || supabase;
 }
 
-async function count(table, apply = q => q) {
-  const client = getDb();
-  if (!client) return 0;
-  const { count: total } = await apply(client.from(table).select('*', { count: 'exact', head: true }));
-  return total || 0;
-}
+function computeQuality(summary) {
+  const issues = summary.issues || {};
+  const totalProducts = Number(summary.totalProducts || 0);
+  const totalPrices = Number(summary.totalPrices || 0);
+  const missingBrand = Number(issues.missingBrand || 0);
+  const missingCategory = Number(issues.missingCategory || 0);
+  const anomalousPrices = Number(issues.anomalousPrices || 0);
+  const invalidEan = Number(issues.invalidEan || 0);
+  const duplicates = Number(issues.duplicates || 0);
+  const imageIssues = Number(issues.imageIssues || 0);
+  const totalIssues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicates + imageIssues;
+  const completenessBase = Math.max(totalProducts, 1);
+  const consistencyBase = Math.max(totalPrices + totalProducts, 1);
+  const lastFinishedAt = summary.lastScraping?.finished_at;
 
-async function getInvalidEanCount() {
-  const client = getDb();
-  if (!client) return 0;
-  const { data } = await client.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
-  return (data || []).filter(row => !/^\d{8,14}$/.test(row.ean || '')).length;
-}
+  const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / completenessBase) * 100));
+  const consistency = Math.max(0, Math.round(100 - ((duplicates + invalidEan + anomalousPrices) / consistencyBase) * 100));
+  const freshness = lastFinishedAt && Date.now() - new Date(lastFinishedAt).getTime() < 8 * 3600000 ? 100 : 0;
+  const reliability = Math.max(0, Math.round(100 - (totalIssues / Math.max(totalProducts + totalPrices, 1)) * 100));
 
-async function getDuplicateEanCount() {
-  const client = getDb();
-  if (!client) return 0;
-  const { data } = await client.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
-  const seen = new Set();
-  const duplicates = new Set();
-  for (const row of data || []) {
-    if (!row.ean) continue;
-    if (seen.has(row.ean)) duplicates.add(row.ean);
-    seen.add(row.ean);
-  }
-  return duplicates.size;
-}
-
-async function getImageIssueCount() {
-  const client = getDb();
-  if (!client) return 0;
-  const { data } = await client.from('product_images').select('url').limit(10000);
-  return (data || []).filter((row) => !/^https?:\/\//i.test(row.url || '')).length;
+  return {
+    completeness,
+    consistency,
+    reliability,
+    freshness,
+    overall: Math.round((completeness + consistency + reliability + freshness) / 4),
+  };
 }
 
 export async function GET() {
@@ -46,65 +40,17 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
   }
 
-  const [
-    totalProducts,
-    totalStores,
-    totalPrices,
-    totalBrands,
-    totalCategories,
-    missingBrand,
-    missingCategory,
-    anomalousPrices,
-    invalidEan,
-    duplicateEan,
-    imageIssues,
-    latestRun,
-  ] = await Promise.all([
-    count('master_products', q => q.eq('status', 'active')),
-    count('stores', q => q.eq('status', 'active')),
-    count('store_products', q => q.eq('available', true)),
-    count('brands'),
-    count('categories'),
-    count('master_products', q => q.eq('status', 'active').is('brand_id', null)),
-    count('master_products', q => q.eq('status', 'active').is('category_id', null)),
-    count('store_products', q => q.or('price.lte.0,price.gt.1000000')),
-    getInvalidEanCount(),
-    getDuplicateEanCount(),
-    getImageIssueCount(),
-    client.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(1).maybeSingle(),
-  ]);
+  const { data, error } = await client.rpc('get_quality_report_summary');
+  if (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
 
-  const issues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicateEan + imageIssues;
-  const completenessBase = Math.max(totalProducts, 1);
-  const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / completenessBase) * 100));
-  const consistency = Math.max(0, Math.round(100 - ((duplicateEan + invalidEan + anomalousPrices) / Math.max(totalPrices + totalProducts, 1)) * 100));
-  const freshness = latestRun.data?.finished_at && Date.now() - new Date(latestRun.data.finished_at).getTime() < 8 * 3600000 ? 100 : 0;
-  const reliability = Math.max(0, Math.round(100 - (issues / Math.max(totalProducts + totalPrices, 1)) * 100));
-
+  const summary = data || {};
   return NextResponse.json({
     success: true,
     data: {
-      totalProducts,
-      totalStores,
-      totalPrices,
-      totalBrands,
-      totalCategories,
-      quality: {
-        completeness,
-        consistency,
-        reliability,
-        freshness,
-        overall: Math.round((completeness + consistency + reliability + freshness) / 4),
-      },
-      issues: {
-        duplicates: duplicateEan,
-        anomalousPrices,
-        imageIssues,
-        invalidEan,
-        missingCategory,
-        missingBrand,
-      },
-      lastScraping: latestRun.data || null,
+      ...summary,
+      quality: computeQuality(summary),
       timestamp: new Date().toISOString(),
     },
   });
