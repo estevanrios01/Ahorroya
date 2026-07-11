@@ -364,12 +364,17 @@ async function runRetailer(retailer) {
         console.error(`[${retailer.name}] error producto ${product.name}: ${error.message}`);
       }
     }
-    stats.productsRemoved = await markMissingUnavailable(store, seenIds);
+    // Search pages are partial samples, not full store catalogs. Only mark
+    // missing products unavailable for retailers explicitly configured as a
+    // full-catalog crawl, otherwise a blocked/short search would hide valid
+    // products from the database.
+    stats.productsRemoved = retailer.fullCatalog ? await markMissingUnavailable(store, seenIds) : 0;
     await recordRun(retailer, stats);
     console.log(`[${retailer.name}] ok`, stats);
     return stats;
   } catch (error) {
     stats.errors++;
+    stats.failed = true;
     await recordRun(retailer, stats, 'failed', error.message).catch(recordError => console.error(`[${retailer.name}] no se pudo registrar error: ${recordError.message}`));
     console.error(`[${retailer.name}] falló: ${error.message}`);
     return stats;
@@ -383,12 +388,18 @@ async function main() {
   if (retailers.length === 0) throw new Error(`Scraper desconocido: ${selected.join(', ')}`);
 
   const totals = { productsFound: 0, productsUpdated: 0, productsInserted: 0, productsRemoved: 0, priceChanges: 0, errors: 0 };
+  let failedRetailers = 0;
   for (const retailer of retailers) {
     const stats = await runRetailer(retailer);
     for (const key of Object.keys(totals)) totals[key] += stats[key] || 0;
+    if (stats.failed) failedRetailers++;
   }
-  console.log('Resumen scrapers:', totals);
-  if (totals.errors > 0) process.exitCode = 1;
+  console.log('Resumen scrapers:', { ...totals, failedRetailers, successfulRetailers: retailers.length - failedRetailers });
+
+  const strictFailures = process.env.SCRAPER_STRICT_FAILURES === 'true';
+  if (failedRetailers === retailers.length || (strictFailures && totals.errors > 0)) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch(error => {
