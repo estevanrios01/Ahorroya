@@ -33,20 +33,11 @@ async function getDuplicateEanCount() {
   return duplicates.size;
 }
 
-async function getBrokenImageSampleCount() {
+async function getImageIssueCount() {
   const client = getDb();
   if (!client) return 0;
-  const { data } = await client.from('product_images').select('url').not('url', 'is', null).limit(25);
-  let broken = 0;
-  await Promise.all((data || []).map(async ({ url }) => {
-    try {
-      const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
-      if (!res.ok) broken++;
-    } catch {
-      broken++;
-    }
-  }));
-  return broken;
+  const { data } = await client.from('product_images').select('url').limit(10000);
+  return (data || []).filter((row) => !/^https?:\/\//i.test(row.url || '')).length;
 }
 
 export async function GET() {
@@ -66,7 +57,7 @@ export async function GET() {
     anomalousPrices,
     invalidEan,
     duplicateEan,
-    brokenImages,
+    imageIssues,
     latestRun,
   ] = await Promise.all([
     count('master_products', q => q.eq('status', 'active')),
@@ -79,11 +70,11 @@ export async function GET() {
     count('store_products', q => q.or('price.lte.0,price.gt.1000000')),
     getInvalidEanCount(),
     getDuplicateEanCount(),
-    getBrokenImageSampleCount(),
+    getImageIssueCount(),
     client.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const issues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicateEan + brokenImages;
+  const issues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicateEan + imageIssues;
   const completenessBase = Math.max(totalProducts, 1);
   const completeness = Math.max(0, Math.round(100 - ((missingBrand + missingCategory) / completenessBase) * 100));
   const consistency = Math.max(0, Math.round(100 - ((duplicateEan + invalidEan + anomalousPrices) / Math.max(totalPrices + totalProducts, 1)) * 100));
@@ -108,7 +99,7 @@ export async function GET() {
       issues: {
         duplicates: duplicateEan,
         anomalousPrices,
-        brokenImagesSample: brokenImages,
+        imageIssues,
         invalidEan,
         missingCategory,
         missingBrand,
