@@ -21,7 +21,7 @@ const TARGET_PRODUCTS = Number(process.env.VTEX_TARGET_PRODUCTS || process.argv[
 const START_FROM = Number(process.env.VTEX_START_FROM || process.argv[4] || 0);
 const SEARCH_TERM = process.env.VTEX_SEARCH || process.argv[5] || '';
 const PAGE_SIZE = Number(process.env.VTEX_PAGE_SIZE || 50);
-const BATCH_SIZE = Number(process.env.IMPORT_BATCH_SIZE || 100);
+const BATCH_SIZE = Number(process.env.IMPORT_BATCH_SIZE || 50);
 
 const STORES = {
   exito: {
@@ -71,19 +71,30 @@ function cryptoId(input) {
 }
 
 async function rest(pathname, { method = 'GET', body, prefer = '', returnMinimal = false } = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-    body: body == null ? undefined : JSON.stringify(body),
-  });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${method} ${pathname}: ${text}`);
-  return returnMinimal || !text ? null : JSON.parse(text);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+        method,
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+          ...(prefer ? { Prefer: prefer } : {}),
+        },
+        body: body == null ? undefined : JSON.stringify(body),
+      });
+      const text = await response.text();
+      if (!response.ok) throw new Error(`${method} ${pathname}: ${text}`);
+      return returnMinimal || !text ? null : JSON.parse(text);
+    } catch (error) {
+      lastError = error;
+      const retryable = /statement timeout|ECONNRESET|terminated|fetch failed/i.test(String(error.message || error));
+      if (!retryable || attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+  throw lastError;
 }
 
 async function upsertBatch(table, rows, onConflict, { returning = true } = {}) {

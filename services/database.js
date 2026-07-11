@@ -24,6 +24,25 @@ function handleError(error, context) {
   return { error: msg };
 }
 
+async function attachPrices(products) {
+  if (!supabase || !products?.length) return products || [];
+  const ids = products.map((product) => product.id).filter(Boolean);
+  if (ids.length === 0) return products;
+  const { data, error } = await supabase
+    .from('store_products')
+    .select('price, original_price, store_id, available, master_product_id')
+    .in('master_product_id', ids)
+    .eq('available', true)
+    .limit(ids.length * 8);
+  if (error) return products.map((product) => ({ ...product, store_products: [] }));
+  const byProduct = new Map();
+  for (const row of data || []) {
+    if (!byProduct.has(row.master_product_id)) byProduct.set(row.master_product_id, []);
+    byProduct.get(row.master_product_id).push(row);
+  }
+  return products.map((product) => ({ ...product, store_products: byProduct.get(product.id) || [] }));
+}
+
 export const db = {
   products: {
     async list({ q, category, city, page = 1, limit = 20 } = {}) {
@@ -66,20 +85,19 @@ export const db = {
           pagination: { page, limit, total, pages: Math.ceil(total / limit) },
         };
       }
-      const needsExactCount = Boolean(q || category);
       let query = supabase
         .from('master_products')
-        .select('*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', needsExactCount ? { count: 'exact' } : undefined)
+        .select('*, brands(name, slug), categories(name, slug)')
         .eq('status', 'active');
-      query = query.eq('store_products.available', true);
       if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
-      const { data, count, error } = await query.order('updated_at', { ascending: false }).range(from, to);
+      const { data, error } = await query.order('updated_at', { ascending: false }).range(from, to);
       if (error) return handleError(error, 'products.list');
-      const total = needsExactCount ? count || 0 : from + (data || []).length;
-      return { data: data || [], pagination: { page, limit, total, pages: needsExactCount ? Math.ceil(total / limit) : page } };
+      const products = await attachPrices(data || []);
+      const total = from + products.length;
+      return { data: products, pagination: { page, limit, total, pages: page } };
     },
 
     async getBySlug(slug) {
