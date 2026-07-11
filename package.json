@@ -2,6 +2,10 @@
   "name": "@ahorroya/web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.8.2"
+  },
   "workspaces": [
     "packages/*"
   ],
