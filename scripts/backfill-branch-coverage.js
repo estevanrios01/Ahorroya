@@ -43,7 +43,7 @@ async function rest(pathname, { method = 'GET', body, prefer, returnMinimal = fa
 async function fetchAll(table, select, filter = '', chunk = 1000) {
   const rows = [];
   for (let from = 0; ; from += chunk) {
-    const separator = filter ? '&' : '';
+    const separator = '&';
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${select}${filter}${separator}order=id.asc&limit=${chunk}&offset=${from}`, { headers });
     if (!response.ok) throw new Error(`GET ${table}: ${response.status}`);
     const batch = await response.json();

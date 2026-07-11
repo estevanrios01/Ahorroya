@@ -12,19 +12,19 @@ La base de datos de Supabase fue alimentada con una semilla nacional operativa p
 |---|---:|
 | brands | 73 |
 | categories | 13 |
-| master_products | 5.476 |
+| master_products | 10.476 |
 | stores | 15 |
 | branches | 324 |
-| store_products | 474.089 |
-| store_product_history | 554.619 |
-| product_images | 5.465 |
+| store_products | 648.015 |
+| store_product_history | 1.131.607 |
+| product_images | 10.465 |
 
 ## Cobertura
 
 - 40 ciudades principales e intermedias.
 - 15 cadenas entre supermercados y farmacias.
 - 324 sedes operativas.
-- Cada sede activa tiene minimo 1.002 productos asociados.
+- Cada sede activa tiene exactamente 2.000 productos asociados.
 - Los precios quedan relacionados por producto, comercio y sede.
 - El historial de precios conserva eventos sin sobrescribir.
 
@@ -43,7 +43,10 @@ No debe considerarse todavia un catalogo oficial completo. Los precios masivos s
 - `TARGET_PRODUCTS=5000 PRODUCTS_PER_BRANCH=1000 npm run data:populate`: OK.
 - `npm run data:backfill-branches`: OK.
 - `npm run data:backfill-low`: OK.
-- `npm run data:audit`: OK, minimo 1.002 productos por sede.
+- `TARGET_PRODUCTS=10000 PRODUCTS_PER_BRANCH=1000 npm run data:populate`: OK.
+- `MIN_PRODUCTS_PER_BRANCH=2000 npm run data:backfill-low`: OK.
+- `scripts/sql/backfill_missing_price_history.sql`: OK, historial inicial para precios sin evento.
+- `npm run data:audit`: OK, minimo 2.000 productos por sede.
 - `npm run db:check`: OK, 14/14 tablas accesibles.
 - `npm run lint`: OK.
 - `npm run test -- --runInBand`: OK, 8 suites pasadas, 1 suite de integracion omitida por requerir servidor.
@@ -55,4 +58,4 @@ No debe considerarse todavia un catalogo oficial completo. Los precios masivos s
 2. Agregar captura por ciudad/sede cuando el comercio lo permita.
 3. Descargar o cachear imagenes oficiales en Supabase Storage.
 4. Agregar estado de verificacion por precio para distinguir `seed`, `scraper`, `admin` y `api`.
-5. Subir el volumen de `master_products` de 5.476 a 10.000 y luego 100.000.
+5. Subir el volumen de productos con precios de 2.834 a 10.000 y luego 100.000.
