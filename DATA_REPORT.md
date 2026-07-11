@@ -12,19 +12,19 @@ La base de datos de Supabase fue alimentada con una semilla nacional operativa p
 |---|---:|
 | brands | 73 |
 | categories | 13 |
-| master_products | 146 |
+| master_products | 1.476 |
 | stores | 15 |
 | branches | 324 |
-| store_products | 31.630 |
-| store_product_history | 31.632 |
-| product_images | 135 |
+| store_products | 134.227 |
+| store_product_history | 143.819 |
+| product_images | 1.465 |
 
 ## Cobertura
 
 - 40 ciudades principales e intermedias.
 - 15 cadenas entre supermercados y farmacias.
 - 324 sedes operativas.
-- Cada sede generada por la carga nacional tiene 100 productos asociados.
+- Cada sede activa tiene minimo 200 productos asociados.
 - Los precios quedan relacionados por producto, comercio y sede.
 - El historial de precios conserva eventos sin sobrescribir.
 
@@ -40,7 +40,9 @@ No debe considerarse todavia un catalogo oficial completo. Los precios masivos s
 
 ## Verificacion tecnica
 
-- `npm run data:populate`: OK.
+- `TARGET_PRODUCTS=1000 PRODUCTS_PER_BRANCH=200 npm run data:populate`: OK.
+- `npm run data:backfill-branches`: OK.
+- `npm run data:audit`: OK, minimo 200 productos por sede.
 - `npm run db:check`: OK, 14/14 tablas accesibles.
 - `npm run lint`: OK.
 - `npm run test -- --runInBand`: OK, 8 suites pasadas, 1 suite de integracion omitida por requerir servidor.
@@ -52,4 +54,4 @@ No debe considerarse todavia un catalogo oficial completo. Los precios masivos s
 2. Agregar captura por ciudad/sede cuando el comercio lo permita.
 3. Descargar o cachear imagenes oficiales en Supabase Storage.
 4. Agregar estado de verificacion por precio para distinguir `seed`, `scraper`, `admin` y `api`.
-5. Subir el volumen de `master_products` de 146 a 1.000, luego 10.000.
+5. Subir el volumen de `master_products` de 1.476 a 10.000 y luego 100.000.

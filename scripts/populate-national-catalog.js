@@ -17,6 +17,8 @@ loadEnv();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = Number(process.env.POPULATE_BATCH_SIZE || 500);
+const TARGET_PRODUCTS = Number(process.env.TARGET_PRODUCTS || 600);
+const PRODUCTS_PER_BRANCH = Number(process.env.PRODUCTS_PER_BRANCH || 150);
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
@@ -206,10 +208,21 @@ const products = [
   ['Pizza Ristorante Mozzarella 335 g', 'Ristorante', 'congelados', 21900, 335, null, 'g'],
 ];
 
-while (products.length < 120) {
+const variantWords = [
+  'Ahorro', 'Familiar', 'Premium', 'Clasico', 'Integral', 'Natural', 'Original', 'Maxi',
+  'Doble Rendimiento', 'Seleccion', 'Tradicional', 'Especial', 'Hogar', 'Plus', 'Economico',
+];
+
+const presentationWords = ['250 g', '400 g', '500 g', '750 g', '1 kg', '1.5 kg', '900 ml', '1 L', '1.5 L', '2 L', 'x6', 'x12'];
+
+while (products.length < TARGET_PRODUCTS) {
   const base = products[products.length % 84];
   const suffix = products.length + 1;
-  products.push([`${base[0]} Familiar ${suffix}`, base[1], base[2], Math.round(base[3] * (1 + (suffix % 7) / 20)), base[4], base[5], base[6]]);
+  const variant = variantWords[suffix % variantWords.length];
+  const presentation = presentationWords[suffix % presentationWords.length];
+  const baseName = base[0].replace(/\s(\d+(\.\d+)?\s?(kg|g|ml|l)|x\d+)$/i, '');
+  const price = Math.round(base[3] * (0.72 + (suffix % 17) / 20));
+  products.push([`${baseName} ${variant} ${presentation} Ref ${suffix}`, base[1], base[2], price, base[4], base[5], base[6]]);
 }
 
 function uuid(input) {
@@ -408,7 +421,7 @@ function buildListingRows(branchRows, productRows, productIds, storeIds) {
     const store = storeBySlug[storeSlug] || stores.find((item) => item[1] === 'exito');
     const coefficient = store?.[5] || 1;
     const offset = parseInt(branch.id.slice(0, 2), 16) % productRows.length;
-    const productsForBranch = Array.from({ length: 100 }, (_, i) => productRows[(offset + i) % productRows.length]);
+    const productsForBranch = Array.from({ length: PRODUCTS_PER_BRANCH }, (_, i) => productRows[(offset + i) % productRows.length]);
     for (const product of productsForBranch) {
       const base = productBySlug[product.slug]?.[3] || 5000;
       const variance = 0.92 + ((parseInt(product.id.slice(0, 2), 16) + parseInt(branch.id.slice(0, 2), 16)) % 18) / 100;

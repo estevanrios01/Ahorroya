@@ -21,6 +21,8 @@
     "db:link": "npx supabase link --project-ref vnfiqibpgpfsevfplvdp",
     "db:push": "npx supabase db push",
     "data:populate": "node scripts/populate-national-catalog.js",
+    "data:audit": "node scripts/data-audit.js",
+    "data:backfill-branches": "node scripts/backfill-branch-coverage.js",
     "scrape": "node scripts/actualizador-precios.js",
     "worker": "node apps/worker/src/index.js"
   },
