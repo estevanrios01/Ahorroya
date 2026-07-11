@@ -2,63 +2,60 @@
 
 Fecha: 2026-07-11
 
-## Estado de poblacion
+## Estado actual
 
-La base de datos de Supabase fue alimentada con una semilla nacional operativa para validar el modelo de comparacion por ciudad, comercio, sede, producto, precio e historial.
+AhorroYa ya tiene una primera base real verificable desde catalogos publicos VTEX:
 
-## Conteos actuales
+- Olimpica: 2.011 precios online reales con imagen oficial.
+- Exito: 4.313 precios online reales con imagen oficial.
+- Carulla: 4.118 precios online reales con imagen oficial.
+- Productos maestros totales: 18.615.
+- Imagenes de producto totales: 21.734.
+- Marcas: 1.410.
+- Categorias: 217.
+- Historial de precios: 1.467.840 eventos.
 
-| Tabla | Total |
-|---|---:|
-| brands | 73 |
-| categories | 13 |
-| master_products | 10.476 |
-| stores | 15 |
-| branches | 324 |
-| store_products | 972.015 |
-| store_product_history | 1.455.607 |
-| product_images | 10.465 |
+Los productos reales importados conservan:
 
-## Cobertura
+- nombre publicado por el comercio
+- marca
+- categoria
+- EAN cuando existe
+- precio actual
+- precio anterior cuando existe
+- disponibilidad
+- URL de producto
+- imagen original del comercio
+- evento historico de precio
 
-- 40 ciudades principales e intermedias.
-- 15 cadenas entre supermercados y farmacias.
-- 324 sedes operativas.
-- Cada sede activa tiene exactamente 3.000 productos asociados.
-- Los 10.476 productos maestros tienen al menos un precio asociado.
-- Los precios quedan relacionados por producto, comercio y sede.
-- El historial de precios conserva eventos sin sobrescribir.
+## Fuentes reales conectadas
 
-## Cadenas incluidas
+| Comercio | Fuente | Estado |
+| --- | --- | --- |
+| Olimpica | API publica VTEX `www.olimpica.com` | Activa |
+| Exito | API publica VTEX `www.exito.com` | Activa |
+| Carulla | API publica VTEX `www.carulla.com` | Activa |
 
-Exito, Carulla, Surtimax, Super Inter, D1, Ara, Olimpica, Jumbo, Metro, Makro, Farmatodo, Cruz Verde, La Rebaja, Pasteur y Locatel.
+## Cambios tecnicos
 
-## Nota de calidad de datos
+- Se creo `scripts/import-vtex-catalog.js` como importador generico para comercios VTEX.
+- El importador soporta paginacion por ventana y busqueda por termino para ampliar cobertura.
+- Se agregaron dominios oficiales de imagenes a `next.config.mjs`.
+- La portada ahora consulta el catalogo general reciente, evitando ocultar datos reales online por filtros de ciudad.
+- Los listados globales de marcas/categorias ya no hacen miles de conteos exactos durante build.
+- CI/CD instala dependencias opcionales nativas y usa `next build --webpack` para evitar fallos de `lightningcss`/Turbopack en Linux.
 
-Esta carga deja funcionando la estructura nacional y permite probar busqueda, ciudad, sedes, comparacion e historial a escala inicial.
+## Limitaciones honestas
 
-No debe considerarse todavia un catalogo oficial completo. Los precios masivos son una semilla operativa controlada y deben ser reemplazados o validados progresivamente por scrapers reales, APIs autorizadas, feeds comerciales o carga administrativa verificada.
+- Los precios importados de VTEX son precios online/nacionales. No se deben presentar como precio exacto de cada sede fisica hasta conectar endpoints o fuentes que entreguen precio por ciudad/sucursal.
+- D1, Ara, Jumbo, Makro, Farmatodo, Cruz Verde y La Rebaja todavia requieren conectores especificos. No se deben poblar con datos inventados.
+- VTEX limita la paginacion publica directa a `_from <= 2500`; para crecer se debe seguir importando por categorias, busquedas y/o endpoints segmentados.
+- Aun queda data sintetica historica en la base. La direccion correcta es ir reemplazandola por fuentes reales comercio por comercio.
 
-## Verificacion tecnica
+## Proximo bloque recomendado
 
-- `TARGET_PRODUCTS=5000 PRODUCTS_PER_BRANCH=1000 npm run data:populate`: OK.
-- `npm run data:backfill-branches`: OK.
-- `npm run data:backfill-low`: OK.
-- `TARGET_PRODUCTS=10000 PRODUCTS_PER_BRANCH=1000 npm run data:populate`: OK.
-- `MIN_PRODUCTS_PER_BRANCH=2000 npm run data:backfill-low`: OK.
-- `MIN_PRODUCTS_PER_BRANCH=3000 npm run data:backfill-low`: OK.
-- `scripts/sql/backfill_missing_price_history.sql`: OK, historial inicial para precios sin evento.
-- `node scripts/backfill-missing-price-history.js`: OK, historial inicial para precios nuevos.
-- `npm run data:audit`: OK, minimo 3.000 productos por sede y 10.476 productos con precio.
-- `npm run db:check`: OK, 14/14 tablas accesibles.
-- `npm run lint`: OK.
-- `npm run test -- --runInBand`: OK, 8 suites pasadas, 1 suite de integracion omitida por requerir servidor.
-- `npm run build`: OK, 47 rutas compiladas.
-
-## Siguiente bloque recomendado
-
-1. Mejorar scrapers por comercio, empezando por Olimpica y Farmatodo porque sus paginas publicas exponen productos con mayor facilidad.
-2. Agregar captura por ciudad/sede cuando el comercio lo permita.
-3. Descargar o cachear imagenes oficiales en Supabase Storage.
-4. Agregar estado de verificacion por precio para distinguir `seed`, `scraper`, `admin` y `api`.
-5. Subir el catalogo maestro de 10.476 a 25.000 productos, manteniendo precios por sede sin perder rendimiento.
+1. Importar mas terminos reales para Exito/Carulla/Olimpica por categoria.
+2. Crear conectores especificos para Farmatodo y Cruz Verde.
+3. Separar visualmente "precio online" de "precio por sede".
+4. Ajustar busqueda por ciudad para mezclar precios por sucursal con precios online cuando no exista precio local.
+5. Eliminar progresivamente productos sinteticos cuando exista cobertura real suficiente.
