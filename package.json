@@ -23,6 +23,7 @@
     "data:populate": "node scripts/populate-national-catalog.js",
     "data:audit": "node scripts/data-audit.js",
     "data:backfill-branches": "node scripts/backfill-branch-coverage.js",
+    "data:backfill-low": "node scripts/backfill-low-branches.js",
     "scrape": "node scripts/actualizador-precios.js",
     "worker": "node apps/worker/src/index.js"
   },

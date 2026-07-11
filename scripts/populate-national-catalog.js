@@ -17,8 +17,8 @@ loadEnv();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = Number(process.env.POPULATE_BATCH_SIZE || 500);
-const TARGET_PRODUCTS = Number(process.env.TARGET_PRODUCTS || 600);
-const PRODUCTS_PER_BRANCH = Number(process.env.PRODUCTS_PER_BRANCH || 150);
+const TARGET_PRODUCTS = Number(process.env.TARGET_PRODUCTS || 5000);
+const PRODUCTS_PER_BRANCH = Number(process.env.PRODUCTS_PER_BRANCH || 300);
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');

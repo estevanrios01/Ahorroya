@@ -15,7 +15,7 @@ loadEnv();
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const MIN_PRODUCTS_PER_BRANCH = Number(process.env.MIN_PRODUCTS_PER_BRANCH || 200);
+const MIN_PRODUCTS_PER_BRANCH = Number(process.env.MIN_PRODUCTS_PER_BRANCH || 1000);
 const BATCH_SIZE = Number(process.env.POPULATE_BATCH_SIZE || 500);
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -53,70 +53,63 @@ async function fetchAll(table, select, filter = '', chunk = 1000) {
   return rows;
 }
 
-async function upsertBatch(table, rows, onConflict) {
+async function insertBatch(rows) {
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const params = new URLSearchParams({ on_conflict: onConflict });
-    await rest(`${table}?${params.toString()}`, {
+    await rest('store_products?on_conflict=master_product_id,store_id,branch_id', {
       method: 'POST',
-      body: batch,
-      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: rows.slice(i, i + BATCH_SIZE),
+      prefer: 'return=minimal,resolution=ignore-duplicates',
       returnMinimal: true,
     });
   }
 }
 
-async function patch(pathname, row) {
-  await rest(pathname, {
-    method: 'PATCH',
-    body: row,
-    prefer: 'return=minimal',
-    returnMinimal: true,
-  });
-}
-
 function priceFor(product, branch, index) {
   const seed = parseInt(product.id.slice(0, 2), 16) + parseInt(branch.id.slice(0, 2), 16) + index;
-  const base = 2500 + (seed % 90000);
-  return Math.round(base / 50) * 50;
+  return Math.round((2500 + (seed % 120000)) / 50) * 50;
 }
 
 async function main() {
   const [branches, products, listings] = await Promise.all([
-    fetchAll('branches', 'id,store_id,code,status'),
+    fetchAll('branches', 'id,store_id,code,name,city,status'),
     fetchAll('master_products', 'id,slug,status', '&status=eq.active'),
-    fetchAll('store_products', 'id,branch_id,master_product_id,available'),
+    fetchAll('store_products', 'branch_id,master_product_id,available'),
   ]);
 
   const inactiveListings = listings.filter((row) => row.available === false);
   if (inactiveListings.length > 0) {
     console.log(`Reactivating inactive listings: ${inactiveListings.length}`);
-    await patch('store_products?available=eq.false', {
-      available: true,
-      updated_at: new Date().toISOString(),
+    await rest('store_products?available=eq.false', {
+      method: 'PATCH',
+      body: { available: true, updated_at: new Date().toISOString() },
+      prefer: 'return=minimal',
+      returnMinimal: true,
     });
   }
 
-  const activeListings = listings.filter((row) => row.branch_id);
-  const productsByBranch = new Map();
-  for (const item of activeListings) {
-    if (!productsByBranch.has(item.branch_id)) productsByBranch.set(item.branch_id, new Set());
-    productsByBranch.get(item.branch_id).add(item.master_product_id);
+  const byBranch = new Map();
+  for (const listing of listings.filter((row) => row.branch_id)) {
+    if (!byBranch.has(listing.branch_id)) byBranch.set(listing.branch_id, new Set());
+    byBranch.get(listing.branch_id).add(listing.master_product_id);
   }
 
-  const newListings = [];
+  const lowBranches = branches
+    .filter((branch) => branch.status === 'active')
+    .map((branch) => ({ ...branch, products: byBranch.get(branch.id) || new Set() }))
+    .filter((branch) => branch.products.size < MIN_PRODUCTS_PER_BRANCH);
 
-  for (const branch of branches.filter((row) => row.status === 'active')) {
-    const current = productsByBranch.get(branch.id) || new Set();
-    if (current.size >= MIN_PRODUCTS_PER_BRANCH) continue;
-    let productIndex = parseInt(branch.id.slice(0, 2), 16) % products.length;
-    while (current.size < MIN_PRODUCTS_PER_BRANCH && productIndex < products.length * 2) {
-      const product = products[productIndex % products.length];
-      productIndex++;
-      if (!product || current.has(product.id)) continue;
-      current.add(product.id);
-      const price = priceFor(product, branch, productIndex);
-      newListings.push({
+  console.log(`Low branches: ${lowBranches.length}`);
+  const rows = [];
+
+  for (const branch of lowBranches) {
+    let index = parseInt(branch.id.slice(0, 2), 16) % products.length;
+    while (branch.products.size < MIN_PRODUCTS_PER_BRANCH && index < products.length * 4) {
+      const product = products[index % products.length];
+      index++;
+      if (!product || branch.products.has(product.id)) continue;
+      branch.products.add(product.id);
+      const price = priceFor(product, branch, index);
+      rows.push({
         master_product_id: product.id,
         store_id: branch.store_id,
         branch_id: branch.id,
@@ -124,16 +117,16 @@ async function main() {
         price,
         original_price: Math.round((price * 1.08) / 50) * 50,
         available: true,
-        stock: 25 + (productIndex % 160),
+        stock: 20 + (index % 200),
         captured_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
     }
+    console.log(`${branch.name} (${branch.city}): ${branch.products.size}`);
   }
 
-  console.log(`Backfill listings: ${newListings.length}`);
-  if (newListings.length === 0) return;
-  await upsertBatch('store_products', newListings, 'master_product_id,store_id,branch_id');
+  console.log(`Rows to insert: ${rows.length}`);
+  if (rows.length > 0) await insertBatch(rows);
 }
 
 main().catch((error) => {

@@ -39,10 +39,7 @@ async function count(table, filter = '') {
 async function fetchAll(table, select, chunk = 1000) {
   const rows = [];
   for (let from = 0; ; from += chunk) {
-    const to = from + chunk - 1;
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${select}`, {
-      headers: { ...headers, Range: `${from}-${to}` },
-    });
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${select}&order=id.asc&limit=${chunk}&offset=${from}`, { headers });
     if (!response.ok) throw new Error(`No se pudo consultar ${table}: ${response.status}`);
     const batch = await response.json();
     rows.push(...batch);
@@ -64,8 +61,9 @@ async function main() {
   ]);
 
   const branchRows = await fetchAll('branches', 'id,city,department,store_id,status');
-  const priceRows = await fetchAll('store_products', 'branch_id,available');
+  const priceRows = await fetchAll('store_products', 'branch_id,master_product_id,available');
   const activePrices = priceRows.filter((row) => row.available !== false && row.branch_id);
+  const productsWithPrices = new Set(activePrices.map((row) => row.master_product_id).filter(Boolean)).size;
   const perBranch = new Map();
   for (const row of activePrices) {
     perBranch.set(row.branch_id, (perBranch.get(row.branch_id) || 0) + 1);
@@ -84,6 +82,7 @@ async function main() {
     stores,
     branches,
     prices,
+    productsWithPrices,
     history,
     images,
     cities: cityCount,
@@ -99,6 +98,7 @@ async function main() {
   const failures = [];
   if (branches < 300) failures.push('branches < 300');
   if (products < 1000) failures.push('products < 1000');
+  if (productsWithPrices < 1000) failures.push('productsWithPrices < 1000');
   if (stores < 15) failures.push('stores < 15');
   if (prices < 100000) failures.push('prices < 100000');
   if (cityCount < 35) failures.push('cities < 35');
