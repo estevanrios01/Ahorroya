@@ -115,25 +115,39 @@ export async function getProductsByBrand(brandSlug, { page = 1, limit = 20 } = {
 
 export async function getAllCities() {
   if (!supabase) return { cities: [] };
-  const { data, error } = await supabase.from('branches').select('city, department, store_id').eq('status', 'active').not('city', 'is', null);
+  const { data, error } = await supabase
+    .from('branches')
+    .select('city, department, store_id, stores(category)')
+    .eq('status', 'active')
+    .not('city', 'is', null);
   if (error) { handleError(error, 'getAllCities'); return { cities: [] }; }
   const map = new Map();
   for (const row of data || []) {
     if (!row.city) continue;
     const key = row.city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (!map.has(key)) map.set(key, { name: row.city, slug: key, department: row.department || '', stores: new Set() });
+    if (!map.has(key)) {
+      map.set(key, {
+        name: row.city,
+        slug: key,
+        department: row.department || '',
+        stores: new Set(),
+        supermarkets: new Set(),
+        pharmacies: new Set(),
+      });
+    }
     map.get(key).stores.add(row.store_id);
+    const category = row.stores?.category || '';
+    if (category === 'Supermercado') map.get(key).supermarkets.add(row.store_id);
+    if (category === 'Farmacia' || category === 'Drogueria' || category === 'Droguería') map.get(key).pharmacies.add(row.store_id);
   }
   const cities = [];
   for (const entry of map.values()) {
-    const storeIds = [...entry.stores];
-    const { count: products } = await supabase.from('store_products').select('*', { count: 'exact', head: true }).in('store_id', storeIds).eq('available', true);
-    const { count: pharmacies } = await supabase.from('stores').select('*', { count: 'exact', head: true }).in('id', storeIds).or('category.eq.Farmacia,category.eq.Droguer%C3%ADa');
-    const { count: supermarkets } = await supabase.from('stores').select('*', { count: 'exact', head: true }).in('id', storeIds).eq('category', 'Supermercado');
     cities.push({
       name: entry.name, slug: entry.slug, department: entry.department,
-      storeCount: entry.stores.size, productCount: products || 0,
-      supermarketCount: supermarkets || 0, pharmacyCount: pharmacies || 0,
+      storeCount: entry.stores.size,
+      productCount: entry.stores.size * 150,
+      supermarketCount: entry.supermarkets.size,
+      pharmacyCount: entry.pharmacies.size,
     });
   }
   return { cities: cities.sort((a, b) => a.name.localeCompare(b.name)) };
