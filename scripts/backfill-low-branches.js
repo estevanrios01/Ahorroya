@@ -64,8 +64,16 @@ async function insertBatch(rows) {
   }
 }
 
+function hashString(value) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+  }
+  return Math.abs(hash);
+}
+
 function priceFor(product, branch, index) {
-  const seed = parseInt(product.id.slice(0, 2), 16) + parseInt(branch.id.slice(0, 2), 16) + index;
+  const seed = hashString(`${product.id}:${branch.id}`) + index;
   return Math.round((2500 + (seed % 120000)) / 50) * 50;
 }
 
@@ -102,10 +110,12 @@ async function main() {
   const rows = [];
 
   for (const branch of lowBranches) {
-    let index = parseInt(branch.id.slice(0, 2), 16) % products.length;
-    while (branch.products.size < MIN_PRODUCTS_PER_BRANCH && index < products.length * 4) {
-      const product = products[index % products.length];
-      index++;
+    const startIndex = hashString(branch.id) % products.length;
+    let attempts = 0;
+    while (branch.products.size < MIN_PRODUCTS_PER_BRANCH && attempts < products.length * 2) {
+      const product = products[(startIndex + attempts) % products.length];
+      const index = startIndex + attempts;
+      attempts++;
       if (!product || branch.products.has(product.id)) continue;
       branch.products.add(product.id);
       const price = priceFor(product, branch, index);
