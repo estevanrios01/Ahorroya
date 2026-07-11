@@ -39,11 +39,9 @@ export const db = {
   products: {
     async list({ q, category, city, page = 1, limit = 20 } = {}) {
       if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-      let cityListingsByProduct = null;
-      let productIdsWithListings = null;
       let query = supabase
         .from('master_products')
-        .select(city ? '*, brands(name, slug), categories(name, slug)' : '*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', { count: 'exact' })
+        .select('*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', { count: 'exact' })
         .eq('status', 'active');
       if (!city) query = query.eq('store_products.available', true);
       if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
@@ -68,18 +66,42 @@ export const db = {
         if (productIds.length === 0) {
           return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
         }
-        cityListingsByProduct = new Map();
+        const cityListingsByProduct = new Map();
         for (const item of listings || []) {
           if (!cityListingsByProduct.has(item.master_product_id)) cityListingsByProduct.set(item.master_product_id, []);
           cityListingsByProduct.get(item.master_product_id).push(item);
         }
-        productIdsWithListings = productIds;
-      }
-      if (productIdsWithListings?.length === 0) {
-        return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-      }
-      if (productIdsWithListings) {
-        query = query.in('id', productIdsWithListings);
+
+        const products = [];
+        for (let i = 0; i < productIds.length; i += 200) {
+          const ids = productIds.slice(i, i + 200);
+          const { data: batch, error: batchError } = await supabase
+            .from('master_products')
+            .select('*, brands(name, slug), categories(name, slug)')
+            .in('id', ids)
+            .eq('status', 'active');
+          if (batchError) return handleError(batchError, 'products.list.cityProducts');
+          products.push(...(batch || []));
+        }
+
+        const normalizedQ = q ? q.toLowerCase() : '';
+        const filtered = products
+          .filter((product) => !category || product.category_id === category)
+          .filter((product) => {
+            if (!normalizedQ) return true;
+            return [product.name, product.short_name, product.barcode, product.ean]
+              .filter(Boolean)
+              .some((value) => String(value).toLowerCase().includes(normalizedQ));
+          })
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((product) => ({ ...product, store_products: cityListingsByProduct.get(product.id) || [] }));
+
+        const fromCity = (page - 1) * limit;
+        const pageData = filtered.slice(fromCity, fromCity + limit);
+        return {
+          data: pageData,
+          pagination: { page, limit, total: filtered.length, pages: Math.ceil(filtered.length / limit) },
+        };
       }
       const from = (page - 1) * limit;
       const to = from + limit - 1;
