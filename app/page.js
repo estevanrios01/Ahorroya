@@ -68,7 +68,7 @@ export default function Home() {
 
     async function loadProducts() {
       try {
-        const response = await fetch('/api/products?limit=12', { cache: 'no-store' });
+        const response = await fetch('/api/products?city=Cali&limit=12', { cache: 'no-store' });
         const payload = await response.json();
         if (active) {
           setProducts((payload.data || []).map(toProductCard));

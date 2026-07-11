@@ -106,7 +106,7 @@ export default function Header() {
               <Bell size={18} />
             </button>
 
-            {user ? (
+            {user && (
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -157,14 +157,6 @@ export default function Header() {
                   )}
                 </AnimatePresence>
               </div>
-            ) : (
-              <button
-                onClick={() => router.push('/auth')}
-                className="hidden sm:flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-emerald-600/20 hover:shadow-emerald-500/30"
-              >
-                <User size={16} />
-                <span>Ingresar</span>
-              </button>
             )}
 
             <button
@@ -206,14 +198,6 @@ export default function Header() {
                 <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorías</Link>
                 <Link href="/supermercados" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Tiendas</Link>
               </div>
-              {!user && (
-                <button
-                  onClick={() => { setMobileMenu(false); router.push('/auth'); }}
-                  className="w-full text-center text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl py-2.5 transition-colors"
-                >
-                  Iniciar sesión
-                </button>
-              )}
             </div>
           </motion.div>
         )}
