@@ -24,93 +24,52 @@ function handleError(error, context) {
   return { error: msg };
 }
 
-async function fetchAllRows(createQuery, pageSize = 1000) {
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await createQuery().range(from, from + pageSize - 1);
-    if (error) return { data: rows, error };
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return { data: rows };
-}
-
 export const db = {
   products: {
     async list({ q, category, city, page = 1, limit = 20 } = {}) {
       if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      if (city) {
+        const offset = (page - 1) * limit;
+        const { data, error } = await supabase.rpc('search_products_by_city', {
+          p_q: q || '',
+          p_city: city,
+          p_category_id: category || null,
+          p_limit: limit,
+          p_offset: offset,
+        });
+        if (error) return handleError(error, 'products.list.searchProductsByCity');
+        const rows = data || [];
+        const total = rows.length > 0 ? Number(rows[0].total_count || 0) : 0;
+        const products = rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          short_name: row.short_name,
+          barcode: row.barcode,
+          ean: row.ean,
+          image: row.image,
+          unit: row.unit,
+          brands: row.brand_name ? { name: row.brand_name, slug: row.brand_slug } : null,
+          categories: row.category_name ? { name: row.category_name, slug: row.category_slug } : null,
+          store_products: row.store_products || [],
+        }));
+        return {
+          data: products,
+          pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        };
+      }
       let query = supabase
         .from('master_products')
         .select('*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', { count: 'exact' })
         .eq('status', 'active');
-      if (!city) query = query.eq('store_products.available', true);
+      query = query.eq('store_products.available', true);
       if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
       if (category) query = query.eq('category_id', category);
-      if (city) {
-        const { data: branches } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('status', 'active')
-          .ilike('city', city);
-        const branchIds = (branches || []).map((branch) => branch.id);
-        if (branchIds.length === 0) {
-          return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-        }
-        const { data: listings, error: listingError } = await fetchAllRows(() => supabase
-          .from('store_products')
-          .select('master_product_id, branch_id, price, original_price, store_id, available')
-          .in('branch_id', branchIds)
-          .eq('available', true));
-        if (listingError) return handleError(listingError, 'products.list.cityListings');
-        const productIds = [...new Set((listings || []).map((item) => item.master_product_id).filter(Boolean))];
-        if (productIds.length === 0) {
-          return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-        }
-        const cityListingsByProduct = new Map();
-        for (const item of listings || []) {
-          if (!cityListingsByProduct.has(item.master_product_id)) cityListingsByProduct.set(item.master_product_id, []);
-          cityListingsByProduct.get(item.master_product_id).push(item);
-        }
-
-        const products = [];
-        for (let i = 0; i < productIds.length; i += 200) {
-          const ids = productIds.slice(i, i + 200);
-          const { data: batch, error: batchError } = await supabase
-            .from('master_products')
-            .select('*, brands(name, slug), categories(name, slug)')
-            .in('id', ids)
-            .eq('status', 'active');
-          if (batchError) return handleError(batchError, 'products.list.cityProducts');
-          products.push(...(batch || []));
-        }
-
-        const normalizedQ = q ? q.toLowerCase() : '';
-        const filtered = products
-          .filter((product) => !category || product.category_id === category)
-          .filter((product) => {
-            if (!normalizedQ) return true;
-            return [product.name, product.short_name, product.barcode, product.ean]
-              .filter(Boolean)
-              .some((value) => String(value).toLowerCase().includes(normalizedQ));
-          })
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((product) => ({ ...product, store_products: cityListingsByProduct.get(product.id) || [] }));
-
-        const fromCity = (page - 1) * limit;
-        const pageData = filtered.slice(fromCity, fromCity + limit);
-        return {
-          data: pageData,
-          pagination: { page, limit, total: filtered.length, pages: Math.ceil(filtered.length / limit) },
-        };
-      }
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       const { data, count, error } = await query.range(from, to).order('name');
       if (error) return handleError(error, 'products.list');
-      const hydrated = cityListingsByProduct
-        ? (data || []).map((product) => ({ ...product, store_products: cityListingsByProduct.get(product.id) || [] }))
-        : data || [];
-      return { data: hydrated, pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
     },
 
     async getBySlug(slug) {
