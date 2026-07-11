@@ -54,7 +54,9 @@ export default async function MarcasPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors truncate">{brand.name}</h2>
-                  <p className="text-sm text-zinc-500">{(brand.productCount || 0).toLocaleString('es-CO')} productos</p>
+                  <p className="text-sm text-zinc-500">
+                    {typeof brand.productCount === 'number' ? `${brand.productCount.toLocaleString('es-CO')} productos` : 'Ver productos'}
+                  </p>
                 </div>
                 <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors">&rarr;</span>
               </Link>

@@ -57,12 +57,7 @@ export async function getAllCategories() {
   if (!supabase) return { categories: [] };
   const { data, error } = await supabase.from('categories').select('*').order('name');
   if (error) { handleError(error, 'getAllCategories'); return { categories: [] }; }
-  const cats = data || [];
-  const withCounts = await Promise.all(cats.map(async (cat) => {
-    const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('category_id', cat.id).eq('status', 'active');
-    return { ...cat, productCount: count || 0 };
-  }));
-  return { categories: withCounts };
+  return { categories: (data || []).map((category) => ({ ...category, productCount: null })) };
 }
 
 export async function getCategoryBySlug(slug) {
@@ -85,14 +80,9 @@ export async function getProductsByCategory(categorySlug, { page = 1, limit = 20
 
 export async function getAllBrands() {
   if (!supabase) return { brands: [] };
-  const { data, error } = await supabase.from('brands').select('*').order('name');
+  const { data, error } = await supabase.from('brands').select('id,name,slug,logo,country').order('name').limit(2000);
   if (error) { handleError(error, 'getAllBrands'); return { brands: [] }; }
-  const brs = data || [];
-  const withCounts = await Promise.all(brs.map(async (brand) => {
-    const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('brand_id', brand.id).eq('status', 'active');
-    return { ...brand, productCount: count || 0 };
-  }));
-  return { brands: withCounts };
+  return { brands: (data || []).map((brand) => ({ ...brand, productCount: null })) };
 }
 
 export async function getBrandBySlug(slug) {
