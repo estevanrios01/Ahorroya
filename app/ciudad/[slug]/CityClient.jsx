@@ -20,7 +20,20 @@ const STORE_LIST = [
   { name: 'La Rebaja', slug: 'la-rebaja', type: 'farmacia' },
 ];
 
+function toSlug(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export default function CityClient({ city }) {
+  const productCount = city.productCount || city.products || 0;
+  const storeCount = city.storeCount || city.stores || 0;
+  const departmentSlug = city.departmentSlug || toSlug(city.department);
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
@@ -37,12 +50,12 @@ export default function CityClient({ city }) {
                 <span className="text-xs text-zinc-400">Ciudades</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">{city.name}</h1>
-              <p className="text-zinc-500 mt-1 max-w-xl">{city.description}</p>
+              <p className="text-zinc-500 mt-1 max-w-xl">{city.description || `Compara precios disponibles en ${city.name}.`}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="default" size="md"><Store size={12} className="mr-1" />{city.stores} comercios</Badge>
-            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{city.products.toLocaleString('es-CO')} productos</Badge>
+            <Badge variant="default" size="md"><Store size={12} className="mr-1" />{storeCount} comercios</Badge>
+            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{productCount.toLocaleString('es-CO')} productos</Badge>
             <Badge variant="success" size="md">{city.department}</Badge>
           </div>
         </motion.div>
@@ -74,7 +87,7 @@ export default function CityClient({ city }) {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-zinc-200">Departamento</h2>
           </div>
-          <Link href={`/departamento/${city.departmentSlug}`}
+          <Link href={`/departamento/${departmentSlug}`}
             className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 hover:bg-zinc-900 transition-all group max-w-sm">
             <div>
               <p className="text-sm font-medium text-zinc-200 group-hover:text-emerald-400 transition-colors">{city.department}</p>
