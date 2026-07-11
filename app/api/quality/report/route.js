@@ -58,6 +58,25 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
   }
 
+  const { data: cached } = await client
+    .from('operational_metrics')
+    .select('payload, updated_at')
+    .eq('key', 'quality_report')
+    .maybeSingle();
+
+  if (cached?.payload) {
+    const summary = cached.payload;
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...summary,
+        quality: computeQuality(summary),
+        metricsUpdatedAt: cached.updated_at,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
   const [
     totalProducts,
     totalStores,
