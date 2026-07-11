@@ -93,7 +93,8 @@ export const db = {
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
-      const { data, error } = await query.order('updated_at', { ascending: false }).range(from, to);
+      if (q || category) query = query.order('updated_at', { ascending: false });
+      const { data, error } = await query.range(from, to);
       if (error) return handleError(error, 'products.list');
       const products = await attachPrices(data || []);
       const total = from + products.length;
