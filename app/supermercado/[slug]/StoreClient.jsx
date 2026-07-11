@@ -59,6 +59,18 @@ export default function StoreClient({ store, products: initialProducts, totalPro
   }, [hasMore, loading, loadMore, page]);
 
   const logo = storeLogos[store.slug] || { initials: store.name.slice(0, 2).toUpperCase(), gradient: 'from-zinc-600 to-zinc-800' };
+  const displayed = allProducts.map((item) => {
+    if (!item.master_products) return item;
+    return {
+      ...item.master_products,
+      storePrice: {
+        price: item.price,
+        oldPrice: item.original_price,
+      },
+      bestPrice: item.price,
+      storesCount: 1,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-zinc-950">

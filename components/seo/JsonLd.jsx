@@ -1,8 +1,9 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 export function ProductJsonLd({ product }) {
-  const bestPrice = Math.min(...product.prices.map(p => p.price));
-  const highPrice = Math.max(...product.prices.map(p => p.price));
+  const prices = product.prices || [];
+  const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : undefined;
+  const highPrice = prices.length > 0 ? Math.max(...prices.map(p => p.price)) : undefined;
 
   const schema = {
     '@context': 'https://schema.org',
@@ -12,14 +13,14 @@ export function ProductJsonLd({ product }) {
     brand: { '@type': 'Brand', name: product.brand },
     category: product.category,
     ...(product.barcode && { gtin13: product.barcode }),
-    offers: {
+    ...(prices.length > 0 ? { offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'COP',
       lowPrice: bestPrice,
       highPrice: highPrice,
-      offerCount: product.prices.length,
+      offerCount: prices.length,
       availability: 'https://schema.org/InStock',
-      offers: product.prices.map(p => ({
+      offers: prices.map(p => ({
         '@type': 'Offer',
         price: p.price,
         priceCurrency: 'COP',
@@ -35,7 +36,7 @@ export function ProductJsonLd({ product }) {
           }
         } : {}),
       })),
-    },
+    } } : {}),
     ...(product.image ? { image: product.image } : {}),
     url: `${SITE_URL}/producto/${product.slug}`,
   };

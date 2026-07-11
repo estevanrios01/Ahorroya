@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.ap
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
-  const brand = await getBrand(slug);
+  const { brand } = await getBrand(slug);
   if (!brand) return { title: 'No encontrado - AhorroYa' };
 
   return {
@@ -27,10 +27,10 @@ export async function generateMetadata({ params }) {
 
 export default async function BrandPage({ params }) {
   const slug = (await params).slug;
-  const brand = await getBrand(slug);
+  const { brand } = await getBrand(slug);
   if (!brand) notFound();
 
-  const products = await getProductsByBrand(brand.name);
+  const { products } = await getProductsByBrand(brand.slug);
 
   return (
     <>
@@ -40,7 +40,7 @@ export default async function BrandPage({ params }) {
         { name: brand.name },
       ]} />
       <WebSiteJsonLd />
-      <BrandClient brand={brand} products={products} />
+      <BrandClient brand={brand} products={products || []} />
     </>
   );
 }

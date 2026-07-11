@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/services/database';
+import { supabase, supabaseAdmin } from '@/services/database';
+
+function getDb() {
+  return supabaseAdmin || supabase;
+}
 
 async function count(table, apply = q => q) {
-  if (!supabaseAdmin) return 0;
-  const { count: total } = await apply(supabaseAdmin.from(table).select('*', { count: 'exact', head: true }));
+  const client = getDb();
+  if (!client) return 0;
+  const { count: total } = await apply(client.from(table).select('*', { count: 'exact', head: true }));
   return total || 0;
 }
 
 async function getInvalidEanCount() {
-  if (!supabaseAdmin) return 0;
-  const { data } = await supabaseAdmin.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
+  const client = getDb();
+  if (!client) return 0;
+  const { data } = await client.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
   return (data || []).filter(row => !/^\d{8,14}$/.test(row.ean || '')).length;
 }
 
 async function getDuplicateEanCount() {
-  if (!supabaseAdmin) return 0;
-  const { data } = await supabaseAdmin.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
+  const client = getDb();
+  if (!client) return 0;
+  const { data } = await client.from('master_products').select('ean').not('ean', 'is', null).limit(10000);
   const seen = new Set();
   const duplicates = new Set();
   for (const row of data || []) {
@@ -27,8 +34,9 @@ async function getDuplicateEanCount() {
 }
 
 async function getBrokenImageSampleCount() {
-  if (!supabaseAdmin) return 0;
-  const { data } = await supabaseAdmin.from('product_images').select('url').not('url', 'is', null).limit(25);
+  const client = getDb();
+  if (!client) return 0;
+  const { data } = await client.from('product_images').select('url').not('url', 'is', null).limit(25);
   let broken = 0;
   await Promise.all((data || []).map(async ({ url }) => {
     try {
@@ -42,8 +50,9 @@ async function getBrokenImageSampleCount() {
 }
 
 export async function GET() {
-  if (!supabaseAdmin) {
-    return NextResponse.json({ success: false, error: 'Supabase service role no configurado' }, { status: 503 });
+  const client = getDb();
+  if (!client) {
+    return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
   }
 
   const [
@@ -71,7 +80,7 @@ export async function GET() {
     getInvalidEanCount(),
     getDuplicateEanCount(),
     getBrokenImageSampleCount(),
-    supabaseAdmin.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    client.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const issues = missingBrand + missingCategory + anomalousPrices + invalidEan + duplicateEan + brokenImages;

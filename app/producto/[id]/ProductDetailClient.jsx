@@ -27,12 +27,13 @@ export default function ProductDetailClient({ product }) {
   const [liked, setLiked] = useState(false);
 
   const images = product.images?.length > 0 ? product.images : product.image ? [product.image] : [];
-  const bestPrice = Math.min(...(product.prices || []).map(p => p.price));
+  const prices = product.prices || [];
+  const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;
   const minPrice = bestPrice;
-  const maxPrice = Math.max(...(product.prices || []).map(p => p.price));
-  const avgPrice = product.prices?.length > 0 ? Math.round(product.prices.reduce((s, p) => s + p.price, 0) / product.prices.length) : 0;
+  const maxPrice = prices.length > 0 ? Math.max(...prices.map(p => p.price)) : null;
+  const avgPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p.price, 0) / prices.length) : null;
 
-  const history = (product.prices || []).map(p => ({ date: p.store, price: p.price }));
+  const history = prices.map(p => ({ date: p.store, price: p.price }));
   const trendingDown = history.length > 1 && history[0]?.price > history[history.length - 1]?.price;
 
   const similarProducts = product.similar || [];
@@ -153,8 +154,8 @@ export default function ProductDetailClient({ product }) {
                 {product.bestStore && <Badge variant="success" size="sm">{product.bestStore}</Badge>}
               </div>
               <div className="flex items-baseline gap-3">
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400">{formatPrice(bestPrice)}</span>
-                {product.prices?.find(p => p.price === bestPrice)?.oldPrice > bestPrice && (
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400">{bestPrice ? formatPrice(bestPrice) : 'Sin precio disponible'}</span>
+                {bestPrice && product.prices?.find(p => p.price === bestPrice)?.oldPrice > bestPrice && (
                   <>
                     <span className="text-base text-zinc-500 line-through">
                       {formatPrice(product.prices.find(p => p.price === bestPrice).oldPrice)}
@@ -163,7 +164,7 @@ export default function ProductDetailClient({ product }) {
                   </>
                 )}
               </div>
-              {product.presentation?.weight && (
+              {bestPrice && product.presentation?.weight && (
                 <p className="text-xs text-zinc-500 mt-1">Precio referente: ~{formatPrice(Math.round(bestPrice / (parseFloat(product.presentation.weight) || 1) * (product.presentation.weight.includes('g') && !product.presentation.weight.includes('kg') ? 1000 : 1)))} / kg</p>
               )}
             </div>
