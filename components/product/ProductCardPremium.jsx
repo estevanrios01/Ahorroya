@@ -127,7 +127,7 @@ export default function ProductCardPremium({ product }) {
             {product.storeLogos.slice(0, 4).map((slug) => (
               <div key={slug} className="h-5 w-5 rounded-md bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-700/50">
                 {storeLogos[slug] ? (
-                  <img src={storeLogos[slug]} alt="" className="h-3 w-3 object-contain" />
+                  <Image src={storeLogos[slug]} alt="" width={12} height={12} className="h-3 w-3 object-contain" />
                 ) : (
                   <span className="text-[6px] font-bold text-zinc-500 uppercase">{slug.slice(0, 2)}</span>
                 )}

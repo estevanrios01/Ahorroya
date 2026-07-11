@@ -28,8 +28,11 @@ export const db = {
   products: {
     async list({ q, category, page = 1, limit = 20 } = {}) {
       if (!supabase) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
-      if (q) query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%`);
+      let query = supabase
+        .from('master_products')
+        .select('*, brands(name, slug), categories(name, slug), store_products(price, original_price, store_id, available)', { count: 'exact' })
+        .eq('status', 'active');
+      if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
@@ -49,6 +52,19 @@ export const db = {
       if (!supabase) return { data: null };
       const { data, error } = await supabase.from('master_products').select('*').eq('id', id).single();
       if (error) return handleError(error, 'products.getById');
+      return { data };
+    },
+
+    async getByBarcode(code) {
+      if (!supabase) return { data: null };
+      const { data, error } = await supabase
+        .from('master_products')
+        .select('*, brands(name, slug), categories(name, slug)')
+        .or(`barcode.eq.${code},ean.eq.${code},upc.eq.${code}`)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if (error) return handleError(error, 'products.getByBarcode');
       return { data };
     },
 
@@ -92,7 +108,7 @@ export const db = {
 
     async search(query, { page = 1, limit = 20 } = {}) {
       if (!supabase) return { data: [], total: 0 };
-      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,brand.ilike.%${query}%,short_name.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
       if (error) return handleError(error, 'products.search');
       return { data: data || [], total: count || 0 };
     },

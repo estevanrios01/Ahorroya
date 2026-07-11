@@ -17,6 +17,9 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
+    "db:check": "node scripts/db-check.js",
+    "db:link": "npx supabase link --project-ref vnfiqibpgpfsevfplvdp",
+    "db:push": "npx supabase db push",
     "scrape": "node scripts/actualizador-precios.js",
     "worker": "node apps/worker/src/index.js"
   },

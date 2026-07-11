@@ -25,6 +25,7 @@ export function SearchInput({
 }: SearchInputProps) {
   const [focused, setFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const listboxId = 'search-input-options';
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -59,6 +60,7 @@ export function SearchInput({
           aria-label="Buscar productos"
           role="combobox"
           aria-expanded={showDropdown}
+          aria-controls={listboxId}
           aria-autocomplete="list"
         />
         {value && (
@@ -81,6 +83,7 @@ export function SearchInput({
             transition={{ duration: 0.15 }}
             className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl z-50"
             role="listbox"
+            id={listboxId}
           >
             {value.length > 0 ? (
               suggestions.map((s, i) => (
@@ -89,6 +92,7 @@ export function SearchInput({
                   onClick={() => { onSuggestionClick?.(s); setFocused(false); }}
                   className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors text-sm"
                   role="option"
+                  aria-selected="false"
                 >
                   {s}
                 </button>
@@ -104,6 +108,7 @@ export function SearchInput({
                     onClick={() => { onChange(s); onSubmit?.(); setFocused(false); }}
                     className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors text-sm"
                     role="option"
+                    aria-selected="false"
                   >
                     {s}
                   </button>

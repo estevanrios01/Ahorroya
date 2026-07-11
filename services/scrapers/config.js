@@ -11,6 +11,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 30000,
     type: 'supermarket',
+    defaultQuery: 'arroz',
   },
   {
     name: 'd1',
@@ -22,6 +23,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 20000,
     type: 'supermarket',
+    defaultQuery: 'leche',
   },
   {
     name: 'jumbo',
@@ -33,6 +35,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 30000,
     type: 'supermarket',
+    defaultQuery: 'aceite',
   },
   {
     name: 'ara',
@@ -44,6 +47,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 20000,
     type: 'supermarket',
+    defaultQuery: 'huevos',
   },
   {
     name: 'carulla',
@@ -55,6 +59,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 30000,
     type: 'supermarket',
+    defaultQuery: 'cafe',
   },
   {
     name: 'olimpica',
@@ -66,6 +71,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 30000,
     type: 'supermarket',
+    defaultQuery: 'azucar',
   },
   {
     name: 'makro',
@@ -77,6 +83,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 30000,
     type: 'supermarket',
+    defaultQuery: 'detergente',
   },
   {
     name: 'farmatodo',
@@ -88,6 +95,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 20000,
     type: 'pharmacy',
+    defaultQuery: 'acetaminofen',
   },
   {
     name: 'cruz-verde',
@@ -99,6 +107,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 20000,
     type: 'pharmacy',
+    defaultQuery: 'ibuprofeno',
   },
   {
     name: 'la-rebaja',
@@ -110,6 +119,7 @@ export const RETAILER_CONFIGS = [
     retryMax: 3,
     timeout: 20000,
     type: 'pharmacy',
+    defaultQuery: 'vitamina',
   },
 ];
 
@@ -126,5 +136,4 @@ export function createScraper(name, customParser) {
   }
   return engine;
 }
-
 

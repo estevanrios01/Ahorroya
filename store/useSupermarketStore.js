@@ -52,8 +52,8 @@ export const useSupermarketStore = create((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('store_products')
-        .select('*, master_products!inner(name, slug, brand), stores!inner(name, slug)')
-        .or(`master_products.name.ilike.%${searchQuery}%,master_products.brand.ilike.%${searchQuery}%`)
+        .select('*, master_products!inner(name, slug), stores!inner(name, slug)')
+        .or(`master_products.name.ilike.%${searchQuery}%`)
         .eq('available', true)
         .limit(50);
       if (error) throw error;

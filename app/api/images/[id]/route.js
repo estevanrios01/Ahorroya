@@ -11,5 +11,9 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: false, error: 'Usuario no autenticado' }, { status: 401 });
   }
   const { id } = await params;
-  return NextResponse.json({ success: true, message: 'Imagen eliminada (simulado - storage backend no configurado)', id });
+  return NextResponse.json({
+    success: false,
+    error: 'Storage backend no configurado',
+    id,
+  }, { status: 501 });
 }

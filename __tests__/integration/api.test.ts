@@ -1,4 +1,6 @@
-describe("API Integration", () => {
+const describeIntegration = process.env.RUN_INTEGRATION_TESTS === "1" ? describe : describe.skip;
+
+describeIntegration("API Integration", () => {
     it("products endpoint returns data", async () => {
         const res = await fetch("http://localhost:3000/api/products");
         const json = await res.json();

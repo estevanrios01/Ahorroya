@@ -9,7 +9,7 @@ function handleError(error, context) {
 export async function getAllProducts({ q, category, page = 1, limit = 20 } = {}) {
   if (!supabase) return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
   let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
-  if (q) query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
   if (category) query = query.eq('category_id', category);
   const from = (page - 1) * limit;
   const { data, count, error } = await query.range(from, from + limit - 1).order('name');
@@ -190,7 +190,7 @@ export async function getDepartment(slug) {
 
 export async function searchProducts(query, { page = 1, limit = 20 } = {}) {
   if (!supabase) return { results: [], total: 0 };
-  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,brand.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
   if (error) { handleError(error, 'searchProducts'); return { results: [], total: 0 }; }
   return { results: data || [], total: count || 0 };
 }

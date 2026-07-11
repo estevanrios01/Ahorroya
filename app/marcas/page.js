@@ -54,12 +54,7 @@ export default async function MarcasPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors truncate">{brand.name}</h2>
-                  <p className="text-sm text-zinc-500">{brand.products} productos</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {brand.categories.map((cat) => (
-                      <span key={cat} className="text-[10px] font-medium text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-full">{cat}</span>
-                    ))}
-                  </div>
+                  <p className="text-sm text-zinc-500">{(brand.productCount || 0).toLocaleString('es-CO')} productos</p>
                 </div>
                 <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors">&rarr;</span>
               </Link>

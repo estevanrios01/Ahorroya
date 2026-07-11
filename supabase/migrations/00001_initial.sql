@@ -130,6 +130,9 @@ CREATE TABLE store_products (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
+ALTER TABLE store_products
+  ADD CONSTRAINT store_products_unique_listing UNIQUE(master_product_id, store_id, branch_id);
+
 -- Historial de Precios
 CREATE TABLE store_product_history (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -155,6 +158,9 @@ CREATE TABLE product_images (
     hash VARCHAR(64),
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
+
+ALTER TABLE product_images
+  ADD CONSTRAINT product_images_master_url_unique UNIQUE(master_product_id, url);
 
 -- Inventario
 CREATE TABLE inventory (
@@ -204,12 +210,27 @@ CREATE TABLE scraping_jobs (
 
 CREATE TABLE scraping_runs (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    store VARCHAR(60),
+    status VARCHAR(20) DEFAULT 'completed' NOT NULL,
     products_found INTEGER DEFAULT 0 NOT NULL,
     products_updated INTEGER DEFAULT 0 NOT NULL,
     products_inserted INTEGER DEFAULT 0 NOT NULL,
+    products_removed INTEGER DEFAULT 0 NOT NULL,
+    price_changes INTEGER DEFAULT 0 NOT NULL,
+    errors INTEGER DEFAULT 0 NOT NULL,
+    error_message TEXT,
     duration_seconds INTEGER DEFAULT 0 NOT NULL,
     started_at TIMESTAMPTZ NOT NULL,
     finished_at TIMESTAMPTZ
+);
+
+-- Eventos analíticos y operativos
+CREATE TABLE analytics_events (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    user_id UUID,
+    properties JSONB DEFAULT '{}'::jsonb NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- Índices
@@ -223,3 +244,6 @@ CREATE INDEX idx_store_product_history_captured ON store_product_history(capture
 CREATE INDEX idx_branches_location ON branches(latitude, longitude);
 CREATE INDEX idx_branches_city ON branches(city);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_scraping_runs_store_started ON scraping_runs(store, started_at DESC);
+CREATE INDEX idx_scraping_jobs_store_created ON scraping_jobs(store, created_at DESC);
+CREATE INDEX idx_analytics_events_created ON analytics_events(created_at DESC);

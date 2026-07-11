@@ -1,6 +1,13 @@
 import './globals.css';
+import { Inter } from 'next/font/google';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['system-ui', 'arial'],
+});
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -36,12 +43,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
-      </head>
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <body className={`${inter.className} min-h-screen bg-zinc-950 text-zinc-100 antialiased`}>
         {children}
       </body>
     </html>

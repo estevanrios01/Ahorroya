@@ -53,7 +53,7 @@ export async function proxy(request) {
     }
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', user.id);
-    requestHeaders.set('x-user-role', user.user_metadata?.role || 'user');
+    requestHeaders.set('x-user-role', user.app_metadata?.role || 'user');
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -70,7 +70,7 @@ export async function proxy(request) {
         if (user) {
           const requestHeaders = new Headers(request.headers);
           requestHeaders.set('x-user-id', user.id);
-          requestHeaders.set('x-user-role', user.user_metadata?.role || 'user');
+          requestHeaders.set('x-user-role', user.app_metadata?.role || 'user');
           return NextResponse.next({ request: { headers: requestHeaders } });
         }
       }
