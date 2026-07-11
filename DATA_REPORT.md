@@ -6,14 +6,14 @@ Fecha: 2026-07-11
 
 AhorroYa ya tiene una primera base real verificable desde catalogos publicos VTEX:
 
-- Olimpica: 2.011 precios online reales con imagen oficial.
-- Exito: 4.313 precios online reales con imagen oficial.
-- Carulla: 4.118 precios online reales con imagen oficial.
-- Productos maestros totales: 18.615.
-- Imagenes de producto totales: 21.734.
-- Marcas: 1.410.
-- Categorias: 217.
-- Historial de precios: 1.467.840 eventos.
+- Olimpica: 7.519 precios online reales con imagen oficial.
+- Exito: 11.806 precios online reales con imagen oficial.
+- Carulla: 9.904 precios online reales con imagen oficial.
+- Productos maestros totales: 33.377.
+- Imagenes de producto totales: 40.684.
+- Marcas: 3.165.
+- Categorias: 333.
+- Historial de precios: 1.491.550 eventos.
 
 Los productos reales importados conservan:
 
@@ -43,6 +43,8 @@ Los productos reales importados conservan:
 - Se agregaron dominios oficiales de imagenes a `next.config.mjs`.
 - La portada ahora consulta el catalogo general reciente, evitando ocultar datos reales online por filtros de ciudad.
 - Los listados globales de marcas/categorias ya no hacen miles de conteos exactos durante build.
+- El endpoint general `/api/products` ya no hace conteo exacto pesado cuando no hay busqueda/filtro.
+- Se eliminaron 993 listados online duplicados generados por diferencias historicas de importador.
 - CI/CD instala dependencias opcionales nativas y usa `next build --webpack` para evitar fallos de `lightningcss`/Turbopack en Linux.
 
 ## Limitaciones honestas

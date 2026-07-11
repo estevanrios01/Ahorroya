@@ -66,9 +66,10 @@ export const db = {
           pagination: { page, limit, total, pages: Math.ceil(total / limit) },
         };
       }
+      const needsExactCount = Boolean(q || category);
       let query = supabase
         .from('master_products')
-        .select('*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', { count: 'exact' })
+        .select('*, brands(name, slug), categories(name, slug), store_products!inner(price, original_price, store_id, available)', needsExactCount ? { count: 'exact' } : undefined)
         .eq('status', 'active');
       query = query.eq('store_products.available', true);
       if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
@@ -77,7 +78,8 @@ export const db = {
       const to = from + limit - 1;
       const { data, count, error } = await query.order('updated_at', { ascending: false }).range(from, to);
       if (error) return handleError(error, 'products.list');
-      return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+      const total = needsExactCount ? count || 0 : from + (data || []).length;
+      return { data: data || [], pagination: { page, limit, total, pages: needsExactCount ? Math.ceil(total / limit) : page } };
     },
 
     async getBySlug(slug) {
