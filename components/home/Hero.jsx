@@ -98,8 +98,8 @@ export default function Hero() {
           className="grid content-start gap-3 sm:grid-cols-3 lg:grid-cols-1"
         >
           {[
-            { icon: Store, label: 'Cobertura', value: '55 comercios', detail: 'Supermercados y farmacias indexados' },
-            { icon: TrendingDown, label: 'Catálogo', value: '200K+ productos', detail: 'Referencias activas en la base nacional' },
+            { icon: Store, label: 'Cobertura', value: 'Fuentes reales', detail: 'Supermercados y farmacias conectados por etapas' },
+            { icon: TrendingDown, label: 'Catálogo', value: 'En carga', detail: 'Priorizamos productos con precio e imagen verificable' },
             { icon: ShieldCheck, label: 'Calidad', value: 'Fotos reales', detail: 'Se ocultan fotos genéricas o no verificables' },
           ].map(({ icon: Icon, label, value, detail }) => (
             <div key={label} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">

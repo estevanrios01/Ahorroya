@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
-import { Search, Heart, ShoppingBag, Bell, User, MapPin, Menu, X, LogOut, ChevronDown, Settings, Package } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, MapPin, Menu, X, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
@@ -59,11 +59,11 @@ export default function Header() {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-500 bg-zinc-900/70 px-3 py-1.5 rounded-full border border-zinc-800/50">
+          <Link href="/ciudades" className="hidden md:flex items-center gap-1.5 text-xs text-zinc-500 bg-zinc-900/70 px-3 py-1.5 rounded-full border border-zinc-800/50 transition-colors hover:border-emerald-500/30 hover:text-zinc-300">
             <MapPin size={12} className="text-emerald-500" />
-            <span>Cali, Colombia</span>
+            <span>Elegir ciudad</span>
             <ChevronDown size={10} className="text-zinc-600" />
-          </div>
+          </Link>
 
           <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-lg relative group">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
@@ -97,13 +97,6 @@ export default function Header() {
                   {cartCount > 9 ? '9+' : cartCount}
                 </span>
               )}
-            </button>
-
-            <button
-              className="hidden sm:flex relative p-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/80 transition-all"
-              aria-label="Notificaciones"
-            >
-              <Bell size={18} />
             </button>
 
             {user && (
@@ -194,7 +187,7 @@ export default function Header() {
                 </div>
               </form>
               <div className="grid grid-cols-3 gap-2">
-                <Link href="/favoritos" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Favoritos</Link>
+                <Link href="/ciudades" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Ciudades</Link>
                 <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorias</Link>
                 <Link href="/supermercados" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Tiendas</Link>
               </div>

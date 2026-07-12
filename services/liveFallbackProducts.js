@@ -99,6 +99,23 @@ function getSourceBySlug(sourceSlug) {
   return SOURCES.find((source) => source.slug === sourceSlug) || null;
 }
 
+function interleaveBatches(batches, limit) {
+  const lists = batches.map((result) => (result.status === 'fulfilled' ? result.value : [])).filter((items) => items.length);
+  const products = [];
+  for (let index = 0; products.length < limit; index++) {
+    let added = false;
+    for (const list of lists) {
+      if (list[index]) {
+        products.push(list[index]);
+        added = true;
+        if (products.length >= limit) break;
+      }
+    }
+    if (!added) break;
+  }
+  return products;
+}
+
 async function fetchSource(source, { q, limit, timeoutMs = 4500 }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
@@ -124,9 +141,9 @@ export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' }
 
   const timeoutMs = store ? 8000 : 4500;
   const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
-  const products = batches
-    .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
-    .slice(0, normalizedLimit);
+  const products = store
+    ? batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : [])).slice(0, normalizedLimit)
+    : interleaveBatches(batches, normalizedLimit);
 
   if (store && products.length === 0) {
     const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
