@@ -6,15 +6,26 @@ function handleError(error, context) {
   return error.message;
 }
 
+function completeFirst(products, limit) {
+  const ordered = [...(products || [])].sort((left, right) => {
+    const leftImage = left.image || left.master_products?.image ? 1 : 0;
+    const rightImage = right.image || right.master_products?.image ? 1 : 0;
+    if (leftImage !== rightImage) return rightImage - leftImage;
+    return String(left.name || left.master_products?.name || '').localeCompare(String(right.name || right.master_products?.name || ''), 'es');
+  });
+  return typeof limit === 'number' ? ordered.slice(0, limit) : ordered;
+}
+
 export async function getAllProducts({ q, category, page = 1, limit = 20 } = {}) {
   if (!supabase) return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
   let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
   if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
   if (category) query = query.eq('category_id', category);
   const from = (page - 1) * limit;
-  const { data, count, error } = await query.range(from, from + limit - 1).order('name');
+  if (!q) query = query.not('image', 'is', null);
+  const { data, count, error } = await query.order('name').range(from, from + limit - 1);
   if (error) { handleError(error, 'getAllProducts'); return { products: [] }; }
-  return { products: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+  return { products: completeFirst(data || [], limit), pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
 
 export async function getProductBySlug(slug) {
@@ -78,7 +89,7 @@ export async function getProductsByCategory(categorySlug, { page = 1, limit = 20
   const { data: cat } = await supabase.from('categories').select('id').eq('slug', categorySlug).single();
   if (!cat) return { products: [] };
   const from = (page - 1) * limit;
-  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).eq('category_id', cat.id).eq('status', 'active').range(from, from + limit - 1).order('name');
+  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).eq('category_id', cat.id).eq('status', 'active').not('image', 'is', null).range(from, from + limit - 1).order('name');
   if (error) { handleError(error, 'getProductsByCategory'); return { products: [] }; }
   return { products: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
@@ -103,7 +114,7 @@ export async function getProductsByBrand(brandSlug, { page = 1, limit = 20 } = {
   const { data: brand } = await supabase.from('brands').select('id').eq('slug', brandSlug).single();
   if (!brand) return { products: [] };
   const from = (page - 1) * limit;
-  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).eq('brand_id', brand.id).eq('status', 'active').range(from, from + limit - 1).order('name');
+  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).eq('brand_id', brand.id).eq('status', 'active').not('image', 'is', null).range(from, from + limit - 1).order('name');
   if (error) { handleError(error, 'getProductsByBrand'); return { products: [] }; }
   return { products: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
@@ -166,13 +177,15 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
   const { data: store } = await supabase.from('stores').select('id,website').eq('slug', storeSlug).single();
   if (!store) return { products: [] };
   const from = (page - 1) * limit;
+  const requestedLimit = Math.min(limit * 2, 96);
   const query = supabase
     .from('store_products')
     .select('*, master_products!inner(*)', { count: 'planned' })
     .eq('store_id', store.id)
     .eq('available', true)
     .neq('url', store.website || '')
-    .range(from, from + limit - 1)
+    .not('master_products.image', 'is', null)
+    .range(from, from + requestedLimit - 1)
     .order('price');
   const { data, count, error } = await query;
   if (error) {
@@ -188,9 +201,9 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
       handleError(error, 'getProductsByStore');
       return { products: [] };
     }
-    return { products: fallback.data || [], pagination: { page, limit, total: from + (fallback.data || []).length, pages: page } };
+    return { products: completeFirst(fallback.data || [], limit), pagination: { page, limit, total: from + (fallback.data || []).length, pages: page } };
   }
-  return { products: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
+  return { products: completeFirst(data || [], limit), pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
 
 export async function getStore(slug) {

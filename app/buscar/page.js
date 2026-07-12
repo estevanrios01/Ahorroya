@@ -54,7 +54,9 @@ export default async function BuscarPage({ searchParams }) {
     db.cities.list(),
     query || city ? db.products.list({ q: query, city, limit: 48 }) : Promise.resolve({ data: [], pagination: { total: 0 } }),
   ]);
-  const products = (result.data || []).map(toProductCard);
+  const products = (result.data || [])
+    .map(toProductCard)
+    .filter((product) => query || product.image);
   const total = result.pagination?.total || products.length;
 
   return (

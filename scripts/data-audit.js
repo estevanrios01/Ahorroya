@@ -28,20 +28,34 @@ const headers = {
 };
 
 async function count(table, filter = '') {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1${filter}`, {
-    method: 'GET',
-    headers: { ...headers, Prefer: 'count=planned' },
-  });
-  if (!response.ok) throw new Error(`No se pudo contar ${table}: ${response.status}`);
-  const range = response.headers.get('content-range') || '0-0/0';
-  return Number(range.split('/')[1] || 0);
+  let lastStatus = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1${filter}`, {
+      method: 'GET',
+      headers: { ...headers, Prefer: 'count=planned' },
+    });
+    lastStatus = response.status;
+    if (response.ok) {
+      const range = response.headers.get('content-range') || '0-0/0';
+      return Number(range.split('/')[1] || 0);
+    }
+    if (![500, 502, 503, 504].includes(response.status)) break;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+  }
+  throw new Error(`No se pudo contar ${table}: ${lastStatus}`);
 }
 
 async function getJson(pathname) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, { headers });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`GET ${pathname}: ${text}`);
-  return text ? JSON.parse(text) : [];
+  let lastText = '';
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, { headers });
+    const text = await response.text();
+    if (response.ok) return text ? JSON.parse(text) : [];
+    lastText = text;
+    if (![500, 502, 503, 504].includes(response.status)) break;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+  }
+  throw new Error(`GET ${pathname}: ${lastText}`);
 }
 
 async function fetchAllSmall(table, select) {
@@ -80,17 +94,15 @@ async function scanActivePrices() {
 }
 
 async function main() {
-  const [brands, categories, products, stores, branches, prices, history, images, branchRows] = await Promise.all([
-    count('brands'),
-    count('categories'),
-    count('master_products'),
-    count('stores'),
-    count('branches'),
-    count('store_products'),
-    count('store_product_history'),
-    count('product_images'),
-    fetchAllSmall('branches', 'id,city,department,store_id,status'),
-  ]);
+  const brands = await count('brands');
+  const categories = await count('categories');
+  const products = await count('master_products');
+  const stores = await count('stores');
+  const branches = await count('branches');
+  const prices = await count('store_products');
+  const history = await count('store_product_history');
+  const images = await count('product_images');
+  const branchRows = await fetchAllSmall('branches', 'id,city,department,store_id,status');
 
   const activeBranches = branchRows.filter((row) => row.status === 'active');
   const activePriceRows = await count('store_products', '&available=eq.true');

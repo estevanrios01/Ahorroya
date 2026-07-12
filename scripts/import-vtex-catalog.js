@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { Agent } = require('undici');
 
 function loadEnv() {
   const envPath = path.resolve(__dirname, '../.env.local');
@@ -25,6 +26,8 @@ const PAGE_SIZE = Number(process.env.VTEX_PAGE_SIZE || 50);
 const BATCH_SIZE = Number(process.env.IMPORT_BATCH_SIZE || 50);
 const SKIP_PRODUCT_IMAGES = process.env.IMPORT_SKIP_PRODUCT_IMAGES === '1';
 const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
+const ALLOW_INSECURE_TLS = process.env.VTEX_ALLOW_INSECURE_TLS === '1';
+const insecureDispatcher = ALLOW_INSECURE_TLS ? new Agent({ connect: { rejectUnauthorized: false } }) : undefined;
 
 const STORES = {
   exito: {
@@ -236,7 +239,7 @@ async function rest(pathname, { method = 'GET', body, prefer = '', returnMinimal
       return returnMinimal || !text ? null : JSON.parse(text);
     } catch (error) {
       lastError = error;
-      const retryable = /statement timeout|ECONNRESET|terminated|fetch failed/i.test(String(error.message || error));
+      const retryable = /PGRST002|schema cache|statement timeout|ECONNRESET|terminated|fetch failed/i.test(String(error.message || error));
       if (!retryable || attempt === 3) break;
       await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
     }
@@ -303,6 +306,7 @@ async function fetchVtexPage(store, from, to) {
   try {
     response = await fetch(`${store.endpoint}?${params.toString()}`, {
       signal: controller.signal,
+      dispatcher: insecureDispatcher,
       headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 AhorroYaCatalogImporter/1.0' },
     });
   } finally {

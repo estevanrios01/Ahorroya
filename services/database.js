@@ -44,6 +44,15 @@ async function attachPrices(products) {
   return products.map((product) => ({ ...product, store_products: byProduct.get(product.id) || [] }));
 }
 
+function preferCompleteProducts(products) {
+  return [...(products || [])].sort((left, right) => {
+    const leftComplete = left.image ? 1 : 0;
+    const rightComplete = right.image ? 1 : 0;
+    if (leftComplete !== rightComplete) return rightComplete - leftComplete;
+    return String(left.name || '').localeCompare(String(right.name || ''), 'es');
+  });
+}
+
 export const db = {
   products: {
     async list({ q, category, city, page = 1, limit = 20 } = {}) {
@@ -90,6 +99,7 @@ export const db = {
         .from('master_products')
         .select('*, brands(name, slug), categories(name, slug)')
         .eq('status', 'active');
+      if (!q) query = query.not('image', 'is', null);
       if (q) {
         const filters = [`name.ilike.%${q}%`, `short_name.ilike.%${q}%`];
         if (/^\d+$/.test(q)) {
@@ -100,12 +110,12 @@ export const db = {
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
-      const { data, error } = await query.range(from, to);
+      const { data, error } = await query.order('name').range(from, to);
       if (error?.code === '57014') {
         return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       }
       if (error) return handleError(error, 'products.list');
-      const products = await attachPrices(data || []);
+      const products = preferCompleteProducts(await attachPrices(data || []));
       const total = from + products.length;
       return { data: products, pagination: { page, limit, total, pages: page } };
     },
