@@ -38,3 +38,12 @@ jobs:
           IMPORT_BATCH_SIZE: "25"
           IMPORT_SKIP_PRODUCT_IMAGES: "1"
           IMPORT_SKIP_PRICE_HISTORY: "0"
+      - run: npm run prices:farmatodo
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FARMATODO_TARGET_PRODUCTS: "200"
+          FARMATODO_TERMS: "arroz,leche,aceite,acetaminofen,ibuprofeno,shampoo,crema"
+          IMPORT_BATCH_SIZE: "25"
+          IMPORT_SKIP_PRODUCT_IMAGES: "1"
+          IMPORT_SKIP_PRICE_HISTORY: "0"

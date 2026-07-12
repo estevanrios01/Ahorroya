@@ -6,16 +6,17 @@ Fecha: 2026-07-12
 
 AhorroYa ya supero la meta minima de catalogo global real:
 
-- Productos maestros reales: 204.019.
-- Imagenes normalizadas en `product_images`: 202.974.
-- Precios reales en `store_products`: 1.245.559.
-- Precios online nacionales: 196.550.
-- Precios por sucursal: 1.036.512.
-- Marcas: 11.565.
-- Categorias: 856.
-- Historial de precios: 1.845.762 eventos.
+- Productos maestros reales: 207.918.
+- Imagenes normalizadas en `product_images`: 205.780.
+- Precios reales en `store_products`: 1.295.928.
+- Precios activos disponibles: 1.261.975.
+- Precios online nacionales: 227.366.
+- Precios por sucursal/ciudad: 1.034.609.
+- Marcas: 11.786.
+- Categorias: 947.
+- Historial de precios: 1.877.965 eventos.
 - Sucursales registradas: 728.
-- Cobertura: 40 ciudades y 32 departamentos.
+- Cobertura: 42 ciudades y 32 departamentos.
 
 Los conteos fueron verificados contra Supabase REST usando `count=planned`, que en este volumen es el metodo estable disponible sin tumbar PostgREST con conteos exactos.
 
@@ -51,6 +52,7 @@ No se inventaron precios para inflar la base.
 | Megatiendas | Supermercado | API publica VTEX | Activa |
 | Euro Supermercados | Supermercado | API publica VTEX | Activa |
 | Makro | Supermercado | API publica de ofertas por sede | Activa |
+| Farmatodo | Farmacia | Buscador publico Algolia con precios por ciudad | Activa |
 | La Rebaja | Farmacia | API publica VTEX | Activa |
 | Droguerias Colsubsidio | Farmacia | API publica VTEX | Activa |
 | Locatel | Farmacia | API publica VTEX | Activa |
@@ -86,6 +88,7 @@ Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no 
 - `scripts/import-vtex-categories-bulk.js` importa por arbol de categorias, soporta offset (`CATEGORY_BULK_START_CATEGORY`) e incluye categorias padre cuando se requiere volumen.
 - `scripts/sync-live-prices.js` ejecuta sincronizacion rotativa de precios vivos contra comercios reales.
 - `scripts/import-makro-offers.js` importa ofertas reales de Makro por 22 sedes, con precio, imagen, SKU, vigencia y sucursal.
+- `scripts/import-farmatodo-algolia.js` importa catalogo real de Farmatodo desde su buscador publico, con imagen, codigo de barras, precio nacional y precios por ciudad.
 - `.github/workflows/live-prices.yml` ejecuta esa sincronizacion cada 15 minutos con concurrencia controlada.
 - `.gitignore` excluye `logs/` para no subir archivos de ejecucion local.
 
@@ -93,7 +96,7 @@ Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no 
 
 El sistema ahora opera como near real-time:
 
-- Cada 15 minutos GitHub Actions ejecuta `npm run prices:live` y `npm run prices:makro`.
+- Cada 15 minutos GitHub Actions ejecuta `npm run prices:live`, `npm run prices:makro` y una pasada ligera de `npm run prices:farmatodo`.
 - Cada corrida revisa una tanda rotativa de terminos sensibles a precio: alimentos basicos, aseo, farmacia, bebe y mascotas.
 - Cada corrida revisa tambien una tanda rotativa de comercios para evitar timeouts y cubrir todos los comercios durante el dia.
 - El worker consulta el comercio real en ese momento.
@@ -108,25 +111,27 @@ Medicion de control del 2026-07-12:
 - Corrida manual GitHub Actions `Live Prices`: success, 0 fallos, 753 eventos de precio.
 - Importacion Makro completa local: 22 sedes, 1.934 ofertas fuente, 111 productos unicos, 1.836 precios por sucursal, 1.832 eventos de precio iniciales.
 - Prueba Makro modo workflow: 1.836 precios refrescados, 0 eventos duplicados cuando no hubo cambio.
-- Precios disponibles totales: 1.233.062.
-- Precios online nacionales disponibles: 196.550.
-- Precios por sucursal disponibles: 1.036.512.
-- Actualizados en la ultima hora: 1.644.
-- Actualizados en las ultimas 6 horas: 9.367.
-- Actualizados en las ultimas 24 horas: 595.807.
-- Ultima captura verificada: 2026-07-12T09:34:34Z desde Makro Valle de Lili, Cali.
+- Importacion Farmatodo completa local: 1.800 productos fuente, 17 ciudades online, 31.632 precios, 31.272 eventos de precio iniciales.
+- Prueba Farmatodo modo workflow: 3.454 precios refrescados, 0 eventos duplicados cuando no hubo cambio.
+- Precios disponibles totales: 1.261.975.
+- Precios online nacionales disponibles: 227.366.
+- Precios por sucursal/ciudad disponibles: 1.034.609.
+- Actualizados en la ultima hora: 40.388.
+- Actualizados en las ultimas 6 horas: 64.997.
+- Actualizados en las ultimas 24 horas: 661.744.
+- Ultima captura verificada: 2026-07-12T10:11:19Z desde Farmatodo por ciudad.
 
 ## Limitaciones honestas
 
-- La mayoria de precios VTEX siguen siendo online/nacionales; Makro ya entra como precio por sede fisica.
+- La mayoria de precios VTEX siguen siendo online/nacionales; Makro ya entra como precio por sede fisica y Farmatodo entra como precio online por ciudad.
 - La meta de 200.000 productos ya se cumplio como catalogo global real; la siguiente mejora no es inflar mas, sino aumentar cobertura de precios por ciudad y por sede.
-- D1, Ara, Farmatodo y Cruz Verde requieren conectores especificos no-VTEX o APIs privadas/publicas distintas.
-- En cargas finales se omitieron algunas inserciones auxiliares de `product_images` e historial para evitar timeouts. La imagen principal sigue guardada en `master_products.image`.
+- D1, Ara y Cruz Verde requieren conectores especificos no-VTEX o APIs privadas/publicas distintas.
+- En cargas finales VTEX se omitieron algunas inserciones auxiliares de `product_images` e historial para evitar timeouts. Farmatodo y Makro ya cargan imagenes/historial en su importacion completa.
 - Actualizacion realmente instantanea solo seria posible si el comercio entrega webhook, feed oficial o API con eventos de cambio. Mientras no exista eso, se usa polling frecuente y deteccion de cambios.
 
 ## Siguiente bloque recomendado
 
-1. Crear conectores especificos para D1, Ara, Farmatodo y Cruz Verde.
+1. Crear conectores especificos para D1, Ara y Cruz Verde.
 2. Separar claramente en UI/API "precio online" vs "precio por sede".
 3. Construir metricas materializadas para no depender de conteos pesados sobre tablas grandes.
 4. Enriquecer productos con multiples imagenes solo para los mas consultados.
