@@ -100,11 +100,12 @@ Esto es lo mas cercano a "en vivo" sin integracion oficial con webhooks de cada 
 
 Medicion de control del 2026-07-12:
 
+- Corrida manual GitHub Actions `Live Prices`: success, 0 fallos, 753 eventos de precio.
 - Precios online disponibles: 196.550.
-- Actualizados en la ultima hora: 283.
-- Actualizados en las ultimas 6 horas: 1.613.
-- Actualizados en las ultimas 24 horas: 121.944.
-- Ultima captura verificada: 2026-07-12T09:01:55Z desde Carulla.
+- Actualizados en la ultima hora: 253.
+- Actualizados en las ultimas 6 horas: 1.568.
+- Actualizados en las ultimas 24 horas: 95.163.
+- Ultima captura verificada: 2026-07-12T09:06:37Z desde Euro Supermercados.
 
 ## Limitaciones honestas
 
