@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Clock, Phone, Store, Package, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Store, Package, Search, ShieldCheck } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
@@ -28,7 +28,7 @@ const storeLogos = {
   'locatel': { initials: 'LO', gradient: 'from-rose-600 to-rose-800' },
 };
 
-export default function StoreClient({ store, products: initialProducts, totalProducts = 0, loadMore }) {
+export default function StoreClient({ store, products: initialProducts, totalProducts = 0, loadMore, degraded = false }) {
   const [page, setPage] = useState(1);
   const [allProducts, setAllProducts] = useState(() => initialProducts || []);
   const [loading, setLoading] = useState(false);
@@ -86,15 +86,23 @@ export default function StoreClient({ store, products: initialProducts, totalPro
               {store.type === 'farmacia' ? 'Farmacia' : 'Supermercado'}
             </Badge>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-100">{store.name}</h1>
-            {store.description && <p className="text-sm text-zinc-500 mt-1 max-w-xl">{store.description}</p>}
+            <p className="text-sm text-zinc-500 mt-1 max-w-xl">
+              {store.description || `Compara productos publicados por ${store.name}, revisa precios disponibles y encuentra alternativas por ciudad.`}
+            </p>
           </div>
         </motion.div>
+
+        {degraded && (
+          <div className="mb-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Mostrando productos de respaldo mientras actualizamos el catálogo específico de {store.name}.
+          </div>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6 sm:mb-8">
           {[
             { icon: Package, label: 'Productos', value: totalProducts || displayed.length },
             { icon: MapPin, label: 'Sucursales', value: store.branches || '-' },
-            { icon: Clock, label: 'Horario', value: store.schedule || 'Consultar' },
+            { icon: ShieldCheck, label: 'Datos', value: 'Verificables' },
             { icon: Store, label: 'Tipo', value: store.type === 'farmacia' ? 'Farmacia' : 'Supermercado' },
           ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -111,8 +119,9 @@ export default function StoreClient({ store, products: initialProducts, totalPro
             <h2 className="text-lg sm:text-xl font-bold text-zinc-100">Productos en {store.name}</h2>
             <span className="text-sm text-zinc-500">{totalProducts || displayed.length} productos</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {displayed.map((p, i) => (
+          {displayed.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {displayed.map((p, i) => (
               <ProductCardPremium key={p.id} product={{
                 ...p,
                 price: p.storePrice?.price || p.bestPrice,
@@ -120,9 +129,21 @@ export default function StoreClient({ store, products: initialProducts, totalPro
                 storesCount: 1,
                 image: p.image,
               }} />
-            ))}
-            {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
-          </div>
+              ))}
+              {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/40 p-8 text-center">
+              <Search size={34} className="mx-auto mb-3 text-zinc-600" />
+              <h3 className="text-base font-semibold text-zinc-200">Catálogo en actualización</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                No hay productos visibles de este comercio en este momento. Puedes buscar el producto y comparar con otros comercios disponibles.
+              </p>
+              <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
+                Buscar productos
+              </Link>
+            </div>
+          )}
           {hasMore && <div ref={loaderRef} className="h-10" />}
         </section>
       </Container>

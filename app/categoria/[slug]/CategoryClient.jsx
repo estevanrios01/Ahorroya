@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog, Package } from 'lucide-react';
+import { Search, ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
@@ -13,7 +13,7 @@ import { ProductCardSkeleton } from '../../../packages/ui/src/components/skeleto
 
 const iconMap = { ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog };
 
-export default function CategoryClient({ category, initialProducts, initialTotal = 0 }) {
+export default function CategoryClient({ category, initialProducts, initialTotal = 0, degraded = false }) {
   const [products, setProducts] = useState(initialProducts || []);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
@@ -79,6 +79,12 @@ export default function CategoryClient({ category, initialProducts, initialTotal
           <Badge variant="default" size="md">{total || displayProducts.length} productos</Badge>
         </motion.div>
 
+        {degraded && (
+          <div className="mb-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Mostrando productos relacionados mientras actualizamos esta categoría.
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {displayProducts.map((p, i) => (
             <motion.div key={p.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
@@ -90,9 +96,12 @@ export default function CategoryClient({ category, initialProducts, initialTotal
 
         {displayProducts.length === 0 && (
           <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-            <Icon size={48} className="mx-auto mb-3 text-zinc-600" />
-            <p className="text-base font-medium text-zinc-400">Explorando productos</p>
-            <p className="text-sm mt-1">Estamos cargando los productos de esta categoría</p>
+            <Search size={42} className="mx-auto mb-3 text-zinc-600" />
+            <p className="text-base font-medium text-zinc-300">Categoría en actualización</p>
+            <p className="text-sm mt-1">Busca un producto puntual para compararlo entre comercios disponibles.</p>
+            <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
+              Buscar productos
+            </Link>
           </div>
         )}
 

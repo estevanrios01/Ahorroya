@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getStoreBySlug, getProductsByStore } from '../../../services/catalog/CatalogService';
+import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import StoreClient from './StoreClient';
 import { StoreJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
@@ -30,7 +31,9 @@ export default async function StorePage({ params }) {
   const { store } = await getStoreBySlug(slug);
   if (!store) notFound();
 
-  const { products, pagination } = await getProductsByStore(slug);
+  const { products, pagination } = await getProductsByStore(slug).catch(() => ({ products: [], pagination: { total: 0 } }));
+  const fallbackProducts = products?.length ? [] : await getLiveFallbackProducts({ limit: 12 }).catch(() => []);
+  const visibleProducts = products?.length ? products : fallbackProducts;
 
   const loadMore = async (page) => {
     'use server';
@@ -47,7 +50,7 @@ export default async function StorePage({ params }) {
         { name: store.name },
       ]} />
       <WebSiteJsonLd />
-      <StoreClient key={slug} store={store} products={products || []} totalProducts={pagination?.total || 0} loadMore={loadMore} />
+      <StoreClient key={slug} store={store} products={visibleProducts || []} totalProducts={pagination?.total || visibleProducts.length || 0} loadMore={loadMore} degraded={!products?.length && fallbackProducts.length > 0} />
     </>
   );
 }
