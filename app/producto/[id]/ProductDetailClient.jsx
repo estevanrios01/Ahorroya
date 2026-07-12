@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowLeft, MapPin, TrendingDown, TrendingUp, Store, ShoppingBag, Heart, Share2,
   AlertCircle, CheckCircle2, ZoomIn, ChevronLeft, ChevronRight, Package, Ruler, Barcode, Map
@@ -37,6 +37,43 @@ export default function ProductDetailClient({ product }) {
   const trendingDown = history.length > 1 && history[0]?.price > history[history.length - 1]?.price;
 
   const similarProducts = product.similar || [];
+
+  useEffect(() => {
+    const syncFavorite = () => {
+      try {
+        const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
+        setLiked(Array.isArray(stored) && stored.some((item) => item.id === product.id));
+      } catch {
+        setLiked(false);
+      }
+    };
+
+    queueMicrotask(syncFavorite);
+    window.addEventListener('storage', syncFavorite);
+    return () => window.removeEventListener('storage', syncFavorite);
+  }, [product.id]);
+
+  function toggleFavorite() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
+      const favorites = Array.isArray(stored) ? stored : [];
+      const exists = favorites.some((item) => item.id === product.id);
+      const next = exists
+        ? favorites.filter((item) => item.id !== product.id)
+        : [{
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            brand: product.brand,
+            price: bestPrice,
+            oldPrice: product.prices?.find((price) => price.price === bestPrice)?.oldPrice,
+          }, ...favorites].slice(0, 100);
+      window.localStorage.setItem('ahorroya:favorites', JSON.stringify(next));
+      setLiked(!exists);
+    } catch {
+      setLiked((value) => !value);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -175,7 +212,7 @@ export default function ProductDetailClient({ product }) {
                 variant="secondary"
                 size="lg"
                 icon={<Heart size={18} fill={liked ? 'currentColor' : 'none'} />}
-                onClick={() => setLiked(!liked)}
+                onClick={toggleFavorite}
               >
                 {liked ? 'Guardado' : 'Guardar'}
               </Button>

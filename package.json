@@ -32,6 +32,7 @@
     "prices:live": "node scripts/sync-live-prices.js",
     "prices:makro": "node scripts/import-makro-offers.js",
     "prices:farmatodo": "node scripts/import-farmatodo-algolia.js",
+    "prices:ara": "node scripts/import-ara-offers.js",
     "prices:freshness": "node scripts/check-price-freshness.js",
     "worker": "node apps/worker/src/index.js"
   },

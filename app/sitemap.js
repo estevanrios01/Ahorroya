@@ -10,7 +10,6 @@ const staticRoutes = [
   { url: '/departamentos', priority: 0.7, freq: 'weekly' },
   { url: '/buscar', priority: 0.5, freq: 'monthly' },
   { url: '/favoritos', priority: 0.3, freq: 'monthly' },
-  { url: '/auth', priority: 0.3, freq: 'monthly' },
   { url: '/dashboard-ejecutivo', priority: 0.4, freq: 'weekly' },
   { url: '/admin', priority: 0.2, freq: 'monthly' },
   { url: '/legal', priority: 0.4, freq: 'monthly' },

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingBag, Store, MapPin, TrendingDown, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const formatPrice = (v) =>
   v != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v) : '';
@@ -31,6 +31,43 @@ export default function ProductCardPremium({ product }) {
     'cruz-verde': '/logos/cruz-verde.svg', 'farmatodo': '/logos/farmatodo.svg',
     'la-rebaja': '/logos/la-rebaja.svg',
   };
+
+  useEffect(() => {
+    const syncFavorite = () => {
+      try {
+        const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
+        setLiked(Array.isArray(stored) && stored.some((item) => item.id === product.id));
+      } catch {
+        setLiked(false);
+      }
+    };
+
+    queueMicrotask(syncFavorite);
+    window.addEventListener('storage', syncFavorite);
+    return () => window.removeEventListener('storage', syncFavorite);
+  }, [product.id]);
+
+  function toggleFavorite() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
+      const favorites = Array.isArray(stored) ? stored : [];
+      const exists = favorites.some((item) => item.id === product.id);
+      const next = exists
+        ? favorites.filter((item) => item.id !== product.id)
+        : [{
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            brand: product.brand,
+            price: product.price,
+            oldPrice: product.oldPrice,
+          }, ...favorites].slice(0, 100);
+      window.localStorage.setItem('ahorroya:favorites', JSON.stringify(next));
+      setLiked(!exists);
+    } catch {
+      setLiked((value) => !value);
+    }
+  }
 
   return (
     <motion.article
@@ -74,7 +111,7 @@ export default function ProductCardPremium({ product }) {
 
         <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
           <button
-            onClick={() => setLiked(!liked)}
+            onClick={toggleFavorite}
             className={`p-2.5 rounded-xl backdrop-blur-md transition-all shadow-lg ${
               liked ? 'bg-rose-500/30 text-rose-400 shadow-rose-500/10' : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
             }`}

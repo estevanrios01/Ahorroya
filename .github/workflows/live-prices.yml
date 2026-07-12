@@ -47,3 +47,11 @@ jobs:
           IMPORT_BATCH_SIZE: "25"
           IMPORT_SKIP_PRODUCT_IMAGES: "1"
           IMPORT_SKIP_PRICE_HISTORY: "0"
+      - run: npm run prices:ara
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ARA_MAX_PAGES: "2"
+          IMPORT_BATCH_SIZE: "25"
+          IMPORT_SKIP_PRODUCT_IMAGES: "1"
+          IMPORT_SKIP_PRICE_HISTORY: "0"
