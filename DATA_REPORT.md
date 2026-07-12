@@ -90,11 +90,21 @@ El sistema ahora opera como near real-time:
 
 - Cada 15 minutos GitHub Actions ejecuta `npm run prices:live`.
 - Cada corrida revisa una tanda rotativa de terminos sensibles a precio: alimentos basicos, aseo, farmacia, bebe y mascotas.
+- Cada corrida revisa tambien una tanda rotativa de comercios para evitar timeouts y cubrir todos los comercios durante el dia.
 - El worker consulta el comercio real en ese momento.
 - Si cambia `price`, `original_price` o `available`, actualiza `store_products` y registra evento en `store_product_history`.
 - Si no cambio nada, solo refresca la captura actual sin duplicar historial innecesario.
+- `npm run prices:freshness` audita frescura de precios sin hacer conteos pesados que tumben PostgREST.
 
 Esto es lo mas cercano a "en vivo" sin integracion oficial con webhooks de cada comercio.
+
+Medicion de control del 2026-07-12:
+
+- Precios online disponibles: 196.550.
+- Actualizados en la ultima hora: 283.
+- Actualizados en las ultimas 6 horas: 1.613.
+- Actualizados en las ultimas 24 horas: 121.944.
+- Ultima captura verificada: 2026-07-12T09:01:55Z desde Carulla.
 
 ## Limitaciones honestas
 

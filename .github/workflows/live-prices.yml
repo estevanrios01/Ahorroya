@@ -25,8 +25,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LIVE_SYNC_ALLOW_INSECURE_TLS: "1"
-          LIVE_SYNC_PRODUCTS_PER_TERM: "220"
-          LIVE_SYNC_TERMS_PER_RUN: "4"
+          LIVE_SYNC_PRODUCTS_PER_TERM: "180"
+          LIVE_SYNC_STORES_PER_RUN: "4"
+          LIVE_SYNC_TERMS_PER_RUN: "3"
           LIVE_SYNC_BATCH_SIZE: "20"
           LIVE_SYNC_SKIP_IMAGES: "1"
           LIVE_SYNC_STORES: "exito,carulla,olimpica,jumbo,metro,mercaldas,megatiendas,euro,larebaja,colsubsidio,locatel,medipiel,bellapiel,pasteur"

@@ -62,6 +62,14 @@ function pickRotatingTerms(terms, perRun) {
   return Array.from({ length: perRun }, (_, index) => terms[(start + index) % terms.length]);
 }
 
+function pickRotatingStores(stores, perRun) {
+  if (!perRun || perRun >= stores.length) return stores;
+  const now = new Date();
+  const wave = Number(process.env.LIVE_SYNC_WAVE || Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 15));
+  const start = (wave * perRun) % stores.length;
+  return Array.from({ length: perRun }, (_, index) => stores[(start + index) % stores.length]);
+}
+
 function runImport(store, term) {
   const env = {
     ...process.env,
@@ -114,12 +122,14 @@ function runImport(store, term) {
 function main() {
   const stores = listFromEnv('LIVE_SYNC_STORES', DEFAULT_STORES);
   const terms = listFromEnv('LIVE_SYNC_TERMS', DEFAULT_TERMS);
+  const storesPerRun = Number(process.env.LIVE_SYNC_STORES_PER_RUN || 4);
   const termsPerRun = Number(process.env.LIVE_SYNC_TERMS_PER_RUN || 4);
+  const selectedStores = pickRotatingStores(stores, storesPerRun);
   const selectedTerms = pickRotatingTerms(terms, termsPerRun);
   const started = Date.now();
 
   console.log('AhorroYa live price sync start', {
-    stores,
+    selectedStores,
     selectedTerms,
     productsPerTerm: process.env.LIVE_SYNC_PRODUCTS_PER_TERM || '250',
   });
@@ -127,7 +137,7 @@ function main() {
   let failed = 0;
   let priceEvents = 0;
   for (const term of selectedTerms) {
-    for (const store of stores) {
+    for (const store of selectedStores) {
       const result = runImport(store, term);
       if (!result.ok) failed++;
       priceEvents += result.priceEvents;
@@ -135,14 +145,14 @@ function main() {
   }
 
   console.log('AhorroYa live price sync complete', {
-    stores: stores.length,
+    stores: selectedStores.length,
     terms: selectedTerms.length,
     failed,
     priceEvents,
     durationSeconds: Math.round((Date.now() - started) / 1000),
   });
 
-  if (failed === stores.length * selectedTerms.length) process.exitCode = 1;
+  if (failed === selectedStores.length * selectedTerms.length) process.exitCode = 1;
 }
 
 main();
