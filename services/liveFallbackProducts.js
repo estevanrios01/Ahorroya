@@ -63,6 +63,11 @@ function normalizeVtexProduct(product, source) {
   };
 }
 
+function getSourceBySlug(sourceSlug) {
+  if (!sourceSlug) return null;
+  return SOURCES.find((source) => source.slug === sourceSlug) || null;
+}
+
 async function fetchSource(source, { q, limit }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
@@ -76,16 +81,30 @@ async function fetchSource(source, { q, limit }) {
   return (products || []).map((product) => normalizeVtexProduct(product, source)).filter(Boolean);
 }
 
-export async function getLiveFallbackProducts({ q = '', limit = 12 } = {}) {
+export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' } = {}) {
   const normalizedLimit = Math.max(1, Math.min(Number(limit) || 12, 24));
-  const cacheKey = `${q}:${normalizedLimit}`;
+  const source = getSourceBySlug(store);
+  const selectedSources = store ? (source ? [source] : []) : SOURCES;
+  if (store && selectedSources.length === 0) return [];
+
+  const cacheKey = `${store}:${q}:${normalizedLimit}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.createdAt < CACHE_TTL_MS) return cached.products;
 
-  const batches = await Promise.allSettled(SOURCES.map((source) => fetchSource(source, { q, limit: normalizedLimit })));
+  const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit })));
   const products = batches
     .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
     .slice(0, normalizedLimit);
+
+  if (store && products.length === 0) {
+    const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit })));
+    const scopedProducts = retryBatches
+      .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+      .filter((product) => product.store_products?.some((entry) => entry.stores?.slug === store))
+      .slice(0, normalizedLimit);
+    cache.set(cacheKey, { createdAt: Date.now(), products: scopedProducts });
+    return scopedProducts;
+  }
 
   cache.set(cacheKey, { createdAt: Date.now(), products });
   return products;

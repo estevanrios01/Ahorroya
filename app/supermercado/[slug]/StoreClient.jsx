@@ -39,12 +39,10 @@ export default function StoreClient({ store, products: initialProducts, totalPro
   useEffect(() => {
     if ((initialProducts || []).length > 0) return;
     let cancelled = false;
-    const query = store.type === 'farmacia' ? 'farmacia' : '';
-
     async function loadFallbackProducts() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/products?limit=24${query ? `&q=${encodeURIComponent(query)}` : ''}`);
+        const response = await fetch(`/api/products?limit=24&store=${encodeURIComponent(store.slug)}`);
         const json = await response.json();
         if (!cancelled && json.success) {
           setAllProducts(json.data || []);
@@ -61,7 +59,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
     return () => {
       cancelled = true;
     };
-  }, [initialProducts, store.type]);
+  }, [initialProducts, store.slug]);
 
   useEffect(() => {
     if (!loaderRef.current) return;
@@ -134,9 +132,9 @@ export default function StoreClient({ store, products: initialProducts, totalPro
           </div>
         </motion.div>
 
-        {degraded && (
+        {degraded && displayed.length > 0 && (
           <div className="mb-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Mostrando productos de respaldo mientras actualizamos el catálogo específico de {store.name}.
+            Mostrando productos publicados por {store.name} desde una fuente en vivo mientras la base principal termina de actualizarse.
           </div>
         )}
 
@@ -183,7 +181,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
               <Search size={34} className="mx-auto mb-3 text-zinc-600" />
               <h3 className="text-base font-semibold text-zinc-200">Catálogo en actualización</h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                No hay productos visibles de este comercio en este momento. Puedes buscar el producto y comparar con otros comercios disponibles.
+                No hay productos verificables de {store.name} en este momento. Para mantener la comparación correcta, no mezclamos productos de otros comercios en esta página.
               </p>
               <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
                 Buscar productos

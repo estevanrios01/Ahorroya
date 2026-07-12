@@ -4,23 +4,13 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { db } from '../../services/database';
+import { fallbackStores, withTimeout } from '../../services/fallbackCatalog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
-const fallbackSupermarkets = [
-  { name: 'Éxito', slug: 'exito', branchCount: 120 },
-  { name: 'Olímpica', slug: 'olimpica', branchCount: 95 },
-  { name: 'Jumbo', slug: 'jumbo', branchCount: 42 },
-  { name: 'Carulla', slug: 'carulla', branchCount: 38 },
-  { name: 'D1', slug: 'd1', branchCount: 80 },
-  { name: 'Ara', slug: 'ara', branchCount: 72 },
-  { name: 'Makro', slug: 'makro', branchCount: 18 },
-  { name: 'Metro', slug: 'metro', branchCount: 25 },
-  { name: 'Super Inter', slug: 'super-inter', branchCount: 34 },
-  { name: 'Surtimax', slug: 'surtimax', branchCount: 28 },
-  { name: 'Mercamio', slug: 'mercamio', branchCount: 18 },
-  { name: 'La Vaquita', slug: 'la-vaquita', branchCount: 16 },
-];
+const fallbackSupermarkets = fallbackStores
+  .filter((store) => store.type === 'supermercado')
+  .map((store) => ({ ...store, branchCount: store.branches }));
 
 export async function generateMetadata() {
   return {
@@ -34,15 +24,15 @@ export async function generateMetadata() {
 
 async function getSupermarkets() {
   try {
-    const result = await Promise.race([
-      db.stores.list({ limit: 200 }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('stores timeout')), 7000)),
-    ]);
+    const result = await withTimeout(db.stores.list({ limit: 200 }), 2500, 'stores timeout');
     const stores = (result.data || []).filter((store) => store.category === 'Supermercado');
     if (!stores.length) return fallbackSupermarkets;
     return stores
-      .map((store) => ({ ...store, branchCount: store.branches || 0 }))
-      .sort((a, b) => b.branchCount - a.branchCount || a.name.localeCompare(b.name));
+      .map((store) => {
+        const fallback = fallbackSupermarkets.find((item) => item.slug === store.slug);
+        return { ...store, branchCount: store.branches || fallback?.branchCount || null };
+      })
+      .sort((a, b) => (b.branchCount || 0) - (a.branchCount || 0) || a.name.localeCompare(b.name));
   } catch {
     return fallbackSupermarkets;
   }
@@ -85,7 +75,7 @@ export default async function SupermercadosPage() {
                 <h2 className="text-lg font-semibold text-zinc-100 transition-colors group-hover:text-emerald-400">{store.name}</h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500">
                   <MapPin size={14} />
-                  {store.branchCount || 0} sedes en seguimiento
+                  {store.branchCount ? `${store.branchCount} sedes en seguimiento` : 'Sedes en validacion'}
                 </p>
               </Link>
             ))}

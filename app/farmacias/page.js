@@ -4,26 +4,19 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { db } from '../../services/database';
+import { fallbackStores, withTimeout } from '../../services/fallbackCatalog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
-const fallbackPharmacies = [
-  { name: 'Farmatodo', slug: 'farmatodo', branchCount: 85 },
-  { name: 'Cruz Verde', slug: 'cruz-verde', branchCount: 110 },
-  { name: 'La Rebaja', slug: 'larebaja', branchCount: 74 },
-  { name: 'Locatel', slug: 'locatel', branchCount: 26 },
-  { name: 'Pasteur', slug: 'pasteur', branchCount: 34 },
-  { name: 'Colsubsidio', slug: 'colsubsidio', branchCount: 32 },
-  { name: 'Droguerías Cafam', slug: 'cafam', branchCount: 24 },
-  { name: 'Medipiel', slug: 'medipiel', branchCount: 18 },
-  { name: 'Bella Piel', slug: 'bellapiel', branchCount: 14 },
-];
+const fallbackPharmacies = fallbackStores
+  .filter((store) => store.type === 'farmacia')
+  .map((store) => ({ ...store, branchCount: store.branches }));
 
 export async function generateMetadata() {
   return {
     metadataBase: new URL(SITE_URL),
     title: 'Farmacias en Colombia - Compara precios | AhorroYa',
-    description: 'Compara precios en farmacias y droguerías de Colombia con sedes activas y productos publicados.',
+    description: 'Compara precios en farmacias y droguerias de Colombia con sedes activas y productos publicados.',
     robots: { index: true, follow: true },
     alternates: { canonical: `${SITE_URL}/farmacias` },
   };
@@ -31,15 +24,15 @@ export async function generateMetadata() {
 
 async function getPharmacies() {
   try {
-    const result = await Promise.race([
-      db.stores.list({ limit: 200 }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('stores timeout')), 7000)),
-    ]);
-    const stores = (result.data || []).filter((store) => ['Farmacia', 'Drogueria', 'Droguería'].includes(store.category));
+    const result = await withTimeout(db.stores.list({ limit: 200 }), 2500, 'stores timeout');
+    const stores = (result.data || []).filter((store) => ['Farmacia', 'Drogueria'].includes(store.category));
     if (!stores.length) return fallbackPharmacies;
     return stores
-      .map((store) => ({ ...store, branchCount: store.branches || 0 }))
-      .sort((a, b) => b.branchCount - a.branchCount || a.name.localeCompare(b.name));
+      .map((store) => {
+        const fallback = fallbackPharmacies.find((item) => item.slug === store.slug);
+        return { ...store, branchCount: store.branches || fallback?.branchCount || null };
+      })
+      .sort((a, b) => (b.branchCount || 0) - (a.branchCount || 0) || a.name.localeCompare(b.name));
   } catch {
     return fallbackPharmacies;
   }
@@ -62,7 +55,7 @@ export default async function FarmaciasPage() {
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-400">Medicamentos y cuidado personal</p>
             <h1 className="text-3xl font-bold text-zinc-100 sm:text-4xl">Farmacias</h1>
             <p className="mt-3 text-sm leading-6 text-zinc-500">
-              Revisa farmacias y droguerías con cobertura nacional para comparar precios de productos de salud, bienestar y cuidado personal.
+              Revisa farmacias y droguerias con cobertura nacional para comparar precios de productos de salud, bienestar y cuidado personal.
             </p>
           </div>
 
@@ -82,7 +75,7 @@ export default async function FarmaciasPage() {
                 <h2 className="text-lg font-semibold text-zinc-100 transition-colors group-hover:text-emerald-400">{store.name}</h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500">
                   <MapPin size={14} />
-                  {store.branchCount || 0} sedes en seguimiento
+                  {store.branchCount ? `${store.branchCount} sedes en seguimiento` : 'Sedes en validacion'}
                 </p>
               </Link>
             ))}

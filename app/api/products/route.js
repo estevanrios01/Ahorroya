@@ -10,8 +10,8 @@ function withTimeout(promise, ms = 2500) {
   ]);
 }
 
-async function degradedResponse({ page = 1, limit = 20, q = '' } = {}) {
-  const fallback = await getLiveFallbackProducts({ q, limit }).catch(() => []);
+async function degradedResponse({ page = 1, limit = 20, q = '', store = '' } = {}) {
+  const fallback = await getLiveFallbackProducts({ q, limit, store }).catch(() => []);
   return NextResponse.json({
     success: true,
     degraded: true,
@@ -27,6 +27,7 @@ export async function GET(request) {
       q: searchParams.get('q') || '',
       category: searchParams.get('category') || undefined,
       city: searchParams.get('city') || undefined,
+      store: searchParams.get('store') || undefined,
       page: searchParams.get('page') || 1,
       limit: searchParams.get('limit') || 20,
     });
@@ -38,8 +39,10 @@ export async function GET(request) {
       );
     }
 
-    const { q, category, city, page, limit } = parsed.data;
+    const { q, category, city, store, page, limit } = parsed.data;
     const sanitizedQ = sanitize(q);
+    if (store) return degradedResponse({ page, limit, q: sanitizedQ, store });
+
     const result = await withTimeout(db.products.list({ q: sanitizedQ, category, city, page, limit }));
     if (result.error) return degradedResponse({ page, limit, q: sanitizedQ });
 
