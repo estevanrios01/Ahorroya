@@ -89,11 +89,20 @@ export const db = {
         .from('master_products')
         .select('*, brands(name, slug), categories(name, slug)')
         .eq('status', 'active');
-      if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
+      if (q) {
+        const filters = [`name.ilike.%${q}%`, `short_name.ilike.%${q}%`];
+        if (/^\d+$/.test(q)) {
+          filters.push(`barcode.ilike.%${q}%`, `ean.ilike.%${q}%`);
+        }
+        query = query.or(filters.join(','));
+      }
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       const { data, error } = await query.range(from, to);
+      if (error?.code === '57014') {
+        return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
+      }
       if (error) return handleError(error, 'products.list');
       const products = await attachPrices(data || []);
       const total = from + products.length;
