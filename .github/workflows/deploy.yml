@@ -12,6 +12,9 @@ jobs:
       NEXT_PUBLIC_API_URL: https://ahorroya.vercel.app
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      VERCEL_OIDC_TOKEN: ${{ secrets.VERCEL_OIDC_TOKEN }}
+      VERCEL_ORG_ID: team_YA1ShaAog7tbOlVYJIkegWsq
+      VERCEL_PROJECT_ID: prj_qF5YCNFeh951EBi9GXoJsAvGiUuP
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,4 +26,12 @@ jobs:
 
       - name: Deploy to Production
         run: |
-          echo "Deploying AhorroYa to production..."
+          if [ -z "$VERCEL_OIDC_TOKEN" ]; then
+            echo "::error::Missing VERCEL_OIDC_TOKEN secret. Create it from the active Vercel CLI token before relying on automatic deploys."
+            exit 1
+          fi
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID","projectName":"ahorroya"}
+          EOF
+          npx vercel deploy --prod --yes
