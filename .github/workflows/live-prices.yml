@@ -2,12 +2,12 @@ name: Live Prices
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 concurrency:
   group: live-prices
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sync:

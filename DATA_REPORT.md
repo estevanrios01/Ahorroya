@@ -89,14 +89,14 @@ Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no 
 - `scripts/sync-live-prices.js` ejecuta sincronizacion rotativa de precios vivos contra comercios reales.
 - `scripts/import-makro-offers.js` importa ofertas reales de Makro por 22 sedes, con precio, imagen, SKU, vigencia y sucursal.
 - `scripts/import-farmatodo-algolia.js` importa catalogo real de Farmatodo desde su buscador publico, con imagen, codigo de barras, precio nacional y precios por ciudad.
-- `.github/workflows/live-prices.yml` ejecuta esa sincronizacion cada 15 minutos con concurrencia controlada.
+- `.github/workflows/live-prices.yml` ejecuta esa sincronizacion cada 30 minutos con concurrencia controlada.
 - `.gitignore` excluye `logs/` para no subir archivos de ejecucion local.
 
 ## Actualizacion viva de precios
 
 El sistema ahora opera como near real-time:
 
-- Cada 15 minutos GitHub Actions ejecuta `npm run prices:live`, `npm run prices:makro` y una pasada ligera de `npm run prices:farmatodo`.
+- Cada 30 minutos GitHub Actions ejecuta `npm run prices:live`, `npm run prices:makro` y una pasada ligera de `npm run prices:farmatodo`.
 - Cada corrida revisa una tanda rotativa de terminos sensibles a precio: alimentos basicos, aseo, farmacia, bebe y mascotas.
 - Cada corrida revisa tambien una tanda rotativa de comercios para evitar timeouts y cubrir todos los comercios durante el dia.
 - El worker consulta el comercio real en ese momento.
