@@ -20,7 +20,7 @@ const TARGET_MASTER_PRODUCTS = Number(process.env.BULK_TARGET_MASTER_PRODUCTS ||
 const PER_TERM = Number(process.env.BULK_PER_TERM || 500);
 const STORES = (process.env.BULK_STORES || 'exito,carulla,olimpica').split(',').map((s) => s.trim()).filter(Boolean);
 
-const TERMS = [
+const DEFAULT_TERMS = [
   'a', 'e', 'i', 'o', 'u',
   'al', 'ar', 'as', 'az', 'ba', 'be', 'bi', 'bo', 'ca', 'ce', 'ch', 'co', 'cu',
   'de', 'di', 'do', 'du', 'el', 'en', 'es', 'fr', 'ga', 'ge', 'go', 'ha', 'he',
@@ -36,19 +36,32 @@ const TERMS = [
   'panal', 'toalla', 'limpiador', 'desinfectante', 'mascota', 'perro', 'gato',
 ];
 
+const TERMS = (process.env.BULK_TERMS
+  ? process.env.BULK_TERMS.split(',')
+  : DEFAULT_TERMS).map((term) => term.trim()).filter(Boolean);
+
 if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Faltan variables de Supabase');
 
 async function countMasterProducts() {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/master_products?select=id&limit=1`, {
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      Prefer: 'count=exact',
-    },
-  });
-  if (!response.ok) throw new Error(await response.text());
-  const range = response.headers.get('content-range') || '0-0/0';
-  return Number(range.split('/')[1] || 0);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/master_products?select=id&limit=1`, {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          Prefer: 'count=planned',
+        },
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const range = response.headers.get('content-range') || '0-0/0';
+      return Number(range.split('/')[1] || 0);
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+  throw lastError;
 }
 
 function runImport(store, term) {

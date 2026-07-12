@@ -20,8 +20,11 @@ const STORE_SLUG = process.env.VTEX_STORE || process.argv[2] || 'exito';
 const TARGET_PRODUCTS = Number(process.env.VTEX_TARGET_PRODUCTS || process.argv[3] || 2000);
 const START_FROM = Number(process.env.VTEX_START_FROM || process.argv[4] || 0);
 const SEARCH_TERM = process.env.VTEX_SEARCH || process.argv[5] || '';
+const CATEGORY_PATH = process.env.VTEX_CATEGORY_PATH || process.argv[6] || '';
 const PAGE_SIZE = Number(process.env.VTEX_PAGE_SIZE || 50);
 const BATCH_SIZE = Number(process.env.IMPORT_BATCH_SIZE || 50);
+const SKIP_PRODUCT_IMAGES = process.env.IMPORT_SKIP_PRODUCT_IMAGES === '1';
+const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
 
 const STORES = {
   exito: {
@@ -47,6 +50,150 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.olimpica.com',
     endpoint: 'https://www.olimpica.com/api/catalog_system/pub/products/search',
+  },
+  jumbo: {
+    name: 'Jumbo',
+    slug: 'jumbo',
+    chain: 'Cencosud',
+    category: 'Supermercado',
+    website: 'https://www.tiendasjumbo.co',
+    endpoint: 'https://www.tiendasjumbo.co/api/catalog_system/pub/products/search',
+  },
+  metro: {
+    name: 'Metro',
+    slug: 'metro',
+    chain: 'Cencosud',
+    category: 'Supermercado',
+    website: 'https://www.tiendasmetro.co',
+    endpoint: 'https://www.tiendasmetro.co/api/catalog_system/pub/products/search',
+  },
+  larebaja: {
+    name: 'La Rebaja',
+    slug: 'larebaja',
+    chain: 'La Rebaja',
+    category: 'Farmacia',
+    website: 'https://www.larebajavirtual.com',
+    endpoint: 'https://www.larebajavirtual.com/api/catalog_system/pub/products/search',
+  },
+  colsubsidio: {
+    name: 'Droguerias Colsubsidio',
+    slug: 'colsubsidio',
+    chain: 'Colsubsidio',
+    category: 'Farmacia',
+    website: 'https://www.drogueriascolsubsidio.com',
+    endpoint: 'https://www.drogueriascolsubsidio.com/api/catalog_system/pub/products/search',
+  },
+  locatel: {
+    name: 'Locatel',
+    slug: 'locatel',
+    chain: 'Locatel',
+    category: 'Farmacia',
+    website: 'https://www.locatelcolombia.com',
+    endpoint: 'https://www.locatelcolombia.com/api/catalog_system/pub/products/search',
+  },
+  medipiel: {
+    name: 'Medipiel',
+    slug: 'medipiel',
+    chain: 'Medipiel',
+    category: 'Farmacia',
+    website: 'https://www.medipiel.com.co',
+    endpoint: 'https://www.medipiel.com.co/api/catalog_system/pub/products/search',
+  },
+  mercaldas: {
+    name: 'Mercaldas',
+    slug: 'mercaldas',
+    chain: 'Mercaldas',
+    category: 'Supermercado',
+    website: 'https://www.mercaldas.com',
+    endpoint: 'https://www.mercaldas.com/api/catalog_system/pub/products/search',
+  },
+  megatiendas: {
+    name: 'Megatiendas',
+    slug: 'megatiendas',
+    chain: 'Megatiendas',
+    category: 'Supermercado',
+    website: 'https://www.megatiendas.co',
+    endpoint: 'https://www.megatiendas.co/api/catalog_system/pub/products/search',
+  },
+  euro: {
+    name: 'Euro Supermercados',
+    slug: 'euro',
+    chain: 'Euro Supermercados',
+    category: 'Supermercado',
+    website: 'https://www.eurosupermercados.com.co',
+    endpoint: 'https://www.eurosupermercados.com.co/api/catalog_system/pub/products/search',
+  },
+  blushbar: {
+    name: 'Blush-Bar',
+    slug: 'blushbar',
+    chain: 'Blush-Bar',
+    category: 'Farmacia',
+    website: 'https://www.blush-bar.com',
+    endpoint: 'https://www.blush-bar.com/api/catalog_system/pub/products/search',
+  },
+  cromantic: {
+    name: 'Cromantic',
+    slug: 'cromantic',
+    chain: 'Cromantic',
+    category: 'Farmacia',
+    website: 'https://www.cromantic.com',
+    endpoint: 'https://www.cromantic.com/api/catalog_system/pub/products/search',
+  },
+  bellapiel: {
+    name: 'Bella Piel',
+    slug: 'bellapiel',
+    chain: 'Bella Piel',
+    category: 'Farmacia',
+    website: 'https://www.bellapiel.com.co',
+    endpoint: 'https://www.bellapiel.com.co/api/catalog_system/pub/products/search',
+  },
+  pasteur: {
+    name: 'Farmacias Pasteur',
+    slug: 'pasteur',
+    chain: 'Farmacias Pasteur',
+    category: 'Farmacia',
+    website: 'https://www.farmaciaspasteur.com.co',
+    endpoint: 'https://www.farmaciaspasteur.com.co/api/catalog_system/pub/products/search',
+  },
+  easy: {
+    name: 'Easy',
+    slug: 'easy',
+    chain: 'Easy',
+    category: 'Retail',
+    website: 'https://www.easy.com.co',
+    endpoint: 'https://www.easy.com.co/api/catalog_system/pub/products/search',
+  },
+  miniso: {
+    name: 'Miniso',
+    slug: 'miniso',
+    chain: 'Miniso',
+    category: 'Retail',
+    website: 'https://www.miniso.co',
+    endpoint: 'https://www.miniso.co/api/catalog_system/pub/products/search',
+  },
+  velez: {
+    name: 'Velez',
+    slug: 'velez',
+    chain: 'Velez',
+    category: 'Retail',
+    website: 'https://www.velez.com.co',
+    endpoint: 'https://www.velez.com.co/api/catalog_system/pub/products/search',
+  },
+  pepeganga: {
+    name: 'Pepeganga',
+    slug: 'pepeganga',
+    chain: 'Pepeganga',
+    category: 'Retail',
+    website: 'https://www.pepeganga.com',
+    endpoint: 'https://www.pepeganga.com/api/catalog_system/pub/products/search',
+  },
+  panamericana: {
+    name: 'Panamericana',
+    slug: 'panamericana',
+    chain: 'Panamericana',
+    category: 'Retail',
+    website: 'https://www.panamericana.com.co',
+    endpoint: 'https://www.panamericana.com.co/api/catalog_system/pub/products/search',
   },
 };
 
@@ -124,9 +271,18 @@ async function insertBatch(table, rows) {
 async function fetchVtexPage(store, from, to) {
   const params = new URLSearchParams({ _from: String(from), _to: String(to) });
   if (SEARCH_TERM) params.set('ft', SEARCH_TERM);
-  const response = await fetch(`${store.endpoint}?${params.toString()}`, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 AhorroYaCatalogImporter/1.0' },
-  });
+  if (CATEGORY_PATH) params.set('fq', `C:${CATEGORY_PATH}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  let response;
+  try {
+    response = await fetch(`${store.endpoint}?${params.toString()}`, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 AhorroYaCatalogImporter/1.0' },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok && response.status !== 206) {
     const text = await response.text();
     if (response.status === 400 && text.includes("_from can't be greater than 2500")) {
@@ -145,7 +301,8 @@ async function fetchSourceProducts(store) {
     resources ||= page.resources;
     if (!page.data?.length) break;
     products.push(...page.data);
-    console.log(`${store.slug}${SEARCH_TERM ? `/${SEARCH_TERM}` : ''} source: ${products.length}/${TARGET_PRODUCTS} desde ${START_FROM} (${resources || 'sin total'})`);
+    const label = CATEGORY_PATH || SEARCH_TERM || 'catalogo';
+    console.log(`${store.slug}/${label} source: ${products.length}/${TARGET_PRODUCTS} desde ${START_FROM} (${resources || 'sin total'})`);
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
   return products.slice(0, TARGET_PRODUCTS);
@@ -250,13 +407,15 @@ async function main() {
 
   const masterBySlug = Object.fromEntries(masters.map((product) => [product.slug, product]));
 
-  await upsertBatch('product_images', normalized.map((product) => ({
-    master_product_id: masterBySlug[product.slug]?.id,
-    url: product.image,
-    thumbnail_url: product.image,
-    alt: product.name,
-    is_primary: true,
-  })).filter((row) => row.master_product_id), 'master_product_id,url', { returning: false });
+  if (!SKIP_PRODUCT_IMAGES) {
+    await upsertBatch('product_images', normalized.map((product) => ({
+      master_product_id: masterBySlug[product.slug]?.id,
+      url: product.image,
+      thumbnail_url: product.image,
+      alt: product.name,
+      is_primary: true,
+    })).filter((row) => row.master_product_id), 'master_product_id,url', { returning: false });
+  }
 
   const now = new Date().toISOString();
   const listings = normalized.map((product) => ({
@@ -275,12 +434,14 @@ async function main() {
   })).filter((row) => row.master_product_id);
 
   await upsertBatch('store_products', listings, 'id', { returning: false });
-  await insertBatch('store_product_history', listings.map((row) => ({
-    store_product_id: row.id,
-    price: row.price,
-    available: row.available,
-    captured_at: row.captured_at,
-  })));
+  if (!SKIP_PRICE_HISTORY) {
+    await insertBatch('store_product_history', listings.map((row) => ({
+      store_product_id: row.id,
+      price: row.price,
+      available: row.available,
+      captured_at: row.captured_at,
+    })));
+  }
 
   console.log('Importacion VTEX finalizada:', {
     store: config.slug,
