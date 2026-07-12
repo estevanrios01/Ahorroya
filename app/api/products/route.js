@@ -21,6 +21,7 @@ async function degradedResponse({ page = 1, limit = 20, q = '', store = '' } = {
 }
 
 export async function GET(request) {
+  let fallbackContext = {};
   try {
     const { searchParams } = new URL(request.url);
     const parsed = searchSchema.safeParse({
@@ -41,6 +42,7 @@ export async function GET(request) {
 
     const { q, category, city, store, page, limit } = parsed.data;
     const sanitizedQ = sanitize(q);
+    fallbackContext = { page, limit, q: sanitizedQ, store };
     if (store) return degradedResponse({ page, limit, q: sanitizedQ, store });
 
     const result = await withTimeout(db.products.list({ q: sanitizedQ, category, city, page, limit }));
@@ -48,6 +50,6 @@ export async function GET(request) {
 
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });
   } catch {
-    return degradedResponse();
+    return degradedResponse(fallbackContext);
   }
 }

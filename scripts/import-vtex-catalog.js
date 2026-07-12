@@ -36,7 +36,7 @@ const STORES = {
     chain: 'Grupo Exito',
     category: 'Supermercado',
     website: 'https://www.exito.com',
-    endpoint: 'https://www.exito.com/api/catalog_system/pub/products/search',
+    endpoint: 'https://exitocol.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   carulla: {
     name: 'Carulla',
@@ -52,7 +52,7 @@ const STORES = {
     chain: 'Olimpica',
     category: 'Supermercado',
     website: 'https://www.olimpica.com',
-    endpoint: 'https://www.olimpica.com/api/catalog_system/pub/products/search',
+    endpoint: 'https://olimpica.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   jumbo: {
     name: 'Jumbo',
@@ -60,7 +60,7 @@ const STORES = {
     chain: 'Cencosud',
     category: 'Supermercado',
     website: 'https://www.tiendasjumbo.co',
-    endpoint: 'https://www.tiendasjumbo.co/api/catalog_system/pub/products/search',
+    endpoint: 'https://jumbocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   metro: {
     name: 'Metro',
@@ -68,7 +68,7 @@ const STORES = {
     chain: 'Cencosud',
     category: 'Supermercado',
     website: 'https://www.tiendasmetro.co',
-    endpoint: 'https://www.tiendasmetro.co/api/catalog_system/pub/products/search',
+    endpoint: 'https://metrocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   larebaja: {
     name: 'La Rebaja',
@@ -213,6 +213,26 @@ function slug(value) {
     .slice(0, 180);
 }
 
+function fixMojibake(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/\u00c3\u00a1/g, '\u00e1')
+    .replace(/\u00c3\u00a9/g, '\u00e9')
+    .replace(/\u00c3\u00ad/g, '\u00ed')
+    .replace(/\u00c3\u00b3/g, '\u00f3')
+    .replace(/\u00c3\u00ba/g, '\u00fa')
+    .replace(/\u00c3\u00b1/g, '\u00f1')
+    .replace(/\u00c3\u0081/g, '\u00c1')
+    .replace(/\u00c3\u0089/g, '\u00c9')
+    .replace(/\u00c3\u008d/g, '\u00cd')
+    .replace(/\u00c3\u0093/g, '\u00d3')
+    .replace(/\u00c3\u009a/g, '\u00da')
+    .replace(/\u00c3\u0091/g, '\u00d1')
+    .replace(/\u00c2/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function cryptoId(input) {
   const hex = crypto.createHash('sha1').update(`ahorroya-vtex:${input}`).digest('hex').slice(0, 32).split('');
   hex[12] = '5';
@@ -355,7 +375,7 @@ function normalizeProduct(product) {
   const item = primaryItem(product);
   const offer = primaryOffer(item);
   const image = item?.images?.[0]?.imageUrl || null;
-  const name = product.productName || item?.nameComplete || item?.name || '';
+  const name = fixMojibake(product.productName || item?.nameComplete || item?.name || '');
   const ean = item?.ean || product.ean?.[0] || product.productReference || null;
   const price = Number(offer?.Price || 0);
   const originalPrice = Number(offer?.ListPrice || offer?.PriceWithoutDiscount || price || 0);
@@ -365,8 +385,8 @@ function normalizeProduct(product) {
     sourceProductId: product.productId,
     name,
     slug: productSlug,
-    brand: product.brand || 'Sin Marca',
-    category: primaryCategory(product),
+    brand: fixMojibake(product.brand || 'Sin Marca'),
+    category: fixMojibake(primaryCategory(product)),
     ean: ean ? String(ean).replace(/[^0-9]/g, '').slice(0, 14) : null,
     sku: item?.itemId || product.productId,
     image,

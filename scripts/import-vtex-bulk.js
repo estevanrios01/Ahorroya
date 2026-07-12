@@ -18,7 +18,22 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TARGET_MASTER_PRODUCTS = Number(process.env.BULK_TARGET_MASTER_PRODUCTS || 200000);
 const PER_TERM = Number(process.env.BULK_PER_TERM || 500);
-const STORES = (process.env.BULK_STORES || 'exito,carulla,olimpica').split(',').map((s) => s.trim()).filter(Boolean);
+const STORES = (process.env.BULK_STORES || [
+  'exito',
+  'olimpica',
+  'jumbo',
+  'metro',
+  'carulla',
+  'larebaja',
+  'colsubsidio',
+  'locatel',
+  'medipiel',
+  'mercaldas',
+  'megatiendas',
+  'euro',
+  'bellapiel',
+  'pasteur',
+].join(',')).split(',').map((s) => s.trim()).filter(Boolean);
 
 const DEFAULT_TERMS = [
   'a', 'e', 'i', 'o', 'u',

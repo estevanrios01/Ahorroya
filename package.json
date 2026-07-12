@@ -25,6 +25,7 @@
     "db:link": "npx supabase link --project-ref vnfiqibpgpfsevfplvdp",
     "db:push": "npx supabase db push",
     "data:populate": "node scripts/populate-national-catalog.js",
+    "data:bulk-vtex": "node scripts/import-vtex-bulk.js",
     "data:audit": "node scripts/data-audit.js",
     "data:backfill-branches": "node scripts/backfill-branch-coverage.js",
     "data:backfill-low": "node scripts/backfill-low-branches.js",

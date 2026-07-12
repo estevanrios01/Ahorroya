@@ -12,7 +12,37 @@ const SOURCES = [
     slug: 'olimpica',
     endpoint: 'https://www.olimpica.com/api/catalog_system/pub/products/search',
   },
+  {
+    name: 'Jumbo',
+    slug: 'jumbo',
+    endpoint: 'https://jumbocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+  },
+  {
+    name: 'Metro',
+    slug: 'metro',
+    endpoint: 'https://metrocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+  },
 ];
+
+function fixMojibake(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/\u00c3\u00a1/g, '\u00e1')
+    .replace(/\u00c3\u00a9/g, '\u00e9')
+    .replace(/\u00c3\u00ad/g, '\u00ed')
+    .replace(/\u00c3\u00b3/g, '\u00f3')
+    .replace(/\u00c3\u00ba/g, '\u00fa')
+    .replace(/\u00c3\u00b1/g, '\u00f1')
+    .replace(/\u00c3\u0081/g, '\u00c1')
+    .replace(/\u00c3\u0089/g, '\u00c9')
+    .replace(/\u00c3\u008d/g, '\u00cd')
+    .replace(/\u00c3\u0093/g, '\u00d3')
+    .replace(/\u00c3\u009a/g, '\u00da')
+    .replace(/\u00c3\u0091/g, '\u00d1')
+    .replace(/\u00c2/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function slug(value) {
   return String(value || '')
@@ -37,11 +67,12 @@ function normalizeVtexProduct(product, source) {
   const offer = primaryOffer(item);
   const price = Number(offer?.Price || 0);
   const image = item?.images?.[0]?.imageUrl || null;
-  const name = product.productName || item?.nameComplete || item?.name || '';
+  const name = fixMojibake(product.productName || item?.nameComplete || item?.name || '');
   if (!name || !image || !price) return null;
 
   const id = `live-${source.slug}-${product.productId || item?.itemId || slug(name)}`;
   const originalPrice = Number(offer?.ListPrice || offer?.PriceWithoutDiscount || price);
+  const brand = fixMojibake(product.brand || '');
   return {
     id,
     name,
@@ -49,7 +80,7 @@ function normalizeVtexProduct(product, source) {
     short_name: name,
     unit: item?.measurementUnit || 'unidad',
     image,
-    brands: product.brand ? { name: product.brand, slug: slug(product.brand) } : null,
+    brands: brand ? { name: brand, slug: slug(brand) } : null,
     categories: null,
     store_products: [{
       id,
@@ -68,12 +99,12 @@ function getSourceBySlug(sourceSlug) {
   return SOURCES.find((source) => source.slug === sourceSlug) || null;
 }
 
-async function fetchSource(source, { q, limit }) {
+async function fetchSource(source, { q, limit, timeoutMs = 4500 }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
   const response = await fetch(`${source.endpoint}?${params.toString()}`, {
     headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 AhorroYaLiveFallback/1.0' },
-    signal: AbortSignal.timeout(2500),
+    signal: AbortSignal.timeout(timeoutMs),
     next: { revalidate: 300 },
   });
   if (!response.ok && response.status !== 206) return [];
@@ -91,13 +122,14 @@ export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' }
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.createdAt < CACHE_TTL_MS) return cached.products;
 
-  const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit })));
+  const timeoutMs = store ? 8000 : 4500;
+  const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
   const products = batches
     .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
     .slice(0, normalizedLimit);
 
   if (store && products.length === 0) {
-    const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit })));
+    const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
     const scopedProducts = retryBatches
       .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
       .filter((product) => product.store_products?.some((entry) => entry.stores?.slug === store))

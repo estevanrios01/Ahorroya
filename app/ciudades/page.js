@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { getAllCities } from '../../services/catalog/CatalogService';
 import CiudadesClient from './CiudadesClient';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
+import PageControls from '../../components/layout/PageControls';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -56,7 +59,9 @@ export default async function CiudadesPage() {
       ]} />
       <WebSiteJsonLd />
       <div className="min-h-screen bg-zinc-950">
+        <Header />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-16">
+          <PageControls forwardHref="/buscar" />
           <div className="flex items-center gap-2 text-xs text-zinc-600 mb-4">
             <Link href="/" className="hover:text-zinc-400 transition-colors">Inicio</Link>
             <span>/</span>
@@ -93,6 +98,7 @@ export default async function CiudadesPage() {
 
           <CiudadesClient ciudades={ciudades} />
         </div>
+        <Footer />
       </div>
     </>
   );

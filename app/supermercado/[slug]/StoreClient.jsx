@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Clock, Store, Package, Search, ShieldCheck } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
+import PageControls from '../../../components/layout/PageControls';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
 import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
@@ -117,6 +118,11 @@ export default function StoreClient({ store, products: initialProducts, totalPro
       <Header />
       <div className={`h-24 sm:h-36 lg:h-48 bg-gradient-to-r ${logo.gradient} opacity-15`} />
       <Container className="relative -mt-12 sm:-mt-20 pb-16">
+        <PageControls
+          backHref={store.type === 'farmacia' ? '/farmacias' : '/supermercados'}
+          forwardHref="/buscar"
+          className="pt-2"
+        />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className={`h-16 w-16 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br ${logo.gradient} flex items-center justify-center shadow-2xl shadow-black/40 border-4 border-zinc-950 flex-shrink-0`}>
             <span className="text-white font-bold text-lg sm:text-2xl uppercase">{logo.initials}</span>

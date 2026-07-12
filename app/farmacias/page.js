@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, MapPin, Pill } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import PageControls from '../../components/layout/PageControls';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { db } from '../../services/database';
 import { fallbackStores, withTimeout } from '../../services/fallbackCatalog';
@@ -51,6 +52,7 @@ export default async function FarmaciasPage() {
       <div className="min-h-screen bg-zinc-950">
         <Header />
         <main className="mx-auto max-w-7xl px-4 py-8 pb-16 sm:px-6 lg:px-8">
+          <PageControls forwardHref="/buscar?q=acetaminofen" />
           <div className="mb-8 max-w-3xl">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-400">Medicamentos y cuidado personal</p>
             <h1 className="text-3xl font-bold text-zinc-100 sm:text-4xl">Farmacias</h1>

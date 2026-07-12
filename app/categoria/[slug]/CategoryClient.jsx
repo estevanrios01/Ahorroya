@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Search, ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog } from 'lucide-react';
 import Header from '../../../components/layout/Header';
 import Footer from '../../../components/layout/Footer';
+import PageControls from '../../../components/layout/PageControls';
 import ProductCardPremium from '../../../components/product/ProductCardPremium';
 import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
@@ -102,6 +103,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
     <div className="min-h-screen bg-zinc-950">
       <Header />
       <Container className="py-6 sm:py-8 pb-16">
+        <PageControls backHref="/categorias" forwardHref={`/buscar?q=${encodeURIComponent(category.name)}`} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
           <div className="flex items-center gap-3 sm:gap-4 mb-4">
             <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center flex-shrink-0">
