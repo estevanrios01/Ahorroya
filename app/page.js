@@ -1,28 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Search, ShieldCheck, Store, TrendingDown } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import { Section } from '../packages/ui/src/components/section';
+import { WebSiteJsonLd } from '../components/seo/JsonLd';
 import { Container } from '../packages/ui/src/components/container';
 import { Divider } from '../packages/ui/src/components/divider';
 import { EmptyState } from '../packages/ui/src/components/empty-state';
-import { WebSiteJsonLd } from '../components/seo/JsonLd';
-import { motion } from 'framer-motion';
-import { ArrowRight, Smartphone, TrendingUp, ShoppingBag, Shield, Zap } from 'lucide-react';
+import { Section } from '../packages/ui/src/components/section';
 
 const Hero = dynamic(() => import('../components/home/Hero'), { ssr: false });
-const SupermarketCarousel = dynamic(() => import('../components/home/StoreCarousel').then((m) => ({ default: m.SupermarketCarousel })), { ssr: false });
-const PharmacyCarousel = dynamic(() => import('../components/home/StoreCarousel').then((m) => ({ default: m.PharmacyCarousel })), { ssr: false });
+const SupermarketCarousel = dynamic(() => import('../components/home/StoreCarousel').then((module) => ({ default: module.SupermarketCarousel })), { ssr: false });
+const PharmacyCarousel = dynamic(() => import('../components/home/StoreCarousel').then((module) => ({ default: module.PharmacyCarousel })), { ssr: false });
 const CategoryGrid = dynamic(() => import('../components/home/CategoryGrid'), { ssr: false });
 const ProductGrid = dynamic(() => import('../components/product/ProductGrid'), { ssr: false });
 
-const FEATURES = [
-  { icon: TrendingUp, title: 'Mejores precios', desc: 'Comparamos precios publicados para que encuentres la mejor oferta disponible.' },
-  { icon: Zap, title: 'Actualizacion continua', desc: 'Los scrapers y reportes actualizan el catalogo cuando la base de datos esta operativa.' },
-  { icon: Shield, title: 'Datos verificables', desc: 'Cada precio debe conservar origen, fecha de captura e historial.' },
+const cityLinks = [
+  { name: 'Cali', slug: 'cali', detail: 'Valle del Cauca' },
+  { name: 'Bogotá', slug: 'bogota', detail: 'Cundinamarca' },
+  { name: 'Medellín', slug: 'medellin', detail: 'Antioquia' },
+  { name: 'Barranquilla', slug: 'barranquilla', detail: 'Atlántico' },
+  { name: 'Cartagena', slug: 'cartagena', detail: 'Bolívar' },
+  { name: 'Bucaramanga', slug: 'bucaramanga', detail: 'Santander' },
+];
+
+const trustItems = [
+  { icon: ShieldCheck, title: 'Fotos verificadas', text: 'Se priorizan imágenes publicadas por los comercios.' },
+  { icon: RefreshCw, title: 'Precios con fecha', text: 'Cada precio guarda captura e historial para detectar cambios.' },
+  { icon: TrendingDown, title: 'Comparación útil', text: 'Ordenamos por menor precio y comercios disponibles.' },
 ];
 
 function toProductCard(product) {
@@ -45,7 +53,7 @@ function toProductCard(product) {
   };
 }
 
-function ProductSectionBody({ loading, products, emptyTitle, emptyDescription }) {
+function ProductSectionBody({ loading, products }) {
   if (loading || products.length > 0) {
     return <ProductGrid products={products} loading={loading} />;
   }
@@ -53,14 +61,15 @@ function ProductSectionBody({ loading, products, emptyTitle, emptyDescription })
   return (
     <EmptyState
       variant="products"
-      title={emptyTitle}
-      description={emptyDescription}
+      title="Catálogo en actualización"
+      description="Estamos consultando los comercios. Intenta de nuevo en unos minutos o busca un producto puntual."
     />
   );
 }
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [degraded, setDegraded] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
@@ -68,13 +77,17 @@ export default function Home() {
 
     async function loadProducts() {
       try {
-        const response = await fetch('/api/products?limit=12', { cache: 'no-store' });
+        const response = await fetch('/api/products?limit=16', { cache: 'no-store' });
         const payload = await response.json();
         if (active) {
-          setProducts((payload.data || []).map(toProductCard));
+          setProducts((payload.data || []).map(toProductCard).filter((product) => product.image));
+          setDegraded(Boolean(payload.degraded));
         }
       } catch {
-        if (active) setProducts([]);
+        if (active) {
+          setProducts([]);
+          setDegraded(true);
+        }
       } finally {
         if (active) setLoadingProducts(false);
       }
@@ -86,7 +99,10 @@ export default function Home() {
     };
   }, []);
 
-  const discountedProducts = products.filter((product) => product.oldPrice && product.price);
+  const discountedProducts = useMemo(
+    () => products.filter((product) => product.oldPrice && product.price).slice(0, 8),
+    [products]
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -94,96 +110,95 @@ export default function Home() {
       <Header />
       <Hero />
 
-      <Container className="space-y-6 sm:space-y-8 pb-8">
-        <Section
-          title="Ofertas del dia"
-          subtitle="Productos con descuentos reales publicados por comercios"
-          action={<Link href="/buscar?q=ofertas" className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-medium inline-flex items-center gap-1">Ver todas <ArrowRight size={14} /></Link>}
-        >
-          <ProductSectionBody
-            loading={loadingProducts}
-            products={discountedProducts.slice(0, 4)}
-            emptyTitle="Sin ofertas disponibles"
-            emptyDescription="Cuando los comercios reporten descuentos reales, apareceran aqui."
-          />
-        </Section>
+      <Container className="space-y-8 pb-10 pt-8">
+        {degraded && (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Estamos mostrando productos de respaldo en vivo mientras la base principal termina de responder.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {trustItems.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+              <Icon className="mb-3 h-5 w-5 text-emerald-400" />
+              <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">{text}</p>
+            </div>
+          ))}
+        </div>
 
         <Section
-          title="Productos destacados"
-          subtitle="Catalogo publicado desde Supabase"
-          action={<Link href="/buscar" className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-medium inline-flex items-center gap-1">Explorar <ArrowRight size={14} /></Link>}
+          title="Productos para comparar ahora"
+          subtitle="Referencias con imagen comercial y precio publicado"
+          action={<Link href="/buscar" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Explorar <ArrowRight size={14} /></Link>}
         >
-          <ProductSectionBody
-            loading={loadingProducts}
-            products={products.slice(0, 8)}
-            emptyTitle="Catalogo pendiente"
-            emptyDescription="Supabase aun no tiene productos publicados para mostrar en esta seccion."
-          />
+          <ProductSectionBody loading={loadingProducts} products={products.slice(0, 8)} />
         </Section>
+
+        {discountedProducts.length > 0 && (
+          <Section
+            title="Bajaron de precio"
+            subtitle="Productos con descuento detectado frente al precio anterior"
+            action={<Link href="/buscar?q=ofertas" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Ver ofertas <ArrowRight size={14} /></Link>}
+          >
+            <ProductSectionBody loading={loadingProducts} products={discountedProducts} />
+          </Section>
+        )}
 
         <Divider />
 
-        <Section title="Supermercados" subtitle="Comercios disponibles en el catalogo">
+        <Section title="Elige tu ciudad" subtitle="Compara según la cobertura disponible por ubicación">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {cityLinks.map((city) => (
+              <Link
+                key={city.slug}
+                href={`/buscar?city=${encodeURIComponent(city.name)}`}
+                className="group flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 transition-all hover:border-emerald-500/30 hover:bg-zinc-900"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                    <MapPin size={18} />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold text-zinc-100">{city.name}</span>
+                    <span className="block text-xs text-zinc-500">{city.detail}</span>
+                  </span>
+                </span>
+                <ArrowRight size={16} className="text-zinc-600 transition-colors group-hover:text-emerald-400" />
+              </Link>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Supermercados" subtitle="Cadenas nacionales y regionales incluidas en el catálogo">
           <SupermarketCarousel />
         </Section>
 
-        <Section title="Farmacias" subtitle="Farmacias disponibles en el catalogo">
+        <Section title="Farmacias" subtitle="Precios de droguerías y farmacias con cobertura nacional">
           <PharmacyCarousel />
         </Section>
 
         <Divider />
 
-        <Section title="Categorias" subtitle="Explora por categoria">
+        <Section title="Categorías principales" subtitle="Accede rápido a productos de compra frecuente">
           <CategoryGrid />
         </Section>
 
-        <Divider />
-
-        <Section
-          title="Mayor ahorro"
-          subtitle="Calculado desde precios actuales y anteriores"
-        >
-          <ProductSectionBody
-            loading={loadingProducts}
-            products={discountedProducts.slice(0, 4)}
-            emptyTitle="Sin ahorros calculados"
-            emptyDescription="Necesitamos precios reales y precios anteriores para calcular el ahorro."
-          />
-        </Section>
-
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600/20 via-emerald-700/10 to-zinc-900 border border-emerald-500/20 p-6 sm:p-8">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-emerald-600/30 flex items-center justify-center">
-                <Smartphone size={28} className="text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-zinc-100">App movil en preparacion</h3>
-                <p className="text-sm text-zinc-400">El escaner y la lista de compras se activaran cuando la base real este poblada.</p>
-              </div>
-            </div>
-            <Link href="/buscar" className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-              <ShoppingBag size={16} /> Explorar catalogo
-            </Link>
+        <div className="grid gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+          <div>
+            <p className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-emerald-400">
+              <CheckCircle2 size={14} />
+              Comparador operativo
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-zinc-100">Busca un producto y revisa el comercio más barato.</h2>
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
+              La lógica ya prioriza fotos reales, precios verificables y cobertura por ciudad. El siguiente salto es aumentar scrapers por comercio para profundizar inventario.
+            </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {FEATURES.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 sm:p-5 text-center"
-            >
-              <feature.icon size={24} className="mx-auto text-emerald-400 mb-2" />
-              <h3 className="text-sm font-semibold text-zinc-200 mb-1">{feature.title}</h3>
-              <p className="text-xs text-zinc-500 leading-relaxed">{feature.desc}</p>
-            </motion.div>
-          ))}
+          <Link href="/buscar" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500">
+            <Search size={16} />
+            Buscar productos
+          </Link>
         </div>
       </Container>
       <Footer />

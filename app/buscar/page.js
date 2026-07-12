@@ -2,6 +2,7 @@ import Link from 'next/link';
 import ProductGrid from '../../components/product/ProductGrid';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { db } from '../../services/database';
+import { getLiveFallbackProducts } from '../../services/liveFallbackProducts';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -25,6 +26,13 @@ export async function generateMetadata({ searchParams }) {
 }
 
 const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Cafe', 'Huevos', 'Pan', 'Acetaminofen', 'Detergente'];
+
+function withTimeout(promise, ms = 7000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('search timeout')), ms)),
+  ]);
+}
 
 function toProductCard(product) {
   const listings = (product.store_products || []).filter((item) => item.available !== false && item.price != null);
@@ -50,10 +58,17 @@ export default async function BuscarPage({ searchParams }) {
   const params = await searchParams;
   const query = params?.q || '';
   const city = params?.city || '';
-  const [{ data: cities }, result] = await Promise.all([
-    db.cities.list(),
-    query || city ? db.products.list({ q: query, city, limit: 48 }) : Promise.resolve({ data: [], pagination: { total: 0 } }),
-  ]);
+  const [{ data: cities }, result] = await Promise.allSettled([
+    withTimeout(db.cities.list(), 5000),
+    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 7000) : Promise.resolve({ data: [], pagination: { total: 0 } }),
+  ]).then(async ([citiesResult, productsResult]) => {
+    const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: [] };
+    if (productsResult.status === 'fulfilled' && !productsResult.value?.error) {
+      return [cityPayload, productsResult.value];
+    }
+    const fallback = query ? await getLiveFallbackProducts({ q: query, limit: 24 }).catch(() => []) : [];
+    return [cityPayload, { data: fallback, pagination: { total: fallback.length } }];
+  });
   const products = (result.data || [])
     .map(toProductCard)
     .filter((product) => query || product.image);

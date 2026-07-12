@@ -4,49 +4,81 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const colors = [
-  'bg-blue-600',
-  'bg-red-600',
-  'bg-green-600',
-  'bg-orange-600',
-  'bg-yellow-600',
-  'bg-teal-600',
-  'bg-blue-800',
-  'bg-purple-600',
-  'bg-emerald-600',
-  'bg-rose-600',
+const fallbackStores = [
+  { name: 'Éxito', slug: 'exito', category: 'Supermercado' },
+  { name: 'Olímpica', slug: 'olimpica', category: 'Supermercado' },
+  { name: 'Jumbo', slug: 'jumbo', category: 'Supermercado' },
+  { name: 'Carulla', slug: 'carulla', category: 'Supermercado' },
+  { name: 'Ara', slug: 'ara', category: 'Supermercado' },
+  { name: 'D1', slug: 'd1', category: 'Supermercado' },
+  { name: 'Makro', slug: 'makro', category: 'Supermercado' },
+  { name: 'Metro', slug: 'metro', category: 'Supermercado' },
+  { name: 'Farmatodo', slug: 'farmatodo', category: 'Farmacia' },
+  { name: 'Cruz Verde', slug: 'cruz-verde', category: 'Farmacia' },
+  { name: 'La Rebaja', slug: 'larebaja', category: 'Farmacia' },
+  { name: 'Locatel', slug: 'locatel', category: 'Farmacia' },
+  { name: 'Pasteur', slug: 'pasteur', category: 'Farmacia' },
+  { name: 'Colsubsidio', slug: 'colsubsidio', category: 'Farmacia' },
 ];
 
-function colorFor(slug = '') {
-  const index = [...slug].reduce((total, char) => total + char.charCodeAt(0), 0);
-  return colors[index % colors.length];
+const colorMap = {
+  exito: 'from-blue-600 to-yellow-500',
+  olimpica: 'from-red-600 to-yellow-500',
+  jumbo: 'from-red-600 to-orange-500',
+  carulla: 'from-emerald-600 to-teal-500',
+  ara: 'from-red-600 to-yellow-500',
+  d1: 'from-red-600 to-red-800',
+  makro: 'from-blue-700 to-yellow-500',
+  metro: 'from-green-700 to-yellow-500',
+  farmatodo: 'from-green-500 to-emerald-700',
+  'cruz-verde': 'from-emerald-600 to-green-800',
+  larebaja: 'from-red-600 to-red-800',
+  locatel: 'from-rose-600 to-red-700',
+  pasteur: 'from-blue-600 to-indigo-700',
+  colsubsidio: 'from-yellow-500 to-orange-600',
+};
+
+function initials(name) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
-function StoreCard({ name, slug, type, category }) {
-  const hrefType = type || (category === 'Farmacia' ? 'farmacia' : 'supermercado');
+function hrefFor(store, type) {
+  const route = type || (store.category === 'Farmacia' || store.category === 'Drogueria' || store.category === 'Droguería' ? 'farmacia' : 'supermercado');
+  return `/${route}/${store.slug}`;
+}
 
+function StoreCard({ store, type, index }) {
+  const gradient = colorMap[store.slug] || 'from-zinc-600 to-zinc-800';
   return (
-    <Link href={`/${hrefType}/${slug}`}>
-      <motion.div
-        whileHover={{ y: -4, scale: 1.02 }}
-        transition={{ duration: 0.2 }}
-        className="flex flex-col items-center gap-3 p-4 sm:p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer group"
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.015 }}
+    >
+      <Link
+        href={hrefFor(store, type)}
+        className="group flex min-h-[132px] flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition-all hover:border-emerald-500/30 hover:bg-zinc-900"
       >
-        <div className={`h-14 w-14 sm:h-16 sm:w-16 rounded-2xl ${colorFor(slug)} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
-          <span className="text-white font-bold text-sm sm:text-base uppercase tracking-wider">
-            {name.slice(0, 2)}
-          </span>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} shadow-lg shadow-black/20`}>
+          <span className="text-sm font-black tracking-wide text-white">{initials(store.name)}</span>
         </div>
-        <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors text-center line-clamp-2">
-          {name}
-        </span>
-      </motion.div>
-    </Link>
+        <div>
+          <p className="text-sm font-semibold text-zinc-100 line-clamp-2">{store.name}</p>
+          <p className="mt-1 text-xs text-zinc-500">{store.category === 'Farmacia' ? 'Farmacia' : 'Supermercado'}</p>
+        </div>
+      </Link>
+    </motion.div>
   );
 }
 
-function StoreGrid({ category, type, limit }) {
-  const [stores, setStores] = useState([]);
+function StoreGrid({ categories, type, limit }) {
+  const [stores, setStores] = useState(fallbackStores);
 
   useEffect(() => {
     let active = true;
@@ -54,10 +86,11 @@ function StoreGrid({ category, type, limit }) {
       .then((response) => response.json())
       .then((payload) => {
         if (!active) return;
-        setStores(payload.data || []);
+        const incoming = Array.isArray(payload.data) && payload.data.length > 0 ? payload.data : fallbackStores;
+        setStores(incoming);
       })
       .catch(() => {
-        if (active) setStores([]);
+        if (active) setStores(fallbackStores);
       });
     return () => {
       active = false;
@@ -66,33 +99,23 @@ function StoreGrid({ category, type, limit }) {
 
   const visible = useMemo(() => (
     stores
-      .filter((store) => category.includes(store.category))
+      .filter((store) => categories.includes(store.category))
       .slice(0, limit)
-  ), [stores, category, limit]);
-
-  if (visible.length === 0) {
-    return (
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {Array.from({ length: Math.min(limit, 10) }).map((_, index) => (
-          <div key={index} className="h-32 rounded-2xl bg-zinc-900/70 border border-zinc-800 animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  ), [stores, categories, limit]);
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-10 gap-3">
-      {visible.map((store) => (
-        <StoreCard key={store.slug} {...store} type={type} />
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      {visible.map((store, index) => (
+        <StoreCard key={`${store.slug}-${store.category}`} store={store} type={type} index={index} />
       ))}
     </div>
   );
 }
 
 export function SupermarketCarousel() {
-  return <StoreGrid category={['Supermercado']} type="supermercado" limit={20} />;
+  return <StoreGrid categories={['Supermercado']} type="supermercado" limit={12} />;
 }
 
 export function PharmacyCarousel() {
-  return <StoreGrid category={['Farmacia', 'Drogueria', 'Droguería']} type="farmacia" limit={12} />;
+  return <StoreGrid categories={['Farmacia', 'Drogueria', 'Droguería']} type="farmacia" limit={8} />;
 }
