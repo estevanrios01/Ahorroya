@@ -31,3 +31,10 @@ jobs:
           LIVE_SYNC_BATCH_SIZE: "20"
           LIVE_SYNC_SKIP_IMAGES: "1"
           LIVE_SYNC_STORES: "exito,carulla,olimpica,jumbo,metro,mercaldas,megatiendas,euro,larebaja,colsubsidio,locatel,medipiel,bellapiel,pasteur"
+      - run: npm run prices:makro
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          IMPORT_BATCH_SIZE: "25"
+          IMPORT_SKIP_PRODUCT_IMAGES: "1"
+          IMPORT_SKIP_PRICE_HISTORY: "0"

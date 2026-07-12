@@ -30,6 +30,7 @@
     "data:backfill-low": "node scripts/backfill-low-branches.js",
     "scrape": "node scripts/actualizador-precios.js",
     "prices:live": "node scripts/sync-live-prices.js",
+    "prices:makro": "node scripts/import-makro-offers.js",
     "prices:freshness": "node scripts/check-price-freshness.js",
     "worker": "node apps/worker/src/index.js"
   },

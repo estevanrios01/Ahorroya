@@ -31,21 +31,24 @@ async function rest(pathname, prefer = '') {
   return { data: text ? JSON.parse(text) : null, range: response.headers.get('content-range') };
 }
 
-async function count(filter, label) {
-  const { range } = await rest(`store_products?select=id&branch_id=is.null&${filter}&limit=1`, 'count=planned');
+async function count(filter, label, branchFilter = '') {
+  const prefix = branchFilter ? `${branchFilter}&` : '';
+  const { range } = await rest(`store_products?select=id&${prefix}${filter}&limit=1`, 'count=planned');
   const value = Number((range || '0-0/0').split('/')[1] || 0);
   return { label, value };
 }
 
 async function main() {
-  const latest = await rest('store_products?select=captured_at,stores(name,slug)&branch_id=is.null&order=captured_at.desc&limit=10');
+  const latest = await rest('store_products?select=captured_at,stores(name,slug),branches(name,city)&order=captured_at.desc&limit=10');
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
   const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
   const stats = [
-    await count('available=eq.true', 'online_prices_available'),
+    await count('available=eq.true', 'prices_available_total'),
+    await count('available=eq.true', 'online_prices_available', 'branch_id=is.null'),
+    await count('available=eq.true', 'branch_prices_available', 'branch_id=not.is.null'),
     await count(`captured_at=gte.${oneHourAgo}`, 'updated_last_hour'),
     await count(`captured_at=gte.${sixHoursAgo}`, 'updated_last_6h'),
     await count(`captured_at=gte.${dayAgo}`, 'updated_last_24h'),

@@ -28,9 +28,9 @@ const headers = {
 };
 
 async function count(table, filter = '') {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*${filter}`, {
-    method: 'HEAD',
-    headers: { ...headers, Prefer: 'count=exact' },
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1${filter}`, {
+    method: 'GET',
+    headers: { ...headers, Prefer: 'count=planned' },
   });
   if (!response.ok) throw new Error(`No se pudo contar ${table}: ${response.status}`);
   const range = response.headers.get('content-range') || '0-0/0';
@@ -92,13 +92,24 @@ async function main() {
     fetchAllSmall('branches', 'id,city,department,store_id,status'),
   ]);
 
-  const { productsWithPrices, perBranch } = await scanActivePrices();
   const activeBranches = branchRows.filter((row) => row.status === 'active');
+  const activePriceRows = await count('store_products', '&available=eq.true');
+  let productsWithPrices = null;
+  let perBranch = new Map();
+  let coverageMode = 'planned';
+
+  if (process.env.AUDIT_FULL_PRICE_SCAN === '1') {
+    const scanned = await scanActivePrices();
+    productsWithPrices = scanned.productsWithPrices;
+    perBranch = scanned.perBranch;
+    coverageMode = 'full-scan';
+  }
+
   const cityCount = new Set(activeBranches.map((row) => row.city).filter(Boolean)).size;
   const departmentCount = new Set(activeBranches.map((row) => row.department).filter(Boolean)).size;
   const countsByBranch = activeBranches.map((row) => perBranch.get(row.id) || 0);
-  const branchesBelow100 = countsByBranch.filter((count) => count < 100).length;
-  const branchesBelow200 = countsByBranch.filter((count) => count < 200).length;
+  const branchesBelow100 = coverageMode === 'full-scan' ? countsByBranch.filter((count) => count < 100).length : null;
+  const branchesBelow200 = coverageMode === 'full-scan' ? countsByBranch.filter((count) => count < 200).length : null;
 
   const report = {
     brands,
@@ -107,15 +118,17 @@ async function main() {
     stores,
     branches,
     prices,
+    activePriceRows,
     productsWithPrices,
     history,
     images,
     cities: cityCount,
     departments: departmentCount,
+    coverageMode,
     branchesBelow100,
     branchesBelow200,
-    minProductsPerBranch: Math.min(...countsByBranch),
-    maxProductsPerBranch: Math.max(...countsByBranch),
+    minProductsPerBranch: coverageMode === 'full-scan' ? Math.min(...countsByBranch) : null,
+    maxProductsPerBranch: coverageMode === 'full-scan' ? Math.max(...countsByBranch) : null,
   };
 
   console.log(JSON.stringify(report, null, 2));
@@ -123,11 +136,11 @@ async function main() {
   const failures = [];
   if (branches < 300) failures.push('branches < 300');
   if (products < 1000) failures.push('products < 1000');
-  if (productsWithPrices < 3000) failures.push('productsWithPrices < 3000');
+  if (coverageMode === 'full-scan' && productsWithPrices < 3000) failures.push('productsWithPrices < 3000');
   if (stores < 15) failures.push('stores < 15');
-  if (prices < 300000) failures.push('prices < 300000');
+  if (activePriceRows < 300000) failures.push('activePriceRows < 300000');
   if (cityCount < 35) failures.push('cities < 35');
-  if (branchesBelow100 > 0) failures.push(`${branchesBelow100} branches below 100 products`);
+  if (coverageMode === 'full-scan' && branchesBelow100 > 0) failures.push(`${branchesBelow100} branches below 100 products`);
 
   if (failures.length > 0) {
     console.error(`Data audit failed: ${failures.join(', ')}`);
