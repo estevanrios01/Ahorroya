@@ -111,7 +111,7 @@ export default function Header() {
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-zinc-800/80 transition-all ml-1"
-                  aria-label="Menú de usuario"
+                  aria-label="Menu de usuario"
                 >
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-600/20">
                     {user.email?.charAt(0)?.toUpperCase() || 'U'}
@@ -142,7 +142,7 @@ export default function Header() {
                           <ShoppingBag size={16} /> Mis Listas
                         </button>
                         <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all">
-                          <Settings size={16} /> Configuración
+                          <Settings size={16} /> Configuracion
                         </button>
                       </div>
                       <div className="p-1.5 border-t border-zinc-800">
@@ -150,7 +150,7 @@ export default function Header() {
                           onClick={logout}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
                         >
-                          <LogOut size={16} /> Cerrar Sesión
+                          <LogOut size={16} /> Cerrar sesion
                         </button>
                       </div>
                     </motion.div>
@@ -162,7 +162,7 @@ export default function Header() {
             <button
               onClick={() => setMobileMenu(!mobileMenu)}
               className="lg:hidden p-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/80 transition-all"
-              aria-label="Menú"
+              aria-label="Menu"
             >
               {mobileMenu ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -195,7 +195,7 @@ export default function Header() {
               </form>
               <div className="grid grid-cols-3 gap-2">
                 <Link href="/favoritos" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Favoritos</Link>
-                <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorías</Link>
+                <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorias</Link>
                 <Link href="/supermercados" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Tiendas</Link>
               </div>
             </div>

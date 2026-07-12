@@ -1,14 +1,19 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getProductsByCategory } from '../../../services/catalog/CatalogService';
-import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
+import { getFallbackCategory, withTimeout } from '../../../services/fallbackCatalog';
 import CategoryClient from './CategoryClient';
 import { CategoryJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
+async function loadCategory(slug) {
+  const result = await withTimeout(getCategoryBySlug(slug), 800, 'category timeout').catch(() => ({ category: null }));
+  return result.category || getFallbackCategory(slug);
+}
+
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
-  const { category } = await getCategoryBySlug(slug);
+  const category = getFallbackCategory(slug) || await loadCategory(slug);
   if (!category) return { title: 'No encontrado - AhorroYa' };
 
   return {
@@ -28,12 +33,11 @@ export async function generateMetadata({ params }) {
 
 export default async function CategoryPage({ params }) {
   const slug = (await params).slug;
-  const { category } = await getCategoryBySlug(slug);
+  const category = await loadCategory(slug);
   if (!category) notFound();
 
-  const { products, pagination } = await getProductsByCategory(slug).catch(() => ({ products: [], pagination: { total: 0 } }));
-  const fallbackProducts = products?.length ? [] : await getLiveFallbackProducts({ q: category.name, limit: 12 }).catch(() => []);
-  const visibleProducts = products?.length ? products : fallbackProducts;
+  const { products, pagination } = await withTimeout(getProductsByCategory(slug), 250, 'category products timeout').catch(() => ({ products: [], pagination: { total: 0 } }));
+  const visibleProducts = products || [];
   const totalProducts = pagination?.total || category.productCount || visibleProducts.length || 0;
 
   return (
@@ -45,7 +49,7 @@ export default async function CategoryPage({ params }) {
         { name: category.name },
       ]} />
       <WebSiteJsonLd />
-      <CategoryClient category={category} initialProducts={visibleProducts || []} initialTotal={totalProducts} degraded={!products?.length && fallbackProducts.length > 0} />
+      <CategoryClient category={category} initialProducts={visibleProducts || []} initialTotal={totalProducts} degraded={!products?.length} />
     </>
   );
 }

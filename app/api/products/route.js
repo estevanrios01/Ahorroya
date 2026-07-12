@@ -3,7 +3,7 @@ import { db } from '@/services/database';
 import { searchSchema, sanitize } from '@/lib/zod';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 
-function withTimeout(promise, ms = 7000) {
+function withTimeout(promise, ms = 2500) {
   return Promise.race([
     promise,
     new Promise((_, reject) => setTimeout(() => reject(new Error('products timeout')), ms)),

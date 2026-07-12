@@ -17,9 +17,36 @@ export default function CategoryClient({ category, initialProducts, initialTotal
   const [products, setProducts] = useState(initialProducts || []);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => !(initialProducts || []).length);
   const [hasMore, setHasMore] = useState(products.length < initialTotal);
   const loaderRef = useRef(null);
+
+  useEffect(() => {
+    if ((initialProducts || []).length > 0) return;
+    let cancelled = false;
+
+    async function loadFallbackProducts() {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/products?limit=24&q=${encodeURIComponent(category.name)}`);
+        const json = await response.json();
+        if (!cancelled && json.success) {
+          setProducts(json.data || []);
+          setTotal(json.pagination?.total || json.data?.length || 0);
+          setHasMore(false);
+        }
+      } catch {
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadFallbackProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [category.name, initialProducts]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -55,7 +82,21 @@ export default function CategoryClient({ category, initialProducts, initialTotal
   }, [hasMore, loading, loadMore]);
 
   const Icon = iconMap[category.icon] || ShoppingCart;
-  const displayProducts = products.length > 0 ? products : initialProducts;
+  const displayProducts = (products.length > 0 ? products : initialProducts).map((item) => {
+    if (!item.store_products?.length) return item;
+    const availablePrices = item.store_products
+      .filter((entry) => entry.available !== false && entry.price != null)
+      .sort((left, right) => Number(left.price) - Number(right.price));
+    const best = availablePrices[0];
+    return {
+      ...item,
+      brand: item.brand || item.brands?.name || '',
+      price: best ? Number(best.price) : null,
+      oldPrice: best?.original_price ? Number(best.original_price) : null,
+      storesCount: new Set(availablePrices.map((entry) => entry.store_id || entry.stores?.slug)).size,
+      presentation: item.presentation || item.unit || item.short_name || '',
+    };
+  });
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -85,16 +126,18 @@ export default function CategoryClient({ category, initialProducts, initialTotal
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {displayProducts.map((p, i) => (
-            <motion.div key={p.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
-              <ProductCardPremium product={p} />
-            </motion.div>
-          ))}
-          {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
-        </div>
+        {(displayProducts.length > 0 || loading) && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {displayProducts.map((p, i) => (
+              <motion.div key={p.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
+                <ProductCardPremium product={p} />
+              </motion.div>
+            ))}
+            {loading && Array.from({ length: displayProducts.length ? 4 : 8 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
+          </div>
+        )}
 
-        {displayProducts.length === 0 && (
+        {displayProducts.length === 0 && !loading && (
           <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800">
             <Search size={42} className="mx-auto mb-3 text-zinc-600" />
             <p className="text-base font-medium text-zinc-300">Categoría en actualización</p>

@@ -39,6 +39,11 @@ export default function ProductDetailClient({ product }) {
   const similarProducts = product.similar || [];
 
   useEffect(() => {
+    const stores = product.totalStores || product.prices?.length || 0;
+    document.title = `${product.name} - Precio en ${stores} ${stores === 1 ? 'comercio' : 'comercios'} | AhorroYa`;
+  }, [product.name, product.prices?.length, product.totalStores]);
+
+  useEffect(() => {
     const syncFavorite = () => {
       try {
         const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');

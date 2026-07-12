@@ -3,6 +3,7 @@ import ProductGrid from '../../components/product/ProductGrid';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { db } from '../../services/database';
 import { getLiveFallbackProducts } from '../../services/liveFallbackProducts';
+import { fallbackCities, withTimeout } from '../../services/fallbackCatalog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -26,13 +27,6 @@ export async function generateMetadata({ searchParams }) {
 }
 
 const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Cafe', 'Huevos', 'Pan', 'Acetaminofen', 'Detergente'];
-
-function withTimeout(promise, ms = 7000) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('search timeout')), ms)),
-  ]);
-}
 
 function toProductCard(product) {
   const listings = (product.store_products || []).filter((item) => item.available !== false && item.price != null);
@@ -59,10 +53,10 @@ export default async function BuscarPage({ searchParams }) {
   const query = params?.q || '';
   const city = params?.city || '';
   const [{ data: cities }, result] = await Promise.allSettled([
-    withTimeout(db.cities.list(), 5000),
-    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 7000) : Promise.resolve({ data: [], pagination: { total: 0 } }),
+    withTimeout(db.cities.list(), 1800, 'cities timeout'),
+    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 2500, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
   ]).then(async ([citiesResult, productsResult]) => {
-    const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: [] };
+    const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: fallbackCities };
     if (productsResult.status === 'fulfilled' && !productsResult.value?.error) {
       return [cityPayload, productsResult.value];
     }

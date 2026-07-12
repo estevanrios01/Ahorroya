@@ -31,9 +31,37 @@ const storeLogos = {
 export default function StoreClient({ store, products: initialProducts, totalProducts = 0, loadMore, degraded = false }) {
   const [page, setPage] = useState(1);
   const [allProducts, setAllProducts] = useState(() => initialProducts || []);
-  const [loading, setLoading] = useState(false);
-  const hasMore = allProducts.length < totalProducts;
+  const [totalCount, setTotalCount] = useState(totalProducts);
+  const [loading, setLoading] = useState(() => !(initialProducts || []).length);
+  const hasMore = totalCount > 0 && allProducts.length < totalCount;
   const loaderRef = useRef(null);
+
+  useEffect(() => {
+    if ((initialProducts || []).length > 0) return;
+    let cancelled = false;
+    const query = store.type === 'farmacia' ? 'farmacia' : '';
+
+    async function loadFallbackProducts() {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/products?limit=24${query ? `&q=${encodeURIComponent(query)}` : ''}`);
+        const json = await response.json();
+        if (!cancelled && json.success) {
+          setAllProducts(json.data || []);
+          setTotalCount(json.pagination?.total || json.data?.length || 0);
+        }
+      } catch {
+        if (!cancelled) setAllProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadFallbackProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProducts, store.type]);
 
   useEffect(() => {
     if (!loaderRef.current) return;
@@ -60,6 +88,20 @@ export default function StoreClient({ store, products: initialProducts, totalPro
 
   const logo = storeLogos[store.slug] || { initials: store.name.slice(0, 2).toUpperCase(), gradient: 'from-zinc-600 to-zinc-800' };
   const displayed = allProducts.map((item) => {
+    if (item.store_products?.length) {
+      const availablePrices = item.store_products
+        .filter((entry) => entry.available !== false && entry.price != null)
+        .sort((left, right) => Number(left.price) - Number(right.price));
+      const best = availablePrices[0];
+      return {
+        ...item,
+        brand: item.brand || item.brands?.name || '',
+        price: best ? Number(best.price) : null,
+        oldPrice: best?.original_price ? Number(best.original_price) : null,
+        storesCount: new Set(availablePrices.map((entry) => entry.store_id || entry.stores?.slug)).size,
+        presentation: item.presentation || item.unit || item.short_name || '',
+      };
+    }
     if (!item.master_products) return item;
     return {
       ...item.master_products,
@@ -100,7 +142,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6 sm:mb-8">
           {[
-            { icon: Package, label: 'Productos', value: totalProducts || displayed.length },
+            { icon: Package, label: 'Productos', value: totalCount || displayed.length },
             { icon: MapPin, label: 'Sucursales', value: store.branches || '-' },
             { icon: ShieldCheck, label: 'Datos', value: 'Verificables' },
             { icon: Store, label: 'Tipo', value: store.type === 'farmacia' ? 'Farmacia' : 'Supermercado' },
@@ -117,20 +159,24 @@ export default function StoreClient({ store, products: initialProducts, totalPro
         <section>
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-zinc-100">Productos en {store.name}</h2>
-            <span className="text-sm text-zinc-500">{totalProducts || displayed.length} productos</span>
+            <span className="text-sm text-zinc-500">{totalCount || displayed.length} productos</span>
           </div>
           {displayed.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {displayed.map((p, i) => (
               <ProductCardPremium key={p.id} product={{
                 ...p,
-                price: p.storePrice?.price || p.bestPrice,
-                oldPrice: p.storePrice?.oldPrice,
-                storesCount: 1,
+                price: p.price || p.storePrice?.price || p.bestPrice,
+                oldPrice: p.oldPrice || p.storePrice?.oldPrice,
+                storesCount: p.storesCount || 1,
                 image: p.image,
               }} />
               ))}
               {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
+            </div>
+          ) : loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={`loading-${i}`} />)}
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/40 p-8 text-center">

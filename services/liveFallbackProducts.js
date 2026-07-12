@@ -68,7 +68,7 @@ async function fetchSource(source, { q, limit }) {
   if (q) params.set('ft', q);
   const response = await fetch(`${source.endpoint}?${params.toString()}`, {
     headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 AhorroYaLiveFallback/1.0' },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(2500),
     next: { revalidate: 300 },
   });
   if (!response.ok && response.status !== 206) return [];
@@ -89,4 +89,22 @@ export async function getLiveFallbackProducts({ q = '', limit = 12 } = {}) {
 
   cache.set(cacheKey, { createdAt: Date.now(), products });
   return products;
+}
+
+export async function getLiveFallbackProductBySlug(productSlug) {
+  const normalizedSlug = slug(productSlug);
+  const readableQuery = normalizedSlug
+    .replace(/-\d+$/g, '')
+    .replace(/-(exito|olimpica|jumbo|carulla|d1|ara|makro|metro)$/g, '')
+    .replace(/-/g, ' ')
+    .trim();
+
+  const batches = await Promise.allSettled([
+    getLiveFallbackProducts({ q: readableQuery, limit: 24 }),
+    getLiveFallbackProducts({ q: readableQuery.split(' ').slice(0, 3).join(' '), limit: 24 }),
+    getLiveFallbackProducts({ limit: 24 }),
+  ]);
+
+  const candidates = batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+  return candidates.find((product) => product.slug === normalizedSlug) || candidates[0] || null;
 }
