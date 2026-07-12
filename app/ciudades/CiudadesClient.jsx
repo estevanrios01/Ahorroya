@@ -68,7 +68,7 @@ export default function CiudadesClient({ ciudades }) {
                   {c.supermarketCount > 0 && <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full">{c.supermarketCount} supermercados</span>}
                   {c.pharmacyCount > 0 && <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full">{c.pharmacyCount} farmacias</span>}
                   <span className="text-xs bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded-full">
-                    {(c.productCount || 0).toLocaleString('es-CO')} productos
+                    {typeof c.productCount === 'number' ? `${c.productCount.toLocaleString('es-CO')} productos` : 'Productos por comercio'}
                   </span>
                 </div>
               </Link>

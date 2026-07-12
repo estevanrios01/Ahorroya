@@ -25,7 +25,6 @@ export default async function CiudadesPage() {
   const { cities: ciudades } = await getAllCities();
 
   const totalStores = ciudades.reduce((acc, c) => acc + (c.storeCount || 0), 0);
-  const totalProducts = ciudades.reduce((acc, c) => acc + (c.productCount || 0), 0);
   const supermarketCount = ciudades.reduce((acc, c) => acc + (c.supermarketCount || 0), 0);
   const pharmacyCount = ciudades.reduce((acc, c) => acc + (c.pharmacyCount || 0), 0);
 
@@ -87,8 +86,8 @@ export default async function CiudadesPage() {
               <div className="text-xs text-zinc-500 mt-1">Farmacias</div>
             </div>
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{totalProducts.toLocaleString('es-CO')}</div>
-              <div className="text-xs text-zinc-500 mt-1">Productos</div>
+              <div className="text-2xl font-bold text-emerald-400">En vivo</div>
+              <div className="text-xs text-zinc-500 mt-1">Precios por comercio</div>
             </div>
           </div>
 

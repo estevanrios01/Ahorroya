@@ -30,13 +30,14 @@ async function attachPrices(products) {
   if (ids.length === 0) return products;
   const { data, error } = await supabase
     .from('store_products')
-    .select('price, original_price, store_id, available, master_product_id')
+    .select('price, original_price, store_id, available, url, master_product_id, stores!inner(website)')
     .in('master_product_id', ids)
     .eq('available', true)
     .limit(ids.length * 8);
   if (error) return products.map((product) => ({ ...product, store_products: [] }));
   const byProduct = new Map();
   for (const row of data || []) {
+    if (row.stores?.website && row.url === row.stores.website) continue;
     if (!byProduct.has(row.master_product_id)) byProduct.set(row.master_product_id, []);
     byProduct.get(row.master_product_id).push(row);
   }
@@ -113,7 +114,13 @@ export const db = {
       if (!supabase) return { data: null };
       const { data, error } = await supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single();
       if (error) return handleError(error, 'products.getBySlug');
-      return { data };
+      const { data: images } = await supabase
+        .from('product_images')
+        .select('url,thumbnail_url,is_primary,alt')
+        .eq('master_product_id', data.id)
+        .order('is_primary', { ascending: false });
+      const imageUrls = (images || []).map((image) => image.url).filter(Boolean);
+      return { data: { ...data, image: data.image || imageUrls[0] || null, images: imageUrls } };
     },
 
     async getById(id) {
@@ -162,9 +169,9 @@ export const db = {
 
     async getPrices(productId) {
       if (!supabase) return { data: [] };
-      const { data, error } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo), branches!left(name, address, city, latitude, longitude)').eq('master_product_id', productId).eq('available', true).order('price');
+      const { data, error } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo, website), branches!left(name, address, city, latitude, longitude)').eq('master_product_id', productId).eq('available', true).order('price');
       if (error) return handleError(error, 'products.getPrices');
-      return { data: data || [] };
+      return { data: (data || []).filter((row) => !row.stores?.website || row.url !== row.stores.website) };
     },
 
     async getPriceHistory(storeProductId) {

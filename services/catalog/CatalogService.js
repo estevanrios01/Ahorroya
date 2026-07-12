@@ -21,8 +21,13 @@ export async function getProductBySlug(slug) {
   if (!supabase) return { product: null };
   const { data, error } = await supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single();
   if (error) return { product: null, error: error.message };
-  const { data: prices } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo)').eq('master_product_id', data.id).eq('available', true).order('price');
-  return { product: { ...data, prices: prices || [] } };
+  const [{ data: prices }, { data: imageRows }] = await Promise.all([
+    supabase.from('store_products').select('*, stores!inner(name, slug, logo, website)').eq('master_product_id', data.id).eq('available', true).order('price'),
+    supabase.from('product_images').select('url,thumbnail_url,is_primary,alt').eq('master_product_id', data.id).order('is_primary', { ascending: false }),
+  ]);
+  const images = (imageRows || []).map((image) => image.url).filter(Boolean);
+  const verifiedPrices = (prices || []).filter((row) => !row.stores?.website || row.url !== row.stores.website);
+  return { product: { ...data, image: data.image || images[0] || null, images, prices: verifiedPrices } };
 }
 
 export async function getProductById(id) {
@@ -135,7 +140,7 @@ export async function getAllCities() {
     cities.push({
       name: entry.name, slug: entry.slug, department: entry.department,
       storeCount: entry.stores.size,
-      productCount: entry.stores.size * 150,
+      productCount: null,
       supermarketCount: entry.supermarkets.size,
       pharmacyCount: entry.pharmacies.size,
     });
@@ -146,12 +151,19 @@ export async function getAllCities() {
 export async function getCity(slug) {
   const { cities } = await getAllCities();
   const city = cities.find(c => c.slug === slug);
-  return { city: city || null };
+  if (!city || !supabase) return { city: city || null };
+  const { data: branches } = await supabase
+    .from('branches')
+    .select('stores!inner(id,name,slug,category)')
+    .eq('status', 'active')
+    .ilike('city', city.name);
+  const stores = [...new Map((branches || []).map((row) => [row.stores.id, row.stores])).values()];
+  return { city: { ...city, stores } };
 }
 
 export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {}) {
   if (!supabase) return { products: [] };
-  const { data: store } = await supabase.from('stores').select('id').eq('slug', storeSlug).single();
+  const { data: store } = await supabase.from('stores').select('id,website').eq('slug', storeSlug).single();
   if (!store) return { products: [] };
   const from = (page - 1) * limit;
   const query = supabase
@@ -159,6 +171,7 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
     .select('*, master_products!inner(*)', { count: 'planned' })
     .eq('store_id', store.id)
     .eq('available', true)
+    .neq('url', store.website || '')
     .range(from, from + limit - 1)
     .order('price');
   const { data, count, error } = await query;
@@ -168,6 +181,7 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
       .select('*, master_products!inner(*)')
       .eq('store_id', store.id)
       .eq('available', true)
+      .neq('url', store.website || '')
       .range(from, from + limit - 1)
       .order('price');
     if (fallback.error) {

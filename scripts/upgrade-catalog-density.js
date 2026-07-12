@@ -78,23 +78,6 @@ const cityPlan = [
   ['Palmira', 'Valle del Cauca', 3.5394, -76.3036, 18],
 ];
 
-const imageRules = [
-  [/arroz/i, 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80'],
-  [/aceite/i, 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80'],
-  [/leche|kumis|yogurt|ques/i, 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80'],
-  [/pan|galleta|tostada|arepa/i, 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80'],
-  [/huevo/i, 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=800&q=80'],
-  [/pollo|carne|jamon|salchicha/i, 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=800&q=80'],
-  [/coca|postobon|agua|jugo|malta|hatsu|bebida|gaseosa/i, 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80'],
-  [/detergente|suavizante|blanqueador|lavaloza|papel higienico|servilleta|jabon rey/i, 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80'],
-  [/acetaminofen|ibuprofeno|loratadina|omeprazol|vitamina|alcohol|tapabocas|ensure|suero/i, 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80'],
-  [/manzana|banano|papa|tomate|cebolla|zanahoria|aguacate|fruta|verdura/i, 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80'],
-  [/dog|whiskas|gato|mascota|arena sanitaria|chunky/i, 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80'],
-  [/helado|mccain|nuggets|pizza|congelado/i, 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=800&q=80'],
-  [/crema dental|shampoo|desodorante|dove|nosotras|panal|compota/i, 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80'],
-  [/azucar|panela|sal|harina|lenteja|frijol|garbanzo|atun|sardina|chocolate|cafe|avena|pasta/i, 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'],
-];
-
 function slug(value) {
   return String(value || '')
     .toLowerCase()
@@ -114,11 +97,6 @@ function uuid(input) {
 
 function jitter(value, index, scale) {
   return Number((value + (((index % 13) - 6) * scale)).toFixed(7));
-}
-
-function imageForProduct(name) {
-  const rule = imageRules.find(([regex]) => regex.test(name));
-  return rule?.[1] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
 }
 
 async function rest(pathname, { method = 'GET', body, prefer = '', returnMinimal = false } = {}) {
@@ -291,24 +269,8 @@ async function main() {
   const branchRows = buildBranchRows(allStores);
   await upsertBatch('branches', branchRows, 'id');
 
-  const productRows = products.slice(0, TARGET_PRODUCTS_FOR_PRICES).map((product) => ({
-    id: product.id,
-    image: imageForProduct(product.name),
-    updated_at: new Date().toISOString(),
-  }));
-  await patchRows('master_products', productRows);
-
-  const imageRows = products.slice(0, TARGET_PRODUCTS_FOR_PRICES).map((product) => {
-    const image = imageForProduct(product.name);
-    return {
-      master_product_id: product.id,
-      url: image,
-      thumbnail_url: image,
-      alt: product.name,
-      is_primary: true,
-    };
-  });
-  await upsertBatch('product_images', imageRows, 'master_product_id,url');
+  // La densificacion solo puede reutilizar imagenes que ya vengan de una fuente comercial.
+  // Nunca se asigna una foto generica basada en el nombre del producto.
 
   const listingRows = buildListingRows(branchRows, products.slice(0, TARGET_PRODUCTS_FOR_PRICES), allStores);
   await upsertBatch('store_products', listingRows, 'master_product_id,store_id,branch_id');

@@ -8,18 +8,6 @@ import Footer from '../../../components/layout/Footer';
 import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
 
-const STORE_LIST = [
-  { name: 'Éxito', slug: 'exito', type: 'supermercado' },
-  { name: 'D1', slug: 'd1', type: 'supermercado' },
-  { name: 'Jumbo', slug: 'jumbo', type: 'supermercado' },
-  { name: 'Olímpica', slug: 'olimpica', type: 'supermercado' },
-  { name: 'Ara', slug: 'ara', type: 'supermercado' },
-  { name: 'Carulla', slug: 'carulla', type: 'supermercado' },
-  { name: 'Cruz Verde', slug: 'cruz-verde', type: 'farmacia' },
-  { name: 'Farmatodo', slug: 'farmatodo', type: 'farmacia' },
-  { name: 'La Rebaja', slug: 'la-rebaja', type: 'farmacia' },
-];
-
 function toSlug(value) {
   return String(value || '')
     .toLowerCase()
@@ -30,9 +18,10 @@ function toSlug(value) {
 }
 
 export default function CityClient({ city }) {
-  const productCount = city.productCount || city.products || 0;
-  const storeCount = city.storeCount || city.stores || 0;
+  const productCount = city.productCount;
+  const storeCount = city.storeCount || (Array.isArray(city.stores) ? city.stores.length : 0);
   const departmentSlug = city.departmentSlug || toSlug(city.department);
+  const stores = city.stores || [];
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -55,7 +44,7 @@ export default function CityClient({ city }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="default" size="md"><Store size={12} className="mr-1" />{storeCount} comercios</Badge>
-            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{productCount.toLocaleString('es-CO')} productos</Badge>
+            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{typeof productCount === 'number' ? `${productCount.toLocaleString('es-CO')} productos` : 'Precios en vivo'}</Badge>
             <Badge variant="success" size="md">{city.department}</Badge>
           </div>
         </motion.div>
@@ -63,9 +52,9 @@ export default function CityClient({ city }) {
         <section className="mb-10">
           <h2 className="text-lg font-semibold text-zinc-200 mb-4">Comercios disponibles en {city.name}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {STORE_LIST.map((store, i) => (
+            {stores.map((store, i) => (
               <motion.div key={store.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <Link href={`/${store.type}/${store.slug}`}
+                <Link href={`/${store.category === 'Farmacia' ? 'farmacia' : 'supermercado'}/${store.slug}`}
                   className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 hover:bg-zinc-900 transition-all group">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-zinc-800 flex items-center justify-center">
@@ -73,7 +62,7 @@ export default function CityClient({ city }) {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-zinc-200 group-hover:text-emerald-400 transition-colors">{store.name}</p>
-                      <p className="text-xs text-zinc-500 capitalize">{store.type}</p>
+                      <p className="text-xs text-zinc-500 capitalize">{store.category}</p>
                     </div>
                   </div>
                   <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
@@ -81,6 +70,7 @@ export default function CityClient({ city }) {
               </motion.div>
             ))}
           </div>
+          {stores.length === 0 && <p className="text-sm text-zinc-500">No hay comercios activos registrados para esta ciudad.</p>}
         </section>
 
         <section>

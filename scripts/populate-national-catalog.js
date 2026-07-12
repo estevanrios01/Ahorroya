@@ -24,21 +24,6 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
 }
 
-const categoryImages = {
-  despensa: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80',
-  lacteos: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
-  panaderia: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
-  farmacia: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80',
-  aseo: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
-  bebidas: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80',
-  carnes: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=800&q=80',
-  frutas: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80',
-  cuidado: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
-  bebes: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=800&q=80',
-  mascotas: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80',
-  congelados: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=800&q=80',
-};
-
 const categories = [
   ['Despensa', 'despensa', 'ShoppingCart'],
   ['Lacteos', 'lacteos', 'Milk'],
@@ -367,7 +352,7 @@ function buildProductRows(brandIds, categoryIds) {
       weight,
       volume,
       unit,
-      image: categoryImages[categorySlug],
+      image: null,
       status: 'active',
     };
   });
@@ -402,7 +387,7 @@ function buildBranchRows(storeIds) {
 }
 
 function buildImageRows(productRows, productIds) {
-  return productRows.map((product) => ({
+  return productRows.filter((product) => product.image).map((product) => ({
     master_product_id: productIds[product.slug],
     url: product.image,
     thumbnail_url: product.image,

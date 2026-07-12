@@ -47,6 +47,16 @@ export default function DashboardOperacionalPage() {
           <StatCard label="Latencia BD" value={data?.health?.checks?.supabase?.latencyMs ? `${data.health.checks.supabase.latencyMs}ms` : 'N/A'} />
           <StatCard label="Uptime" value={data?.metrics?.uptime ? `${Math.round(data.metrics.uptime / 3600)}h` : 'N/A'} />
         </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+          <StatCard label="Productos reales" value={data?.production?.totalProducts?.toLocaleString('es-CO') || 'N/A'} color="text-emerald-400" />
+          <StatCard label="Precios activos" value={data?.production?.totalPrices?.toLocaleString('es-CO') || 'N/A'} color="text-emerald-400" />
+          <StatCard label="Comercios" value={data?.production?.totalStores?.toLocaleString('es-CO') || 'N/A'} />
+          <StatCard label="Sucursales" value={data?.production?.totalBranches?.toLocaleString('es-CO') || 'N/A'} />
+          <StatCard label="Ciudades" value={data?.production?.cities || 'N/A'} />
+          <StatCard label="Departamentos" value={data?.production?.departments || 'N/A'} />
+          <StatCard label="Imágenes fuente" value={data?.production?.totalImages?.toLocaleString('es-CO') || 'N/A'} />
+          <StatCard label="Sin imagen" value={data?.production?.productsWithoutImage?.toLocaleString('es-CO') || 'N/A'} color={data?.production?.productsWithoutImage ? 'text-amber-400' : 'text-emerald-400'} />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">APIs</h2>

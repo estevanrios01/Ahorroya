@@ -33,6 +33,8 @@
     "prices:makro": "node scripts/import-makro-offers.js",
     "prices:farmatodo": "node scripts/import-farmatodo-algolia.js",
     "prices:ara": "node scripts/import-ara-offers.js",
+    "images:cleanup": "node scripts/cleanup-noncommercial-images.js",
+    "data:cleanup-synthetic": "node scripts/cleanup-synthetic-listings.js",
     "prices:freshness": "node scripts/check-price-freshness.js",
     "worker": "node apps/worker/src/index.js"
   },
