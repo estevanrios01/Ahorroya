@@ -1,8 +1,7 @@
 -- AhorroYa emergency Supabase cleanup
 -- Use only when the project exceeded database space / Disk IO budget.
 -- Run in Supabase SQL Editor after taking a backup if possible.
-
-begin;
+-- Execute during low traffic. Do not run while importers are active.
 
 -- 1) Inspect largest public tables before deleting anything.
 select
@@ -60,17 +59,17 @@ where pi.id = di.id
   and di.rn > 1;
 
 -- 5) Refresh planner stats so REST counts and queries stop doing extra work.
-analyze public.brands;
-analyze public.categories;
-analyze public.stores;
-analyze public.branches;
-analyze public.master_products;
-analyze public.store_products;
-analyze public.store_product_history;
-analyze public.product_images;
-analyze public.scraping_jobs;
-analyze public.scraping_runs;
-analyze public.analytics_events;
+vacuum analyze public.brands;
+vacuum analyze public.categories;
+vacuum analyze public.stores;
+vacuum analyze public.branches;
+vacuum analyze public.master_products;
+vacuum analyze public.store_products;
+vacuum analyze public.store_product_history;
+vacuum analyze public.product_images;
+vacuum analyze public.scraping_jobs;
+vacuum analyze public.scraping_runs;
+vacuum analyze public.analytics_events;
 
 -- 6) Inspect largest tables after cleanup.
 select
@@ -81,5 +80,3 @@ select
 from pg_stat_user_tables
 where schemaname = 'public'
 order by pg_total_relation_size(format('%I.%I', schemaname, relname)::regclass) desc;
-
-commit;

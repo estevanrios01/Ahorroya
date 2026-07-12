@@ -78,6 +78,31 @@ async function insertBatch(table, rows) {
   }
 }
 
+async function fetchExistingListings(ids) {
+  const rows = [];
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE);
+    if (!batch.length) continue;
+    const result = await rest(`store_products?id=in.(${batch.join(',')})&select=id,price,original_price,available`);
+    if (Array.isArray(result)) rows.push(...result);
+  }
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+function numericEqual(left, right) {
+  const a = left == null ? null : Number(left);
+  const b = right == null ? null : Number(right);
+  if (a == null && b == null) return true;
+  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.01;
+}
+
+function listingChanged(previous, next) {
+  if (!previous) return true;
+  return !numericEqual(previous.price, next.price)
+    || !numericEqual(previous.original_price, next.original_price)
+    || Boolean(previous.available) !== Boolean(next.available);
+}
+
 async function fetchOlimpicaPage(from, to) {
   const url = `https://www.olimpica.com/api/catalog_system/pub/products/search?_from=${from}&_to=${to}`;
   const response = await fetch(url, {
@@ -241,9 +266,11 @@ async function main() {
       captured_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
-  await upsertBatch('store_products', listingRows, 'id', { returning: false });
+  const existingListings = await fetchExistingListings(listingRows.map((row) => row.id));
+  const changedListings = listingRows.filter((row) => listingChanged(existingListings.get(row.id), row));
+  await upsertBatch('store_products', changedListings, 'id', { returning: false });
 
-  const historyRows = listingRows.map((row) => ({
+  const historyRows = changedListings.map((row) => ({
     store_product_id: row.id,
     price: row.price,
     available: row.available,
@@ -256,6 +283,8 @@ async function main() {
     normalized: normalized.length,
     images: imageRows.length,
     listings: listingRows.length,
+    writtenListings: changedListings.length,
+    skippedUnchanged: listingRows.length - changedListings.length,
     store: store.slug,
   });
 }

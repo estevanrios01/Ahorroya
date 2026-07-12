@@ -482,8 +482,9 @@ async function main() {
     updated_at: now,
   })).filter((row) => row.master_product_id);
 
-  const existingListings = SKIP_PRICE_HISTORY ? new Map() : await fetchExistingListings(listings.map((row) => row.id));
-  const historyRows = listings
+  const existingListings = await fetchExistingListings(listings.map((row) => row.id));
+  const changedListings = listings.filter((row) => listingChanged(existingListings.get(row.id), row));
+  const historyRows = SKIP_PRICE_HISTORY ? [] : changedListings
     .filter((row) => listingChanged(existingListings.get(row.id), row))
     .map((row) => ({
       store_product_id: row.id,
@@ -492,7 +493,7 @@ async function main() {
       captured_at: row.captured_at,
     }));
 
-  await upsertBatch('store_products', listings, 'id', { returning: false });
+  await upsertBatch('store_products', changedListings, 'id', { returning: false });
   if (!SKIP_PRICE_HISTORY) {
     await insertBatch('store_product_history', historyRows);
   }
@@ -502,6 +503,8 @@ async function main() {
     source: raw.length,
     normalized: normalized.length,
     listings: listings.length,
+    writtenListings: changedListings.length,
+    skippedUnchanged: listings.length - changedListings.length,
     priceEvents: SKIP_PRICE_HISTORY ? 'skipped' : historyRows.length,
   });
 }
