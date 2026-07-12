@@ -34,4 +34,4 @@ jobs:
           cat > .vercel/project.json <<EOF
           {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID","projectName":"ahorroya"}
           EOF
-          npx vercel deploy --prod --yes
+          npx vercel deploy --prod --yes --token "$VERCEL_OIDC_TOKEN"
