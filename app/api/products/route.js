@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { searchSchema, sanitize } from '@/lib/zod';
+import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 
-function degradedResponse(page = 1, limit = 20) {
+async function degradedResponse({ page = 1, limit = 20, q = '' } = {}) {
+  const fallback = await getLiveFallbackProducts({ q, limit }).catch(() => []);
   return NextResponse.json({
     success: true,
     degraded: true,
-    data: [],
-    pagination: { page, limit, total: 0, pages: 0 },
+    data: fallback,
+    pagination: { page, limit, total: fallback.length, pages: fallback.length ? 1 : 0 },
   });
 }
 
@@ -32,7 +34,7 @@ export async function GET(request) {
     const { q, category, city, page, limit } = parsed.data;
     const sanitizedQ = sanitize(q);
     const result = await db.products.list({ q: sanitizedQ, category, city, page, limit });
-    if (result.error) return degradedResponse(page, limit);
+    if (result.error) return degradedResponse({ page, limit, q: sanitizedQ });
 
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });
   } catch {
