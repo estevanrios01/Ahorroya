@@ -1,8 +1,11 @@
 name: Scrapers
 
 on:
-  schedule:
-    - cron: "0 */6 * * *"
+  # Emergency pause: Supabase exceeded the Free Plan database space
+  # and is running out of Disk IO budget. Re-enable this schedule only
+  # after cleanup/upgrade and after lowering write volume.
+  # schedule:
+  #   - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:

@@ -1,8 +1,11 @@
 name: Live Prices
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+  # Emergency pause: Supabase exceeded the Free Plan database space
+  # and is running out of Disk IO budget. Re-enable this schedule only
+  # after cleanup/upgrade and after lowering write volume.
+  # schedule:
+  #   - cron: "*/30 * * * *"
   workflow_dispatch:
 
 concurrency:
