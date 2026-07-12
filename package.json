@@ -29,6 +29,7 @@
     "data:backfill-branches": "node scripts/backfill-branch-coverage.js",
     "data:backfill-low": "node scripts/backfill-low-branches.js",
     "scrape": "node scripts/actualizador-precios.js",
+    "prices:live": "node scripts/sync-live-prices.js",
     "worker": "node apps/worker/src/index.js"
   },
   "dependencies": {

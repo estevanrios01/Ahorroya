@@ -1,0 +1,32 @@
+name: Live Prices
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: live-prices
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+      - run: npm ci --include=optional
+      - run: npm run prices:live
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LIVE_SYNC_ALLOW_INSECURE_TLS: "1"
+          LIVE_SYNC_PRODUCTS_PER_TERM: "220"
+          LIVE_SYNC_TERMS_PER_RUN: "4"
+          LIVE_SYNC_BATCH_SIZE: "20"
+          LIVE_SYNC_SKIP_IMAGES: "1"
+          LIVE_SYNC_STORES: "exito,carulla,olimpica,jumbo,metro,mercaldas,megatiendas,euro,larebaja,colsubsidio,locatel,medipiel,bellapiel,pasteur"

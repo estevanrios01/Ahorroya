@@ -268,6 +268,31 @@ async function insertBatch(table, rows) {
   }
 }
 
+async function fetchExistingListings(ids) {
+  const rows = [];
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE);
+    if (!batch.length) continue;
+    const result = await rest(`store_products?id=in.(${batch.join(',')})&select=id,price,original_price,available`);
+    if (Array.isArray(result)) rows.push(...result);
+  }
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+function numericEqual(left, right) {
+  const a = left == null ? null : Number(left);
+  const b = right == null ? null : Number(right);
+  if (a == null && b == null) return true;
+  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.01;
+}
+
+function listingChanged(previous, next) {
+  if (!previous) return true;
+  return !numericEqual(previous.price, next.price)
+    || !numericEqual(previous.original_price, next.original_price)
+    || Boolean(previous.available) !== Boolean(next.available);
+}
+
 async function fetchVtexPage(store, from, to) {
   const params = new URLSearchParams({ _from: String(from), _to: String(to) });
   if (SEARCH_TERM) params.set('ft', SEARCH_TERM);
@@ -433,14 +458,19 @@ async function main() {
     updated_at: now,
   })).filter((row) => row.master_product_id);
 
-  await upsertBatch('store_products', listings, 'id', { returning: false });
-  if (!SKIP_PRICE_HISTORY) {
-    await insertBatch('store_product_history', listings.map((row) => ({
+  const existingListings = SKIP_PRICE_HISTORY ? new Map() : await fetchExistingListings(listings.map((row) => row.id));
+  const historyRows = listings
+    .filter((row) => listingChanged(existingListings.get(row.id), row))
+    .map((row) => ({
       store_product_id: row.id,
       price: row.price,
       available: row.available,
       captured_at: row.captured_at,
-    })));
+    }));
+
+  await upsertBatch('store_products', listings, 'id', { returning: false });
+  if (!SKIP_PRICE_HISTORY) {
+    await insertBatch('store_product_history', historyRows);
   }
 
   console.log('Importacion VTEX finalizada:', {
@@ -448,6 +478,7 @@ async function main() {
     source: raw.length,
     normalized: normalized.length,
     listings: listings.length,
+    priceEvents: SKIP_PRICE_HISTORY ? 'skipped' : historyRows.length,
   });
 }
 

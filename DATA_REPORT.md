@@ -76,10 +76,25 @@ Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no 
   - timeout por peticion a origen
   - reintentos ante cortes de red/PostgREST
   - modo rapido para cargas masivas (`IMPORT_SKIP_PRODUCT_IMAGES`, `IMPORT_SKIP_PRICE_HISTORY`)
+  - deteccion de cambios para guardar historial solo cuando cambia precio, descuento o disponibilidad
   - nuevas fuentes VTEX reales
 - `scripts/import-vtex-bulk.js` ahora permite `BULK_TERMS` y usa conteo planned.
 - `scripts/import-vtex-categories-bulk.js` importa por arbol de categorias, soporta offset (`CATEGORY_BULK_START_CATEGORY`) e incluye categorias padre cuando se requiere volumen.
+- `scripts/sync-live-prices.js` ejecuta sincronizacion rotativa de precios vivos contra comercios reales.
+- `.github/workflows/live-prices.yml` ejecuta esa sincronizacion cada 15 minutos con concurrencia controlada.
 - `.gitignore` excluye `logs/` para no subir archivos de ejecucion local.
+
+## Actualizacion viva de precios
+
+El sistema ahora opera como near real-time:
+
+- Cada 15 minutos GitHub Actions ejecuta `npm run prices:live`.
+- Cada corrida revisa una tanda rotativa de terminos sensibles a precio: alimentos basicos, aseo, farmacia, bebe y mascotas.
+- El worker consulta el comercio real en ese momento.
+- Si cambia `price`, `original_price` o `available`, actualiza `store_products` y registra evento en `store_product_history`.
+- Si no cambio nada, solo refresca la captura actual sin duplicar historial innecesario.
+
+Esto es lo mas cercano a "en vivo" sin integracion oficial con webhooks de cada comercio.
 
 ## Limitaciones honestas
 
@@ -87,6 +102,7 @@ Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no 
 - La meta de 200.000 productos ya se cumplio como catalogo global real; la siguiente mejora no es inflar mas, sino aumentar cobertura de precios por ciudad y por sede.
 - D1, Ara, Makro, Farmatodo y Cruz Verde requieren conectores especificos no-VTEX o APIs privadas/publicas distintas.
 - En cargas finales se omitieron algunas inserciones auxiliares de `product_images` e historial para evitar timeouts. La imagen principal sigue guardada en `master_products.image`.
+- Actualizacion realmente instantanea solo seria posible si el comercio entrega webhook, feed oficial o API con eventos de cambio. Mientras no exista eso, se usa polling frecuente y deteccion de cambios.
 
 ## Siguiente bloque recomendado
 
