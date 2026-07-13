@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Search, ShieldCheck, TrendingDown } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -11,12 +10,10 @@ import { Container } from '../packages/ui/src/components/container';
 import { Divider } from '../packages/ui/src/components/divider';
 import { EmptyState } from '../packages/ui/src/components/empty-state';
 import { Section } from '../packages/ui/src/components/section';
-
-const Hero = dynamic(() => import('../components/home/Hero'), { ssr: false });
-const SupermarketCarousel = dynamic(() => import('../components/home/StoreCarousel').then((module) => ({ default: module.SupermarketCarousel })), { ssr: false });
-const PharmacyCarousel = dynamic(() => import('../components/home/StoreCarousel').then((module) => ({ default: module.PharmacyCarousel })), { ssr: false });
-const CategoryGrid = dynamic(() => import('../components/home/CategoryGrid'), { ssr: false });
-const ProductGrid = dynamic(() => import('../components/product/ProductGrid'), { ssr: false });
+import Hero from '../components/home/Hero';
+import { SupermarketCarousel, PharmacyCarousel } from '../components/home/StoreCarousel';
+import CategoryGrid from '../components/home/CategoryGrid';
+import ProductGrid from '../components/product/ProductGrid';
 
 const cityLinks = [
   { name: 'Cali', slug: 'cali', detail: 'Valle del Cauca' },
