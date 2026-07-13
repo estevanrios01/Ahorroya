@@ -16,7 +16,7 @@ export async function generateMetadata({ searchParams }) {
   const city = params?.city || '';
   return {
     metadataBase: new URL(SITE_URL),
-    title: q ? `"${q}" - Resultados de busqueda | AhorroYa` : 'Buscar productos - AhorroYa',
+    title: q ? `"${q}" - Resultados de búsqueda | AhorroYa` : 'Buscar productos - AhorroYa',
     description: `Busca productos y compara precios en supermercados y farmacias de Colombia.${q ? ` Resultados para "${q}".` : ''}${city ? ` Filtro en ${city}.` : ''}`,
     openGraph: {
       title: q ? `"${q}" - AhorroYa` : 'Buscar productos - AhorroYa',
@@ -29,7 +29,7 @@ export async function generateMetadata({ searchParams }) {
   };
 }
 
-const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Cafe', 'Huevos', 'Pan', 'Acetaminofen', 'Detergente'];
+const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Café', 'Huevos', 'Pan', 'Acetaminofén', 'Detergente'];
 
 function toProductCard(product) {
   const listings = (product.store_products || []).filter((item) => item.available !== false && item.price != null);
@@ -43,7 +43,9 @@ function toProductCard(product) {
     brand: product.brands?.name || '',
     price: best ? Number(best.price) : null,
     oldPrice: originalPrice && best && originalPrice > Number(best.price) ? originalPrice : null,
-    storesCount: new Set(listings.map((item) => item.store_id)).size,
+    storesCount: new Set(listings.map((item) => item.store_id || item.stores?.slug)).size,
+    bestStore: best?.stores?.name || '',
+    store_products: listings,
     slug: product.slug,
     presentation: product.unit || product.short_name || '',
     image: product.image,
@@ -93,7 +95,7 @@ export default async function BuscarPage({ searchParams }) {
                 type="text"
                 name="q"
                 defaultValue={query}
-                placeholder="Ej: arroz, leche, acetaminofen..."
+                placeholder="Ej: arroz, leche, acetaminofén..."
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-all"
                 aria-label="Buscar productos"
                 autoFocus={!query}
@@ -150,7 +152,7 @@ export default async function BuscarPage({ searchParams }) {
             <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl">
               <p className="text-zinc-500 mb-2">No encontramos productos con esos filtros.</p>
               <p className="text-sm text-zinc-600">
-                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorias</Link>.
+                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorías</Link>.
               </p>
             </div>
           )}
@@ -158,8 +160,8 @@ export default async function BuscarPage({ searchParams }) {
           {!query && !city && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Link href="/categorias" className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group">
-                <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Categorias</h3>
-                <p className="text-sm text-zinc-500 mt-1">Explora productos por categoria</p>
+                <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Categorías</h3>
+                <p className="text-sm text-zinc-500 mt-1">Explora productos por categoría</p>
               </Link>
               <Link href="/marcas" className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group">
                 <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Marcas</h3>

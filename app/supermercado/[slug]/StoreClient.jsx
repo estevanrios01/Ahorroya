@@ -185,9 +185,9 @@ export default function StoreClient({ store, products: initialProducts, totalPro
           ) : (
             <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/40 p-8 text-center">
               <Search size={34} className="mx-auto mb-3 text-zinc-600" />
-              <h3 className="text-base font-semibold text-zinc-200">Catálogo en actualización</h3>
+              <h3 className="text-base font-semibold text-zinc-200">Sin productos verificables</h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                No hay productos verificables de {store.name} en este momento. Para mantener la comparación correcta, no mezclamos productos de otros comercios en esta página.
+                No hay productos con precio e imagen confiable de {store.name} en este momento. Para mantener la comparación correcta, no mezclamos productos de otros comercios en esta página.
               </p>
               <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
                 Buscar productos

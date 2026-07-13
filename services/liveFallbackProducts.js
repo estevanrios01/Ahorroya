@@ -1,5 +1,14 @@
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
+const DISCOVERY_QUERIES = ['arroz', 'aceite', 'leche', 'huevos', 'detergente', 'pollo'];
+const DISCOVERY_INCLUDE_TERMS = [
+  'arroz', 'aceite', 'leche', 'huevo', 'detergente', 'pollo', 'pasta', 'cafe', 'azucar',
+  'galleta', 'crema', 'queso', 'yogur', 'atun', 'frijol', 'lenteja',
+];
+const DISCOVERY_EXCLUDE_TERMS = [
+  'moto', 'motor', 'liqui moly', 'bidon', 'recolector', 'porta huevos', 'minichefs',
+  'juguete', 'extractor', 'materna', 'biberon', 'tetero', 'maquina', 'accesorio',
+];
 
 const SOURCES = [
   {
@@ -153,6 +162,12 @@ function mergeComparableProducts(products, limit) {
   return [...map.values()].slice(0, limit);
 }
 
+function isDiscoveryProduct(product) {
+  const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+  return DISCOVERY_INCLUDE_TERMS.some((term) => text.includes(term))
+    && !DISCOVERY_EXCLUDE_TERMS.some((term) => text.includes(term));
+}
+
 async function fetchSource(source, { q, limit, timeoutMs = 4500 }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
@@ -177,11 +192,21 @@ export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' }
   if (cached && Date.now() - cached.createdAt < CACHE_TTL_MS) return cached.products;
 
   const timeoutMs = store ? 8000 : 4500;
-  const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
+  const queries = q
+    ? [q]
+    : store
+      ? DISCOVERY_QUERIES.slice(0, 4)
+      : selectedSources.map((_, index) => DISCOVERY_QUERIES[index % DISCOVERY_QUERIES.length]);
+  const batches = await Promise.allSettled(
+    store && !q
+      ? queries.map((query) => fetchSource(source, { q: query, limit: Math.max(6, Math.ceil(normalizedLimit / 2)), timeoutMs }))
+      : selectedSources.map((item, index) => fetchSource(item, { q: queries[index] || q, limit: normalizedLimit, timeoutMs }))
+  );
   const rawProducts = store
-    ? batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : [])).slice(0, normalizedLimit)
+    ? batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
     : interleaveBatches(batches, normalizedLimit);
-  const products = store ? rawProducts : mergeComparableProducts(rawProducts, normalizedLimit);
+  const scopedProducts = q ? rawProducts : rawProducts.filter(isDiscoveryProduct);
+  const products = mergeComparableProducts(scopedProducts, normalizedLimit);
 
   if (store && products.length === 0) {
     const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));

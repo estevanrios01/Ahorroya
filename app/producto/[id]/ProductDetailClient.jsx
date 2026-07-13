@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -21,10 +21,10 @@ const formatPrice = (v) => v != null ? new Intl.NumberFormat('es-CO', { style: '
 
 export default function ProductDetailClient({ product }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const images = product.images?.length > 0 ? product.images : product.image ? [product.image] : [];
   const prices = product.prices || [];
@@ -80,6 +80,23 @@ export default function ProductDetailClient({ product }) {
     }
   }
 
+  async function shareProduct() {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, text: `Compara precios de ${product.name} en AhorroYa`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1800);
+      }
+    } catch {}
+  }
+
+  function scrollToComparison() {
+    document.getElementById('comparativa-precios')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
@@ -111,7 +128,7 @@ export default function ProductDetailClient({ product }) {
                     src={images[selectedImage]}
                     alt={product.name}
                     fill
-                    className={`object-cover transition-transform duration-500 ${zoomed ? 'scale-150' : 'scale-100'}`}
+                    className={`object-contain bg-white p-4 transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     priority
                   />
@@ -212,7 +229,7 @@ export default function ProductDetailClient({ product }) {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="primary" size="lg" icon={<ShoppingBag size={18} />} className="flex-1">Comparar precios</Button>
+              <Button variant="primary" size="lg" icon={<ShoppingBag size={18} />} className="flex-1" onClick={scrollToComparison}>Comparar precios</Button>
               <Button
                 variant="secondary"
                 size="lg"
@@ -221,8 +238,8 @@ export default function ProductDetailClient({ product }) {
               >
                 {liked ? 'Guardado' : 'Guardar'}
               </Button>
-              <button className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all" aria-label="Compartir">
-                <Share2 size={18} />
+              <button onClick={shareProduct} className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all" aria-label="Compartir">
+                {copied ? <CheckCircle2 size={18} className="text-emerald-400" /> : <Share2 size={18} />}
               </button>
             </div>
           </motion.div>
@@ -233,7 +250,8 @@ export default function ProductDetailClient({ product }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 sm:p-5"
+            id="comparativa-precios"
+            className="scroll-mt-24 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 sm:p-5"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-zinc-100">Comparativa de precios</h2>

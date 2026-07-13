@@ -99,7 +99,7 @@ export default function Hero() {
         >
           {[
             { icon: Store, label: 'Cobertura', value: 'Fuentes reales', detail: 'Supermercados y farmacias conectados por etapas' },
-            { icon: TrendingDown, label: 'Catálogo', value: 'En carga', detail: 'Priorizamos productos con precio e imagen verificable' },
+            { icon: TrendingDown, label: 'Catálogo', value: 'Comparación viva', detail: 'Priorizamos productos con precio e imagen verificable' },
             { icon: ShieldCheck, label: 'Calidad', value: 'Fotos reales', detail: 'Se ocultan fotos genéricas o no verificables' },
           ].map(({ icon: Icon, label, value, detail }) => (
             <div key={label} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">

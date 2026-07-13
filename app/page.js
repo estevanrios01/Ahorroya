@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Search, ShieldCheck, Store, TrendingDown } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Search, ShieldCheck, TrendingDown } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { WebSiteJsonLd } from '../components/seo/JsonLd';
@@ -29,7 +29,7 @@ const cityLinks = [
 
 const trustItems = [
   { icon: ShieldCheck, title: 'Fotos verificadas', text: 'Se priorizan imágenes publicadas por los comercios.' },
-  { icon: RefreshCw, title: 'Precios con fecha', text: 'Cada precio guarda captura e historial para detectar cambios.' },
+  { icon: RefreshCw, title: 'Precios con fecha', text: 'Cada precio conserva origen y fecha para detectar cambios.' },
   { icon: TrendingDown, title: 'Comparación útil', text: 'Ordenamos por menor precio y comercios disponibles.' },
 ];
 
@@ -45,7 +45,9 @@ function toProductCard(product) {
     brand: product.brands?.name || '',
     price: best ? Number(best.price) : null,
     oldPrice: originalPrice && best && originalPrice > Number(best.price) ? originalPrice : null,
-    storesCount: new Set(listings.map((item) => item.store_id)).size,
+    storesCount: new Set(listings.map((item) => item.store_id || item.stores?.slug)).size,
+    bestStore: best?.stores?.name || '',
+    store_products: listings,
     slug: product.slug,
     presentation: product.unit || product.short_name || '',
     image: product.image,
@@ -61,8 +63,8 @@ function ProductSectionBody({ loading, products }) {
   return (
     <EmptyState
       variant="products"
-      title="Catálogo en actualización"
-      description="Estamos consultando los comercios. Intenta de nuevo en unos minutos o busca un producto puntual."
+      title="Sin productos verificables por ahora"
+      description="No mostramos productos sin precio e imagen confiable. Busca un producto puntual para consultar fuentes vivas disponibles."
     />
   );
 }
@@ -113,7 +115,7 @@ export default function Home() {
       <Container className="space-y-8 pb-10 pt-8">
         {degraded && (
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Estamos mostrando productos de respaldo en vivo mientras la base principal termina de responder.
+            Mostrando precios desde fuentes vivas mientras la base principal vuelve a estar disponible.
           </div>
         )}
 
@@ -129,7 +131,7 @@ export default function Home() {
 
         <Section
           title="Productos para comparar ahora"
-          subtitle="Referencias con imagen comercial y precio publicado"
+          subtitle="Referencias con imagen comercial, precio publicado y comercio de menor precio"
           action={<Link href="/buscar" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Explorar <ArrowRight size={14} /></Link>}
         >
           <ProductSectionBody loading={loadingProducts} products={products.slice(0, 8)} />
@@ -192,7 +194,7 @@ export default function Home() {
             </p>
             <h2 className="mt-2 text-xl font-bold text-zinc-100">Busca un producto y revisa el comercio más barato.</h2>
             <p className="mt-1 text-sm leading-6 text-zinc-500">
-              La lógica ya prioriza fotos reales, precios verificables y cobertura por ciudad. El siguiente salto es aumentar scrapers por comercio para profundizar inventario.
+              La lógica prioriza fotos reales, precios verificables y cobertura por ciudad. El siguiente salto operativo es recuperar Supabase y ampliar inventario sin romper la cuota.
             </p>
           </div>
           <Link href="/buscar" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500">

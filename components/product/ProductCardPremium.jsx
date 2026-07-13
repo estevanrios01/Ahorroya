@@ -21,6 +21,14 @@ export default function ProductCardPremium({ product }) {
   const [liked, setLiked] = useState(false);
   const [imgError, setImgError] = useState(false);
 
+  const offers = Array.isArray(product.store_products)
+    ? product.store_products
+      .filter((offer) => offer.available !== false && offer.price != null)
+      .sort((left, right) => Number(left.price) - Number(right.price))
+    : [];
+  const bestOffer = offers[0] || null;
+  const comparisonCount = product.storesCount || offers.length || 0;
+  const storeLabel = product.bestStore || bestOffer?.stores?.name || bestOffer?.store?.name || '';
   const hasPrice = product.price != null && Number(product.price) > 0;
   const hasDiscount = hasPrice && product.oldPrice && Number(product.oldPrice) > Number(product.price);
   const discountPercent = hasDiscount ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : 0;
@@ -99,7 +107,7 @@ export default function ProductCardPremium({ product }) {
             <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 px-4 text-center text-zinc-500">
               <Store size={36} className="mb-2 opacity-60" />
               <span className="text-[10px] font-semibold uppercase tracking-wide">{product.brand || 'Producto'}</span>
-              <span className="mt-1 text-[10px] text-zinc-400">Imagen pendiente</span>
+              <span className="mt-1 text-[10px] text-zinc-400">Sin foto verificada</span>
             </div>
           )}
 
@@ -132,9 +140,15 @@ export default function ProductCardPremium({ product }) {
           {presentation && <p className="text-[11px] text-zinc-500 line-clamp-1">{presentation}</p>}
 
           <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="text-lg font-bold tracking-tight text-zinc-100">{hasPrice ? formatPrice(product.price) : 'Ver precio'}</span>
+            <span className="text-lg font-bold tracking-tight text-zinc-100">
+              {hasPrice ? `${comparisonCount > 1 ? 'Desde ' : ''}${formatPrice(product.price)}` : 'Ver precio'}
+            </span>
             {hasDiscount && <span className="text-[11px] text-zinc-500 line-through">{formatPrice(product.oldPrice)}</span>}
           </div>
+
+          {storeLabel && (
+            <p className="text-[11px] font-medium text-zinc-400">Mejor precio en {storeLabel}</p>
+          )}
 
           {hasDiscount && (
             <p className="text-[11px] font-medium text-emerald-400">Ahorras {formatPrice(product.oldPrice - product.price)}</p>
@@ -143,8 +157,8 @@ export default function ProductCardPremium({ product }) {
           <div className="flex items-center justify-between gap-2 pt-1">
             <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500">
               <Store size={11} />
-              {product.storesCount > 0
-                ? `${product.storesCount} ${product.storesCount === 1 ? 'comercio' : 'comercios'}`
+              {comparisonCount > 0
+                ? `${comparisonCount} ${comparisonCount === 1 ? 'comercio' : 'comercios'}`
                 : 'Comparar'}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors group-hover:bg-emerald-600 group-hover:text-white">
