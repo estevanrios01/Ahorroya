@@ -62,10 +62,12 @@ export default async function BuscarPage({ searchParams }) {
     query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 1200, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
   ]).then(async ([citiesResult, productsResult]) => {
     const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: fallbackCities };
-    if (productsResult.status === 'fulfilled' && !productsResult.value?.error) {
+    const databaseResult = productsResult.status === 'fulfilled' ? productsResult.value : null;
+    if (!query && !city) return [cityPayload, databaseResult || { data: [], pagination: { total: 0 } }];
+    if (databaseResult && !databaseResult.error && databaseResult.data?.length) {
       return [cityPayload, productsResult.value];
     }
-    const fallback = query ? await getLiveFallbackProducts({ q: query, limit: 24 }).catch(() => []) : [];
+    const fallback = await getLiveFallbackProducts({ q: query, limit: 24 }).catch(() => []);
     return [cityPayload, {
       data: fallback,
       degraded: true,

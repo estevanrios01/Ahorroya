@@ -13,10 +13,10 @@ async function safeCount(client, table, apply = (query) => query) {
       1200,
       `${table} count timeout`
     );
-    if (error) return 0;
+    if (error) return null;
     return count || 0;
   } catch {
-    return 0;
+    return null;
   }
 }
 
@@ -56,6 +56,12 @@ function computeQuality(summary) {
   };
 }
 
+function isTrustedCache(cached) {
+  if (!cached?.payload || cached.payload.source !== 'database-computed') return false;
+  const updatedAt = new Date(cached.updated_at).getTime();
+  return Number.isFinite(updatedAt) && Date.now() - updatedAt < 15 * 60 * 1000;
+}
+
 export async function GET() {
   const client = getDb();
   if (!client) {
@@ -68,7 +74,7 @@ export async function GET() {
     'quality cache timeout'
   ).catch(() => ({ data: null }));
 
-  if (cached?.payload) {
+  if (isTrustedCache(cached)) {
     const summary = cached.payload;
     return NextResponse.json({
       success: true,
@@ -106,6 +112,7 @@ export async function GET() {
   ]);
 
   const summary = {
+    source: 'database-computed',
     totalProducts,
     totalStores,
     totalPrices,
@@ -122,6 +129,15 @@ export async function GET() {
     },
     lastScraping: null,
   };
+
+  if ([totalProducts, totalStores, totalPrices].every((value) => value == null)) {
+    return NextResponse.json({
+      success: false,
+      degraded: true,
+      error: 'La base de datos no está disponible para calcular métricas reales.',
+      data: null,
+    }, { status: 503 });
+  }
 
   return NextResponse.json({
     success: true,

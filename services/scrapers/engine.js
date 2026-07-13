@@ -16,6 +16,16 @@ function normalizeEAN(ean) {
   return cleaned.length >= 8 && cleaned.length <= 14 ? cleaned : null;
 }
 
+function sameValue(left, right) {
+  return (left ?? null) === (right ?? null);
+}
+
+function sameNumber(left, right) {
+  if (left == null && right == null) return true;
+  return Number.isFinite(Number(left)) && Number.isFinite(Number(right))
+    && Math.abs(Number(left) - Number(right)) < 0.01;
+}
+
 export class ScraperEngine {
   constructor(options) {
     this.name = options.name;
@@ -29,6 +39,7 @@ export class ScraperEngine {
     this.retryMax = options.retryMax || 3;
     this.timeout = options.timeout || 30000;
     this.headers = options.headers || {};
+    this.fullCatalog = options.fullCatalog === true;
     this.logger = createLogger({ service: `scraper:${this.name}` });
     this.lastRequest = 0;
   }
@@ -113,7 +124,7 @@ export class ScraperEngine {
         }
       }
 
-      if (seenStoreProductIds.size > 0) {
+      if (this.fullCatalog && errors === 0 && seenStoreProductIds.size > 0) {
         productsRemoved = await this.markMissingProductsUnavailable(seenStoreProductIds);
       }
 
@@ -149,7 +160,7 @@ export class ScraperEngine {
     ]);
     if (!store) return false;
 
-    let productQuery = supabaseAdmin.from('master_products').select('id, image');
+    let productQuery = supabaseAdmin.from('master_products').select('id, name, slug, short_name, commercial_name, brand_id, category_id, barcode, ean, image, description, unit, weight, status');
     if (normalized.ean) {
       productQuery = productQuery.or(`ean.eq.${normalized.ean},barcode.eq.${normalized.ean}`);
     } else {
@@ -179,8 +190,16 @@ export class ScraperEngine {
     let masterId;
     let inserted = false;
     if (existing) {
-      const { error } = await supabaseAdmin.from('master_products').update(masterPayload).eq('id', existing.id);
-      if (error) throw error;
+      const comparablePayload = { ...masterPayload };
+      delete comparablePayload.updated_at;
+      const masterChanged = Object.entries(comparablePayload).some(([key, value]) => {
+        if (key === 'weight') return !sameNumber(existing[key], value);
+        return !sameValue(existing[key], value);
+      });
+      if (masterChanged) {
+        const { error } = await supabaseAdmin.from('master_products').update(masterPayload).eq('id', existing.id);
+        if (error) throw error;
+      }
       masterId = existing.id;
     } else {
       const { data: insertedProduct, error } = await supabaseAdmin.from('master_products').insert(masterPayload).select('id').single();
@@ -193,7 +212,7 @@ export class ScraperEngine {
 
     const { data: storeProduct, error: spError } = await supabaseAdmin
       .from('store_products')
-      .select('id, price, available')
+      .select('id, sku, price, original_price, available, url')
       .eq('master_product_id', masterId)
       .eq('store_id', store.id)
       .is('branch_id', null)
@@ -205,18 +224,27 @@ export class ScraperEngine {
     let priceChanged = false;
     if (storeProduct) {
       priceChanged = Number(storeProduct.price) !== normalized.price;
-      const { error } = await supabaseAdmin.from('store_products').update({
-        sku: normalized.sku,
-        price: normalized.price,
-        original_price: normalized.originalPrice,
-        available: normalized.available,
-        url: normalized.url,
-        captured_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq('id', storeProduct.id);
-      if (error) throw error;
+      const availabilityChanged = Boolean(storeProduct.available) !== Boolean(normalized.available);
+      const listingChanged = priceChanged
+        || availabilityChanged
+        || !sameNumber(storeProduct.original_price, normalized.originalPrice)
+        || !sameValue(storeProduct.sku, normalized.sku)
+        || !sameValue(storeProduct.url, normalized.url);
+      if (listingChanged) {
+        const { error } = await supabaseAdmin.from('store_products').update({
+          sku: normalized.sku,
+          price: normalized.price,
+          original_price: normalized.originalPrice,
+          available: normalized.available,
+          url: normalized.url,
+          captured_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', storeProduct.id);
+        if (error) throw error;
+      }
       storeProductId = storeProduct.id;
-      updated = true;
+      updated = listingChanged;
+      if (availabilityChanged && !priceChanged) priceChanged = true;
     } else {
       const { data: newStoreProduct, error } = await supabaseAdmin.from('store_products').insert({
         master_product_id: masterId,

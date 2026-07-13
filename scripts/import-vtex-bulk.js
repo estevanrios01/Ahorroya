@@ -57,6 +57,11 @@ const TERMS = (process.env.BULK_TERMS
 
 if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Faltan variables de Supabase');
 
+if (process.env.REAL_CATALOG_IMPORT !== '1') {
+  console.error('Importación masiva bloqueada: define REAL_CATALOG_IMPORT=1 después de verificar capacidad y salud de Supabase.');
+  process.exit(1);
+}
+
 async function countMasterProducts() {
   let lastError = null;
   for (let attempt = 1; attempt <= 4; attempt++) {
@@ -85,6 +90,7 @@ function runImport(store, term) {
     VTEX_TARGET_PRODUCTS: String(PER_TERM),
     VTEX_START_FROM: '0',
     VTEX_SEARCH: term,
+    IMPORT_SKIP_PRICE_HISTORY: '1',
   };
   const result = spawnSync(process.execPath, ['scripts/import-vtex-catalog.js', store, String(PER_TERM), '0', term], {
     cwd: path.resolve(__dirname, '..'),

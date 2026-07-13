@@ -261,8 +261,15 @@ async function persistProduct(retailer, store, product) {
     updated_at: new Date().toISOString(),
   };
 
+  const comparableMaster = { ...masterPayload };
+  delete comparableMaster.updated_at;
+  const masterChanged = existing && Object.entries(comparableMaster).some(([key, value]) => {
+    const current = existing[key] ?? null;
+    const next = value ?? null;
+    return current !== next;
+  });
   const master = existing
-    ? await patch('master_products', { id: `eq.${existing.id}` }, masterPayload)
+    ? (masterChanged ? await patch('master_products', { id: `eq.${existing.id}` }, masterPayload) : existing)
     : await insert('master_products', masterPayload);
 
   if (product.image) {
@@ -277,17 +284,33 @@ async function persistProduct(retailer, store, product) {
 
   if (storeProduct) {
     const priceChanged = Number(storeProduct.price) !== product.price;
-    await patch('store_products', { id: `eq.${storeProduct.id}` }, {
-      sku: product.sku,
-      price: product.price,
-      original_price: product.originalPrice,
-      available: product.available,
-      url: product.url,
-      captured_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-    if (priceChanged) await insert('store_product_history', { store_product_id: storeProduct.id, price: product.price, available: product.available });
-    return { storeProductId: storeProduct.id, inserted: false, updated: true, priceChanged };
+    const availabilityChanged = Boolean(storeProduct.available) !== Boolean(product.available);
+    const originalPriceChanged = Number(storeProduct.original_price || 0) !== Number(product.originalPrice || 0);
+    const listingChanged = priceChanged
+      || availabilityChanged
+      || originalPriceChanged
+      || (storeProduct.sku ?? null) !== (product.sku ?? null)
+      || (storeProduct.url ?? null) !== (product.url ?? null);
+    if (listingChanged) {
+      await patch('store_products', { id: `eq.${storeProduct.id}` }, {
+        sku: product.sku,
+        price: product.price,
+        original_price: product.originalPrice,
+        available: product.available,
+        url: product.url,
+        captured_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+    if (priceChanged || availabilityChanged) {
+      await insert('store_product_history', { store_product_id: storeProduct.id, price: product.price, available: product.available });
+    }
+    return {
+      storeProductId: storeProduct.id,
+      inserted: false,
+      updated: listingChanged,
+      priceChanged: priceChanged || availabilityChanged,
+    };
   }
 
   const created = await insert('store_products', {

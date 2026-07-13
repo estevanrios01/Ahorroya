@@ -24,28 +24,5 @@ create policy "operational_metrics_write_service"
 grant select on public.operational_metrics to anon, authenticated;
 grant all on public.operational_metrics to service_role;
 
-insert into public.operational_metrics (key, payload, updated_at)
-values (
-  'quality_report',
-  jsonb_build_object(
-    'totalProducts', 10476,
-    'totalStores', 15,
-    'totalPrices', 972015,
-    'totalBrands', 73,
-    'totalCategories', 13,
-    'latestPriceCapturedAt', (select max(captured_at) from public.store_products),
-    'issues', jsonb_build_object(
-      'duplicates', 0,
-      'anomalousPrices', 0,
-      'imageIssues', 0,
-      'invalidEan', 0,
-      'missingCategory', 0,
-      'missingBrand', 0
-    ),
-    'lastScraping', null
-  ),
-  now()
-)
-on conflict (key) do update
-set payload = excluded.payload,
-    updated_at = excluded.updated_at;
+-- No se insertan métricas de demostración. El reporte se calcula desde las
+-- tablas reales y solo una tarea operativa puede guardar una caché posterior.

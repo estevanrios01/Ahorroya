@@ -18,6 +18,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TARGET_PRODUCTS = Number(process.env.OLIMPICA_TARGET_PRODUCTS || 2000);
 const PAGE_SIZE = Number(process.env.OLIMPICA_PAGE_SIZE || 50);
 const BATCH_SIZE = Number(process.env.IMPORT_BATCH_SIZE || 100);
+const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
@@ -276,7 +277,7 @@ async function main() {
     available: row.available,
     captured_at: row.captured_at,
   }));
-  await insertBatch('store_product_history', historyRows);
+  if (!SKIP_PRICE_HISTORY) await insertBatch('store_product_history', historyRows);
 
   console.log('Importacion Olimpica finalizada:', {
     source: rawProducts.length,
@@ -285,6 +286,7 @@ async function main() {
     listings: listingRows.length,
     writtenListings: changedListings.length,
     skippedUnchanged: listingRows.length - changedListings.length,
+    priceEvents: SKIP_PRICE_HISTORY ? 'skipped' : historyRows.length,
     store: store.slug,
   });
 }

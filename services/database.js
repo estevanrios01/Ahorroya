@@ -160,7 +160,7 @@ export const db = {
       if (!isDatabaseAvailable(supabase)) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       const { data: cat } = await supabase.from('categories').select('id').eq('slug', categorySlug).single();
       if (!cat) return { data: [] };
-      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('category_id', cat.id).eq('status', 'active');
+      let query = supabase.from('master_products').select('*', { count: 'planned' }).eq('category_id', cat.id).eq('status', 'active');
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       const { data, count, error } = await query.range(from, to).order('name');
@@ -172,7 +172,7 @@ export const db = {
       if (!isDatabaseAvailable(supabase)) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       const { data: brand } = await supabase.from('brands').select('id').eq('slug', brandSlug).single();
       if (!brand) return { data: [] };
-      let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('brand_id', brand.id).eq('status', 'active');
+      let query = supabase.from('master_products').select('*', { count: 'planned' }).eq('brand_id', brand.id).eq('status', 'active');
       const from = (page - 1) * limit;
       const to = from + limit - 1;
       const { data, count, error } = await query.range(from, to).order('name');
@@ -182,21 +182,21 @@ export const db = {
 
     async getPrices(productId) {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo, website), branches!left(name, address, city, latitude, longitude)').eq('master_product_id', productId).eq('available', true).order('price');
+      const { data, error } = await supabase.from('store_products').select('*, stores!inner(name, slug, logo, website), branches!left(name, address, city, latitude, longitude)').eq('master_product_id', productId).eq('available', true).order('price').limit(200);
       if (error) return handleError(error, 'products.getPrices');
       return { data: (data || []).filter((row) => !row.stores?.website || row.url !== row.stores.website) };
     },
 
     async getPriceHistory(storeProductId) {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.from('store_product_history').select('*').eq('store_product_id', storeProductId).order('captured_at', { ascending: true });
+      const { data, error } = await supabase.from('store_product_history').select('*').eq('store_product_id', storeProductId).order('captured_at', { ascending: false }).limit(365);
       if (error) return handleError(error, 'products.getPriceHistory');
-      return { data: data || [] };
+      return { data: [...(data || [])].reverse() };
     },
 
     async search(query, { page = 1, limit = 20 } = {}) {
       if (!isDatabaseAvailable(supabase)) return { data: [], total: 0 };
-      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
       if (error) return handleError(error, 'products.search');
       return { data: data || [], total: count || 0 };
     },
@@ -205,7 +205,7 @@ export const db = {
   stores: {
     async list({ page = 1, limit = 50 } = {}) {
       if (!isDatabaseAvailable(supabase)) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
-      const { data, count, error } = await supabase.from('stores').select('*', { count: 'exact' }).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      const { data, count, error } = await supabase.from('stores').select('*', { count: 'planned' }).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
       if (error) return handleError(error, 'stores.list');
       return { data: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
     },
@@ -249,7 +249,7 @@ export const db = {
 
     async getProductCount(categoryId) {
       if (!isDatabaseAvailable(supabase)) return 0;
-      const { count, error } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('category_id', categoryId).eq('status', 'active');
+      const { count, error } = await supabase.from('master_products').select('*', { count: 'planned', head: true }).eq('category_id', categoryId).eq('status', 'active');
       if (error) return 0;
       return count || 0;
     },
@@ -272,7 +272,7 @@ export const db = {
 
     async getProductCount(brandId) {
       if (!isDatabaseAvailable(supabase)) return 0;
-      const { count, error } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('brand_id', brandId).eq('status', 'active');
+      const { count, error } = await supabase.from('master_products').select('*', { count: 'planned', head: true }).eq('brand_id', brandId).eq('status', 'active');
       if (error) return 0;
       return count || 0;
     },

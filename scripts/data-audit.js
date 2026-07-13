@@ -29,11 +29,26 @@ const headers = {
 
 async function count(table, filter = '') {
   let lastStatus = null;
-  for (let attempt = 1; attempt <= 4; attempt++) {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1${filter}`, {
-      method: 'GET',
-      headers: { ...headers, Prefer: 'count=planned' },
-    });
+  let lastError = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.AUDIT_TIMEOUT_MS || 4000));
+    let response;
+    try {
+      response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1${filter}`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: { ...headers, Prefer: 'count=planned' },
+      });
+    } catch (error) {
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response) {
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      continue;
+    }
     lastStatus = response.status;
     if (response.ok) {
       const range = response.headers.get('content-range') || '0-0/0';
@@ -42,20 +57,34 @@ async function count(table, filter = '') {
     if (![500, 502, 503, 504].includes(response.status)) break;
     await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
   }
-  throw new Error(`No se pudo contar ${table}: ${lastStatus}`);
+  throw new Error(`No se pudo contar ${table}: ${lastStatus || lastError?.message || 'sin respuesta'}`);
 }
 
 async function getJson(pathname) {
   let lastText = '';
-  for (let attempt = 1; attempt <= 4; attempt++) {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, { headers });
+  let lastError = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.AUDIT_TIMEOUT_MS || 4000));
+    let response;
+    try {
+      response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, { headers, signal: controller.signal });
+    } catch (error) {
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response) {
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      continue;
+    }
     const text = await response.text();
     if (response.ok) return text ? JSON.parse(text) : [];
     lastText = text;
     if (![500, 502, 503, 504].includes(response.status)) break;
     await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
   }
-  throw new Error(`GET ${pathname}: ${lastText}`);
+  throw new Error(`GET ${pathname}: ${lastText || lastError?.message || 'sin respuesta'}`);
 }
 
 async function fetchAllSmall(table, select) {

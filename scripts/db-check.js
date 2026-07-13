@@ -34,12 +34,27 @@ const requiredTables = [
 ];
 
 async function checkTable(table) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=*&limit=1`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(env.DB_CHECK_TIMEOUT_MS || 2000));
+  let response;
+  try {
+    response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=id&limit=1`, {
+      signal: controller.signal,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+    });
+  } catch (error) {
+    return {
+      table,
+      ok: false,
+      status: 0,
+      message: error.name === 'AbortError' ? 'request timeout' : error.message,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
   const body = await response.text();
   let payload;
   try {

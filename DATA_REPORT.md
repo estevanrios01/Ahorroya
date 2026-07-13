@@ -1,142 +1,115 @@
 # AhorroYa Data Report
 
-Fecha: 2026-07-12
+Fecha de verificacion: 2026-07-13
 
-## Estado actual verificado
+## Resumen ejecutivo
 
-AhorroYa ya supero la meta minima de catalogo global real:
+El catalogo publico de AhorroYa puede consultar productos, imagenes y precios publicados por comercios reales. Sin embargo, la base PostgreSQL de Supabase no esta disponible actualmente y rechaza conexiones con `57P03` (`database system is not accepting connections`). Por esta razon no es posible certificar hoy ningun total persistido de productos, precios, imagenes, marcas o sucursales.
 
-- Productos maestros reales: 211.804.
-- Imagenes normalizadas en `product_images`: 205.800.
-- Precios reales en `store_products`: 1.303.984.
-- Precios activos disponibles: 1.269.820.
-- Precios online nacionales: 228.779.
-- Precios por sucursal/ciudad: 1.041.040.
-- Marcas: 11.840.
-- Categorias: 931.
-- Historial de precios: 1.880.076 eventos.
-- Sucursales registradas: 767.
-- Cobertura: 42 ciudades y 32 departamentos.
+La meta de 200.000 productos reales no se considera cumplida hasta que pueda medirse directamente en PostgreSQL, verificarse la procedencia de cada registro y distinguir productos maestros de ofertas por comercio.
 
-Los conteos fueron verificados contra Supabase REST usando `count=planned`, que en este volumen es el metodo estable disponible sin tumbar PostgREST con conteos exactos.
+## Estado verificado
 
-## Que significa "real"
+| Componente | Estado | Evidencia |
+| --- | --- | --- |
+| Sitio web y catalogo de contingencia | Operativo | Busqueda, comercio y detalle consultados de extremo a extremo |
+| Fuentes comerciales publicas | Operativas parcialmente | 14 comercios consultables desde el catalogo vivo |
+| Imagenes de producto | Operativas en las muestras probadas | Las imagenes proceden de la respuesta del comercio y conservan su URL original |
+| Comparacion por EAN | Operativa en las muestras probadas | Un producto exacto mostro ofertas de varios comercios |
+| PostgreSQL / PostgREST | Critico | Las 14 tablas auditadas responden 503 y PostgreSQL rechaza conexiones |
+| Conteos persistidos | No verificables | No se publican cifras estimadas como hechos |
+| Historial persistido | No verificable | La escritura queda pendiente hasta recuperar PostgreSQL |
+| Migracion de capacidad | Preparada, no aplicada | Pendiente de que PostgreSQL acepte conexiones |
 
-Los productos importados provienen de catalogos publicos de comercios reales. Cada registro conserva, cuando la fuente lo entrega:
+## Fuentes comerciales conectadas
 
-- nombre publicado por el comercio
-- marca
-- categoria
-- EAN/codigo de barras
-- precio actual online
-- precio anterior cuando existe
-- disponibilidad
-- URL original del producto
-- imagen original del comercio en `master_products.image`
-- historial de precio cuando la carga no se ejecuto en modo rapido
+El modo de contingencia consulta catalogos publicos de estos comercios:
 
-No se inventaron precios para inflar la base.
+- Exito
+- D1
+- Olimpica
+- Carulla
+- Jumbo
+- Metro
+- La Rebaja
+- Droguerias Colsubsidio
+- Locatel
+- Farmacias Pasteur
+- Farmatodo
+- Cruz Verde
+- Makro
+- Ara
 
-## Fuentes reales conectadas
+La disponibilidad y cobertura dependen de lo que cada comercio exponga publicamente. Una fuente publica no equivale a una integracion oficial: no ofrece garantia de actualizacion instantanea, estabilidad contractual ni cobertura de todas las sedes.
 
-### Supermercados y farmacias prioritarias
+## Integridad de datos
 
-| Comercio | Tipo | Fuente | Estado |
-| --- | --- | --- | --- |
-| Exito | Supermercado | API publica VTEX | Activa |
-| Carulla | Supermercado | API publica VTEX | Activa |
-| Olimpica | Supermercado | API publica VTEX | Activa |
-| Jumbo | Supermercado | API publica VTEX | Activa |
-| Metro | Supermercado | API publica VTEX | Activa |
-| Mercaldas | Supermercado | API publica VTEX | Activa |
-| Megatiendas | Supermercado | API publica VTEX | Activa |
-| Euro Supermercados | Supermercado | API publica VTEX | Activa |
-| Makro | Supermercado | API publica de ofertas por sede | Activa |
-| Ara | Supermercado | Paginas publicas de ofertas Ara/Elementor | Activa parcial |
-| Farmatodo | Farmacia | Buscador publico Algolia con precios por ciudad | Activa |
-| La Rebaja | Farmacia | API publica VTEX | Activa |
-| Droguerias Colsubsidio | Farmacia | API publica VTEX | Activa |
-| Locatel | Farmacia | API publica VTEX | Activa |
-| Medipiel | Farmacia | API publica VTEX | Activa |
-| Bella Piel | Farmacia | API publica VTEX | Activa |
-| Farmacias Pasteur | Farmacia | API publica VTEX | Activa |
-| Blush-Bar | Farmacia/Cuidado personal | API publica VTEX | Activa |
-| Cromantic | Farmacia/Cuidado personal | API publica VTEX | Activa |
+Se retiraron los procesos que generaban artificialmente:
 
-### Fuentes retail usadas para completar catalogo global
+- variantes de productos para aumentar el volumen
+- sucursales y direcciones inexistentes
+- precios calculados o aleatorios
+- existencias por ciudad sin evidencia de origen
+- eventos historicos iniciales duplicados
 
-Estas fuentes se marcaron como `Retail`, no como supermercado/farmacia, para no contaminar la logica principal:
+La poblacion masiva ahora exige `REAL_CATALOG_IMPORT=1` y solo acepta importadores basados en fuentes de comercios. El modo predeterminado es una simulacion sin escrituras.
 
-| Comercio | Tipo | Fuente | Estado |
-| --- | --- | --- | --- |
-| Easy | Retail | API publica VTEX | Activa |
-| Miniso | Retail | API publica VTEX | Activa |
-| Velez | Retail | API publica VTEX | Activa |
-| Pepeganga | Retail | API publica VTEX | Activa |
-| Panamericana | Retail | API publica VTEX | Activa |
+El pipeline de precios evita actualizar registros cuando no cambio el precio, la disponibilidad ni los metadatos relevantes. El historial solo se crea cuando existe un cambio real de precio o disponibilidad.
 
-## Cambios tecnicos
+## Incidente de Supabase
 
-- `scripts/import-vtex-catalog.js` ahora soporta:
-  - busqueda por termino
-  - importacion por categoria VTEX (`VTEX_CATEGORY_PATH`)
-  - timeout por peticion a origen
-  - reintentos ante cortes de red/PostgREST
-  - modo rapido para cargas masivas (`IMPORT_SKIP_PRODUCT_IMAGES`, `IMPORT_SKIP_PRICE_HISTORY`)
-  - deteccion de cambios para guardar historial solo cuando cambia precio, descuento o disponibilidad
-  - nuevas fuentes VTEX reales
-- `scripts/import-vtex-bulk.js` ahora permite `BULK_TERMS` y usa conteo planned.
-- `scripts/import-vtex-categories-bulk.js` importa por arbol de categorias, soporta offset (`CATEGORY_BULK_START_CATEGORY`) e incluye categorias padre cuando se requiere volumen.
-- `scripts/sync-live-prices.js` ejecuta sincronizacion rotativa de precios vivos contra comercios reales.
-- `scripts/import-makro-offers.js` importa ofertas reales de Makro por 22 sedes, con precio, imagen, SKU, vigencia y sucursal.
-- `scripts/import-farmatodo-algolia.js` importa catalogo real de Farmatodo desde su buscador publico, con imagen, codigo de barras, precio nacional y precios por ciudad.
-- `scripts/import-ara-offers.js` importa ofertas reales publicadas por Ara, con precio oferta, precio regular, imagen oficial y EAN cuando aparece en la URL de imagen.
-- `.github/workflows/live-prices.yml` ejecuta esa sincronizacion cada 30 minutos con concurrencia controlada.
-- `.gitignore` excluye `logs/` para no subir archivos de ejecucion local.
+Acciones realizadas:
 
-## Actualizacion viva de precios
+1. Se verifico que el proyecto figure activo en el plano de control.
+2. Se probaron PostgREST, conexion PostgreSQL y Supabase CLI.
+3. Se aumento de forma segura el `statement_timeout` a 120 segundos.
+4. Se solicito un reinicio oficial del proyecto mediante Management API.
+5. Se espero la recuperacion y se repitieron las pruebas.
 
-El sistema ahora opera como near real-time:
+Resultado: PostgreSQL continua rechazando conexiones y PostgREST devuelve 503. Los correos historicos del proyecto reportaron aproximadamente 1.393 MB usados sobre el limite de 500 MB del plan Free, ademas de agotamiento del presupuesto de Disk I/O. No se ejecutara una limpieza destructiva sin poder inspeccionar primero la base y conservar una copia.
 
-- Cada 30 minutos GitHub Actions ejecuta `npm run prices:live`, `npm run prices:makro`, `npm run prices:farmatodo` y `npm run prices:ara`.
-- Cada corrida revisa una tanda rotativa de terminos sensibles a precio: alimentos basicos, aseo, farmacia, bebe y mascotas.
-- Cada corrida revisa tambien una tanda rotativa de comercios para evitar timeouts y cubrir todos los comercios durante el dia.
-- El worker consulta el comercio real en ese momento.
-- Si cambia `price`, `original_price` o `available`, actualiza `store_products` y registra evento en `store_product_history`.
-- Si no cambio nada, solo refresca la captura actual sin duplicar historial innecesario.
-- `npm run prices:freshness` audita frescura de precios sin hacer conteos pesados que tumben PostgREST.
+## Mejoras preparadas
 
-Esto es lo mas cercano a "en vivo" sin integracion oficial con webhooks de cada comercio.
+La migracion `20260713120000_catalog_capacity_and_retention.sql` incorpora:
 
-Medicion de control del 2026-07-12:
+- indices parciales para entidades activas
+- indices trigram para busqueda textual
+- tabla de metricas operacionales con RLS y permisos explicitos
+- funcion de diagnostico de almacenamiento restringida a `service_role`
+- funcion manual de retencion para historial y registros operacionales antiguos
 
-- Corrida manual GitHub Actions `Live Prices`: success, 0 fallos, 753 eventos de precio.
-- Importacion Makro completa local: 22 sedes, 1.934 ofertas fuente, 111 productos unicos, 1.836 precios por sucursal, 1.832 eventos de precio iniciales.
-- Prueba Makro modo workflow: 1.836 precios refrescados, 0 eventos duplicados cuando no hubo cambio.
-- Importacion Farmatodo completa local: 1.800 productos fuente, 17 ciudades online, 31.632 precios, 31.272 eventos de precio iniciales.
-- Prueba Farmatodo modo workflow: 3.454 precios refrescados, 0 eventos duplicados cuando no hubo cambio.
-- Importacion Ara completa local: 32 productos fuente, 1 rama nacional de ofertas, 32 precios, 32 eventos iniciales.
-- Prueba Ara modo workflow: 32 precios refrescados, 0 eventos duplicados cuando no hubo cambio.
-- Precios disponibles totales: 1.269.820.
-- Precios online nacionales disponibles: 228.779.
-- Precios por sucursal/ciudad disponibles: 1.041.040.
-- Actualizados en la ultima hora: 1.827.
-- Actualizados en las ultimas 6 horas: 45.071.
-- Actualizados en las ultimas 24 horas: 329.139.
-- Ultima captura verificada: 2026-07-12T15:08:17Z desde Ara Ofertas Nacionales.
+La migracion no ha sido aplicada porque la base no acepta conexiones.
 
-## Limitaciones honestas
+## Pruebas ejecutadas
 
-- La mayoria de precios VTEX siguen siendo online/nacionales; Makro ya entra como precio por sede fisica, Farmatodo entra como precio online por ciudad y Ara entra como ofertas nacionales publicadas.
-- La meta de 200.000 productos ya se cumplio como catalogo global real; la siguiente mejora no es inflar mas, sino aumentar cobertura de precios por ciudad y por sede.
-- D1 responde con proteccion anti-bot desde procesos server; Cruz Verde expone categorias/zonas, pero sus endpoints de producto devuelven `INVALID_SESSION` sin sesion valida. No se importan precios de esas fuentes hasta tener API/feed autorizado o una via estable y permitida.
-- En cargas finales VTEX se omitieron algunas inserciones auxiliares de `product_images` e historial para evitar timeouts. Farmatodo y Makro ya cargan imagenes/historial en su importacion completa.
-- Actualizacion realmente instantanea solo seria posible si el comercio entrega webhook, feed oficial o API con eventos de cambio. Mientras no exista eso, se usa polling frecuente y deteccion de cambios.
+- `npm run lint`: aprobado
+- `npm test -- --runInBand`: 9 suites aprobadas, 50 pruebas aprobadas y 4 omitidas
+- `npm run build`: aprobado con Next.js 16.2.10
+- pruebas API de integracion con servidor local: 4 de 4 aprobadas
+- busqueda exacta `arroz diana 500`: un producto con ofertas reales de varios comercios
+- paginas de D1, Exito, Farmatodo y Cruz Verde: productos con imagen y precio en las muestras probadas
+- detalle de producto: imagen correspondiente, EAN y comparacion entre comercios
+- reporte de calidad: devuelve 503 degradado cuando no puede medir la base, en vez de mostrar ceros o cifras inventadas
 
-## Siguiente bloque recomendado
+## Trabajo pendiente real
 
-1. Conseguir API/feed autorizado para D1 y Cruz Verde, o habilitar una integracion oficial.
-2. Separar claramente en UI/API "precio online" vs "precio por sede".
-3. Construir metricas materializadas para no depender de conteos pesados sobre tablas grandes.
-4. Enriquecer productos con multiples imagenes solo para los mas consultados.
-5. Priorizar cobertura por ciudad: Cali, Bogota, Medellin, Barranquilla, Bucaramanga y Pereira.
+1. Recuperar la instancia PostgreSQL o migrar el proyecto a una instancia con capacidad suficiente.
+2. Aplicar las migraciones y obtener un reporte de almacenamiento antes de borrar datos.
+3. Identificar y eliminar exclusivamente datos sinteticos mediante una transaccion controlada y con respaldo.
+4. Reimportar catalogos oficiales por lotes, sin historial inicial redundante.
+5. Medir productos maestros, ofertas, imagenes, sedes y frescura directamente desde la base.
+6. Ampliar comercios y ciudades solo cuando exista una fuente comprobable para cada registro.
+
+## Criterio de finalizacion
+
+AhorroYa solo podra declarar 200.000 productos reales cuando una auditoria reproducible confirme:
+
+- origen comercial verificable
+- identificador estable o EAN cuando exista
+- imagen correspondiente al producto
+- oferta asociada al comercio correcto
+- precio y fecha de captura
+- deduplicacion entre comercios
+- ausencia de sucursales, precios y existencias sinteticas
+
+Hasta entonces, el sistema se considera operativo en modo de contingencia y la recuperacion de la base sigue siendo el bloqueador principal.
