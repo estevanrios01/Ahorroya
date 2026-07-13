@@ -5,12 +5,12 @@ const SOURCES = [
   {
     name: 'Exito',
     slug: 'exito',
-    endpoint: 'https://www.exito.com/api/catalog_system/pub/products/search',
+    endpoint: 'https://exitocol.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   {
     name: 'Olimpica',
     slug: 'olimpica',
-    endpoint: 'https://www.olimpica.com/api/catalog_system/pub/products/search',
+    endpoint: 'https://olimpica.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
   },
   {
     name: 'Jumbo',
@@ -116,6 +116,43 @@ function interleaveBatches(batches, limit) {
   return products;
 }
 
+function comparableKey(product) {
+  return slug(`${product.brands?.name || ''}-${product.name || ''}`)
+    .replace(/-(exito|olimpica|jumbo|metro)$/g, '')
+    .replace(/-x-\d+$/g, '')
+    .slice(0, 140);
+}
+
+function mergeComparableProducts(products, limit) {
+  const map = new Map();
+  for (const product of products) {
+    const key = comparableKey(product);
+    if (!key) continue;
+    const current = map.get(key);
+    if (!current) {
+      map.set(key, { ...product, store_products: [...(product.store_products || [])] });
+      continue;
+    }
+
+    const existingStoreIds = new Set(current.store_products.map((item) => item.store_id || item.stores?.slug));
+    for (const offer of product.store_products || []) {
+      const storeId = offer.store_id || offer.stores?.slug;
+      if (!existingStoreIds.has(storeId)) {
+        current.store_products.push(offer);
+        existingStoreIds.add(storeId);
+      }
+    }
+
+    const currentBest = Math.min(...current.store_products.map((item) => Number(item.price)).filter(Boolean));
+    const productBest = Math.min(...(product.store_products || []).map((item) => Number(item.price)).filter(Boolean));
+    if (productBest && (!currentBest || productBest < currentBest)) {
+      current.price = productBest;
+      current.image = product.image || current.image;
+    }
+  }
+  return [...map.values()].slice(0, limit);
+}
+
 async function fetchSource(source, { q, limit, timeoutMs = 4500 }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
@@ -141,9 +178,10 @@ export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' }
 
   const timeoutMs = store ? 8000 : 4500;
   const batches = await Promise.allSettled(selectedSources.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));
-  const products = store
+  const rawProducts = store
     ? batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : [])).slice(0, normalizedLimit)
     : interleaveBatches(batches, normalizedLimit);
+  const products = store ? rawProducts : mergeComparableProducts(rawProducts, normalizedLimit);
 
   if (store && products.length === 0) {
     const retryBatches = await Promise.allSettled(SOURCES.map((item) => fetchSource(item, { q, limit: normalizedLimit, timeoutMs })));

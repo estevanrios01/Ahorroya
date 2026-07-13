@@ -4,14 +4,31 @@ import { getLiveFallbackProducts } from '../../../../services/liveFallbackProduc
 import { withTimeout } from '../../../../services/fallbackCatalog';
 
 const CATEGORY_SEARCH_TERMS = {
-  mercado: '',
+  mercado: 'arroz',
   farmacia: 'acetaminofen',
   lacteos: 'leche',
   carnes: 'pollo',
   aseo: 'detergente',
-  bebes: 'pañales',
-  mascotas: 'perro',
+  bebes: 'panales',
+  mascotas: 'alimento perro',
   bebidas: 'agua',
+};
+
+const CATEGORY_INCLUDE_TERMS = {
+  mercado: ['arroz', 'aceite', 'cafe', 'azucar', 'pasta', 'grano', 'lenteja', 'frijol'],
+  farmacia: ['acetaminofen', 'ibuprofeno', 'vitamina', 'medicamento', 'pastilla', 'capsula'],
+  lacteos: ['leche', 'queso', 'yogur', 'yoghurt', 'kumis', 'mantequilla', 'crema'],
+  carnes: ['pollo', 'carne', 'res', 'cerdo', 'huevo', 'salchicha', 'jamon'],
+  aseo: ['detergente', 'jabon', 'limpiador', 'lavaloza', 'cloro', 'suavizante'],
+  bebes: ['panal', 'pañal', 'formula', 'bebe', 'pañito', 'panito'],
+  mascotas: ['perro', 'gato', 'mascota', 'concentrado'],
+  bebidas: ['agua', 'gaseosa', 'jugo', 'bebida', 'nectar', 'te '],
+};
+
+const CATEGORY_EXCLUDE_TERMS = {
+  lacteos: ['extractor', 'materna', 'biberon', 'tetero', 'chocolatina'],
+  carnes: ['mascota', 'perro', 'gato'],
+  farmacia: ['juguete'],
 };
 
 export async function GET(request) {
@@ -27,7 +44,21 @@ export async function GET(request) {
   const { products } = await withTimeout(getProductsByCategory(slug, { page, limit }), 1800, 'category products timeout')
     .catch(() => ({ products: [] }));
   if (!products?.length) {
-    const fallback = await getLiveFallbackProducts({ q: CATEGORY_SEARCH_TERMS[slug] || slug, limit }).catch(() => []);
+    const seen = new Set();
+    const terms = CATEGORY_INCLUDE_TERMS[slug] || [slug];
+    const excludedTerms = CATEGORY_EXCLUDE_TERMS[slug] || [];
+    const fallback = (await getLiveFallbackProducts({
+      q: CATEGORY_SEARCH_TERMS[slug] || slug,
+      limit,
+    }).catch(() => []))
+      .filter((product) => {
+        const key = product.id || product.slug;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+        return terms.some((term) => text.includes(term)) && !excludedTerms.some((term) => text.includes(term));
+      })
+      .slice(0, limit);
     return NextResponse.json({ success: true, degraded: true, data: fallback });
   }
   return NextResponse.json({ success: true, data: products });

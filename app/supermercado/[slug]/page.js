@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getStoreBySlug, getProductsByStore } from '../../../services/catalog/CatalogService';
 import { getFallbackStore, withTimeout } from '../../../services/fallbackCatalog';
+import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import StoreClient from './StoreClient';
 import { StoreJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
@@ -9,6 +10,26 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.ap
 async function loadStore(slug) {
   const result = await withTimeout(getStoreBySlug(slug), 800, 'store timeout').catch(() => ({ store: null }));
   return result.store || getFallbackStore(slug);
+}
+
+async function loadStoreProducts(slug) {
+  const result = await withTimeout(getProductsByStore(slug), 1000, 'store products timeout')
+    .catch(() => ({ products: [], pagination: { total: 0 } }));
+
+  if (result.products?.length) {
+    return {
+      products: result.products,
+      pagination: result.pagination || { total: result.products.length },
+      degraded: false,
+    };
+  }
+
+  const liveProducts = await getLiveFallbackProducts({ store: slug, limit: 24 }).catch(() => []);
+  return {
+    products: liveProducts,
+    pagination: { total: liveProducts.length },
+    degraded: true,
+  };
 }
 
 export async function generateMetadata({ params }) {
@@ -36,7 +57,7 @@ export default async function StorePage({ params }) {
   const store = await loadStore(slug);
   if (!store) notFound();
 
-  const { products, pagination } = await withTimeout(getProductsByStore(slug), 250, 'store products timeout').catch(() => ({ products: [], pagination: { total: 0 } }));
+  const { products, pagination, degraded } = await loadStoreProducts(slug);
   const visibleProducts = products || [];
 
   const loadMore = async (page) => {
@@ -54,7 +75,7 @@ export default async function StorePage({ params }) {
         { name: store.name },
       ]} />
       <WebSiteJsonLd />
-      <StoreClient key={slug} store={store} products={visibleProducts || []} totalProducts={pagination?.total || visibleProducts.length || 0} loadMore={loadMore} degraded={!products?.length} />
+      <StoreClient key={slug} store={store} products={visibleProducts || []} totalProducts={pagination?.total || visibleProducts.length || 0} loadMore={loadMore} degraded={degraded} />
     </>
   );
 }

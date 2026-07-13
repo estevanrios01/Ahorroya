@@ -1,14 +1,77 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getProductsByCategory } from '../../../services/catalog/CatalogService';
 import { getFallbackCategory, withTimeout } from '../../../services/fallbackCatalog';
+import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import CategoryClient from './CategoryClient';
 import { CategoryJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+const CATEGORY_SEARCH_TERMS = {
+  mercado: 'arroz',
+  farmacia: 'acetaminofen',
+  lacteos: 'leche',
+  carnes: 'pollo',
+  aseo: 'detergente',
+  bebes: 'panales',
+  mascotas: 'alimento perro',
+  bebidas: 'agua',
+};
+
+const CATEGORY_INCLUDE_TERMS = {
+  mercado: ['arroz', 'aceite', 'cafe', 'azucar', 'pasta', 'grano', 'lenteja', 'frijol'],
+  farmacia: ['acetaminofen', 'ibuprofeno', 'vitamina', 'medicamento', 'pastilla', 'capsula'],
+  lacteos: ['leche', 'queso', 'yogur', 'yoghurt', 'kumis', 'mantequilla', 'crema'],
+  carnes: ['pollo', 'carne', 'res', 'cerdo', 'huevo', 'salchicha', 'jamon'],
+  aseo: ['detergente', 'jabon', 'limpiador', 'lavaloza', 'cloro', 'suavizante'],
+  bebes: ['panal', 'pañal', 'formula', 'bebe', 'pañito', 'panito'],
+  mascotas: ['perro', 'gato', 'mascota', 'concentrado'],
+  bebidas: ['agua', 'gaseosa', 'jugo', 'bebida', 'nectar', 'te '],
+};
+
+const CATEGORY_EXCLUDE_TERMS = {
+  lacteos: ['extractor', 'materna', 'biberon', 'tetero', 'chocolatina'],
+  carnes: ['mascota', 'perro', 'gato'],
+  farmacia: ['juguete'],
+};
 
 async function loadCategory(slug) {
   const result = await withTimeout(getCategoryBySlug(slug), 800, 'category timeout').catch(() => ({ category: null }));
   return result.category || getFallbackCategory(slug);
+}
+
+async function loadCategoryProducts(slug) {
+  const result = await withTimeout(getProductsByCategory(slug), 1000, 'category products timeout')
+    .catch(() => ({ products: [], pagination: { total: 0 } }));
+
+  if (result.products?.length) {
+    return {
+      products: result.products,
+      pagination: result.pagination || { total: result.products.length },
+      degraded: false,
+    };
+  }
+
+  const seen = new Set();
+  const terms = CATEGORY_INCLUDE_TERMS[slug] || [slug];
+  const excludedTerms = CATEGORY_EXCLUDE_TERMS[slug] || [];
+  const liveProducts = (await getLiveFallbackProducts({
+    q: CATEGORY_SEARCH_TERMS[slug] || slug,
+    limit: 24,
+  }).catch(() => []))
+    .filter((product) => {
+      const key = product.id || product.slug;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+      return terms.some((term) => text.includes(term)) && !excludedTerms.some((term) => text.includes(term));
+    })
+    .slice(0, 24);
+
+  return {
+    products: liveProducts,
+    pagination: { total: liveProducts.length },
+    degraded: true,
+  };
 }
 
 export async function generateMetadata({ params }) {
@@ -36,7 +99,7 @@ export default async function CategoryPage({ params }) {
   const category = await loadCategory(slug);
   if (!category) notFound();
 
-  const { products, pagination } = await withTimeout(getProductsByCategory(slug), 250, 'category products timeout').catch(() => ({ products: [], pagination: { total: 0 } }));
+  const { products, pagination, degraded } = await loadCategoryProducts(slug);
   const visibleProducts = products || [];
   const totalProducts = pagination?.total || category.productCount || visibleProducts.length || 0;
 
@@ -49,7 +112,7 @@ export default async function CategoryPage({ params }) {
         { name: category.name },
       ]} />
       <WebSiteJsonLd />
-      <CategoryClient category={category} initialProducts={visibleProducts || []} initialTotal={totalProducts} degraded={!products?.length} />
+      <CategoryClient category={category} initialProducts={visibleProducts || []} initialTotal={totalProducts} degraded={degraded} />
     </>
   );
 }
