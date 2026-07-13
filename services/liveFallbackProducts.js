@@ -8,10 +8,11 @@ const DISCOVERY_INCLUDE_TERMS = [
 const DISCOVERY_EXCLUDE_TERMS = [
   'moto', 'motor', 'liqui moly', 'bidon', 'recolector', 'porta huevos', 'minichefs',
   'juguete', 'extractor', 'materna', 'biberon', 'tetero', 'maquina', 'accesorio',
+  'organizador', 'acrilico', '2tiempos', 'semisintetico', 'sintetico',
 ];
 const QUERY_FILTERS = [
-  { terms: ['aceite'], exclude: ['moto', 'motor', 'liqui moly', 'horquilla', 'recolector'] },
-  { terms: ['huevo', 'huevos'], exclude: ['porta huevos', 'juguete', 'gallina porta'] },
+  { terms: ['aceite'], exclude: ['moto', 'motor', 'liqui moly', 'horquilla', 'recolector', '2tiempos', 'semisintetico', 'sintetico'] },
+  { terms: ['huevo', 'huevos'], exclude: ['porta huevos', 'organizador', 'acrilico', 'juguete', 'gallina porta'] },
   { terms: ['leche'], exclude: ['extractor', 'materna', 'biberon', 'tetero', 'chocolatina'] },
   { terms: ['arroz'], exclude: ['minichefs', 'juguete'] },
 ];
@@ -169,7 +170,7 @@ function mergeComparableProducts(products, limit) {
 }
 
 function isDiscoveryProduct(product) {
-  const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+  const text = slug(`${product.name || ''} ${product.brands?.name || ''}`).replace(/-/g, ' ');
   return DISCOVERY_INCLUDE_TERMS.some((term) => text.includes(term))
     && !DISCOVERY_EXCLUDE_TERMS.some((term) => text.includes(term));
 }
@@ -182,7 +183,7 @@ function getQueryFilter(query) {
 function matchesQueryIntent(product, query) {
   const filter = getQueryFilter(query);
   if (!filter) return true;
-  const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+  const text = slug(`${product.name || ''} ${product.brands?.name || ''}`).replace(/-/g, ' ');
   return !filter.exclude.some((term) => text.includes(term));
 }
 

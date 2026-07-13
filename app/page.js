@@ -1,6 +1,3 @@
-'use client';
-
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, MapPin, RefreshCw, Search, ShieldCheck, TrendingDown } from 'lucide-react';
 import Header from '../components/layout/Header';
@@ -8,101 +5,28 @@ import Footer from '../components/layout/Footer';
 import { WebSiteJsonLd } from '../components/seo/JsonLd';
 import { Container } from '../packages/ui/src/components/container';
 import { Divider } from '../packages/ui/src/components/divider';
-import { EmptyState } from '../packages/ui/src/components/empty-state';
 import { Section } from '../packages/ui/src/components/section';
 import Hero from '../components/home/Hero';
 import { SupermarketCarousel, PharmacyCarousel } from '../components/home/StoreCarousel';
 import CategoryGrid from '../components/home/CategoryGrid';
-import ProductGrid from '../components/product/ProductGrid';
+import HomeProductSections from '../components/home/HomeProductSections';
 
 const cityLinks = [
   { name: 'Cali', slug: 'cali', detail: 'Valle del Cauca' },
-  { name: 'Bogotá', slug: 'bogota', detail: 'Cundinamarca' },
-  { name: 'Medellín', slug: 'medellin', detail: 'Antioquia' },
-  { name: 'Barranquilla', slug: 'barranquilla', detail: 'Atlántico' },
-  { name: 'Cartagena', slug: 'cartagena', detail: 'Bolívar' },
+  { name: 'Bogota', slug: 'bogota', detail: 'Cundinamarca' },
+  { name: 'Medellin', slug: 'medellin', detail: 'Antioquia' },
+  { name: 'Barranquilla', slug: 'barranquilla', detail: 'Atlantico' },
+  { name: 'Cartagena', slug: 'cartagena', detail: 'Bolivar' },
   { name: 'Bucaramanga', slug: 'bucaramanga', detail: 'Santander' },
 ];
 
 const trustItems = [
-  { icon: ShieldCheck, title: 'Fotos verificadas', text: 'Se priorizan imágenes publicadas por los comercios.' },
+  { icon: ShieldCheck, title: 'Fotos verificadas', text: 'Se priorizan imagenes publicadas por los comercios.' },
   { icon: RefreshCw, title: 'Precios con fecha', text: 'Cada precio conserva origen y fecha para detectar cambios.' },
-  { icon: TrendingDown, title: 'Comparación útil', text: 'Ordenamos por menor precio y comercios disponibles.' },
+  { icon: TrendingDown, title: 'Comparacion util', text: 'Ordenamos por menor precio y comercios disponibles.' },
 ];
 
-function toProductCard(product) {
-  const listings = (product.store_products || []).filter((item) => item.available !== false && item.price != null);
-  const ordered = [...listings].sort((a, b) => Number(a.price) - Number(b.price));
-  const best = ordered[0];
-  const originalPrice = best?.original_price ? Number(best.original_price) : null;
-
-  return {
-    id: product.id,
-    name: product.name,
-    brand: product.brands?.name || '',
-    price: best ? Number(best.price) : null,
-    oldPrice: originalPrice && best && originalPrice > Number(best.price) ? originalPrice : null,
-    storesCount: new Set(listings.map((item) => item.store_id || item.stores?.slug)).size,
-    bestStore: best?.stores?.name || '',
-    store_products: listings,
-    slug: product.slug,
-    presentation: product.unit || product.short_name || '',
-    image: product.image,
-    isCheapest: ordered.length > 1,
-  };
-}
-
-function ProductSectionBody({ loading, products }) {
-  if (loading || products.length > 0) {
-    return <ProductGrid products={products} loading={loading} />;
-  }
-
-  return (
-    <EmptyState
-      variant="products"
-      title="Sin productos verificables por ahora"
-      description="No mostramos productos sin precio e imagen confiable. Busca un producto puntual para consultar fuentes vivas disponibles."
-    />
-  );
-}
-
 export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [degraded, setDegraded] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadProducts() {
-      try {
-        const response = await fetch('/api/products?limit=16', { cache: 'no-store' });
-        const payload = await response.json();
-        if (active) {
-          setProducts((payload.data || []).map(toProductCard).filter((product) => product.image));
-          setDegraded(Boolean(payload.degraded));
-        }
-      } catch {
-        if (active) {
-          setProducts([]);
-          setDegraded(true);
-        }
-      } finally {
-        if (active) setLoadingProducts(false);
-      }
-    }
-
-    loadProducts();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const discountedProducts = useMemo(
-    () => products.filter((product) => product.oldPrice && product.price).slice(0, 8),
-    [products]
-  );
-
   return (
     <div className="min-h-screen bg-zinc-950">
       <WebSiteJsonLd />
@@ -110,12 +34,6 @@ export default function Home() {
       <Hero />
 
       <Container className="space-y-8 pb-10 pt-8">
-        {degraded && (
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Mostrando precios desde fuentes vivas mientras la base principal vuelve a estar disponible.
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {trustItems.map(({ icon: Icon, title, text }) => (
             <div key={title} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
@@ -126,27 +44,11 @@ export default function Home() {
           ))}
         </div>
 
-        <Section
-          title="Productos para comparar ahora"
-          subtitle="Referencias con imagen comercial, precio publicado y comercio de menor precio"
-          action={<Link href="/buscar" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Explorar <ArrowRight size={14} /></Link>}
-        >
-          <ProductSectionBody loading={loadingProducts} products={products.slice(0, 8)} />
-        </Section>
-
-        {discountedProducts.length > 0 && (
-          <Section
-            title="Bajaron de precio"
-            subtitle="Productos con descuento detectado frente al precio anterior"
-            action={<Link href="/buscar?q=ofertas" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Ver ofertas <ArrowRight size={14} /></Link>}
-          >
-            <ProductSectionBody loading={loadingProducts} products={discountedProducts} />
-          </Section>
-        )}
+        <HomeProductSections />
 
         <Divider />
 
-        <Section title="Elige tu ciudad" subtitle="Compara según la cobertura disponible por ubicación">
+        <Section title="Elige tu ciudad" subtitle="Compara segun la cobertura disponible por ubicacion">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {cityLinks.map((city) => (
               <Link
@@ -169,17 +71,17 @@ export default function Home() {
           </div>
         </Section>
 
-        <Section title="Supermercados" subtitle="Cadenas nacionales y regionales incluidas en el catálogo">
+        <Section title="Supermercados" subtitle="Cadenas nacionales y regionales incluidas en el catalogo">
           <SupermarketCarousel />
         </Section>
 
-        <Section title="Farmacias" subtitle="Precios de droguerías y farmacias con cobertura nacional">
+        <Section title="Farmacias" subtitle="Precios de droguerias y farmacias con cobertura nacional">
           <PharmacyCarousel />
         </Section>
 
         <Divider />
 
-        <Section title="Categorías principales" subtitle="Accede rápido a productos de compra frecuente">
+        <Section title="Categorias principales" subtitle="Accede rapido a productos de compra frecuente">
           <CategoryGrid />
         </Section>
 
@@ -189,9 +91,9 @@ export default function Home() {
               <CheckCircle2 size={14} />
               Comparador operativo
             </p>
-            <h2 className="mt-2 text-xl font-bold text-zinc-100">Busca un producto y revisa el comercio más barato.</h2>
+            <h2 className="mt-2 text-xl font-bold text-zinc-100">Busca un producto y revisa el comercio mas barato.</h2>
             <p className="mt-1 text-sm leading-6 text-zinc-500">
-              La lógica prioriza fotos reales, precios verificables y cobertura por ciudad. El siguiente salto operativo es recuperar Supabase y ampliar inventario sin romper la cuota.
+              La logica prioriza fotos reales, precios verificables y cobertura por ciudad. El siguiente salto operativo es recuperar Supabase y ampliar inventario sin romper la cuota.
             </p>
           </div>
           <Link href="/buscar" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500">
