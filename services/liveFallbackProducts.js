@@ -9,6 +9,12 @@ const DISCOVERY_EXCLUDE_TERMS = [
   'moto', 'motor', 'liqui moly', 'bidon', 'recolector', 'porta huevos', 'minichefs',
   'juguete', 'extractor', 'materna', 'biberon', 'tetero', 'maquina', 'accesorio',
 ];
+const QUERY_FILTERS = [
+  { terms: ['aceite'], exclude: ['moto', 'motor', 'liqui moly', 'horquilla', 'recolector'] },
+  { terms: ['huevo', 'huevos'], exclude: ['porta huevos', 'juguete', 'gallina porta'] },
+  { terms: ['leche'], exclude: ['extractor', 'materna', 'biberon', 'tetero', 'chocolatina'] },
+  { terms: ['arroz'], exclude: ['minichefs', 'juguete'] },
+];
 
 const SOURCES = [
   {
@@ -168,6 +174,33 @@ function isDiscoveryProduct(product) {
     && !DISCOVERY_EXCLUDE_TERMS.some((term) => text.includes(term));
 }
 
+function getQueryFilter(query) {
+  const normalized = String(query || '').toLowerCase();
+  return QUERY_FILTERS.find((filter) => filter.terms.some((term) => normalized.includes(term))) || null;
+}
+
+function matchesQueryIntent(product, query) {
+  const filter = getQueryFilter(query);
+  if (!filter) return true;
+  const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+  return !filter.exclude.some((term) => text.includes(term));
+}
+
+function tokenSet(value) {
+  return new Set(slug(value).split('-').filter((token) => token.length > 2));
+}
+
+function tokenOverlapScore(left, right) {
+  const leftTokens = tokenSet(left);
+  const rightTokens = tokenSet(right);
+  if (!leftTokens.size || !rightTokens.size) return 0;
+  let overlap = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) overlap += 1;
+  }
+  return overlap / Math.max(leftTokens.size, rightTokens.size);
+}
+
 async function fetchSource(source, { q, limit, timeoutMs = 4500 }) {
   const params = new URLSearchParams({ _from: '0', _to: String(Math.max(0, limit - 1)) });
   if (q) params.set('ft', q);
@@ -205,7 +238,7 @@ export async function getLiveFallbackProducts({ q = '', limit = 12, store = '' }
   const rawProducts = store
     ? batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
     : interleaveBatches(batches, normalizedLimit);
-  const scopedProducts = q ? rawProducts : rawProducts.filter(isDiscoveryProduct);
+  const scopedProducts = q ? rawProducts.filter((product) => matchesQueryIntent(product, q)) : rawProducts.filter(isDiscoveryProduct);
   const products = mergeComparableProducts(scopedProducts, normalizedLimit);
 
   if (store && products.length === 0) {
@@ -237,5 +270,11 @@ export async function getLiveFallbackProductBySlug(productSlug) {
   ]);
 
   const candidates = batches.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
-  return candidates.find((product) => product.slug === normalizedSlug) || candidates[0] || null;
+  const exact = candidates.find((product) => product.slug === normalizedSlug);
+  if (exact) return exact;
+
+  const ranked = candidates
+    .map((product) => ({ product, score: tokenOverlapScore(normalizedSlug, product.slug || product.name) }))
+    .sort((left, right) => right.score - left.score);
+  return ranked[0]?.score >= 0.6 ? ranked[0].product : null;
 }

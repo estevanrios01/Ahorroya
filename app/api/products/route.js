@@ -10,11 +10,13 @@ function withTimeout(promise, ms = 2500) {
   ]);
 }
 
-async function degradedResponse({ page = 1, limit = 20, q = '', store = '' } = {}) {
+async function degradedResponse({ page = 1, limit = 20, q = '', store = '', city = '' } = {}) {
   const fallback = await getLiveFallbackProducts({ q, limit, store }).catch(() => []);
   return NextResponse.json({
     success: true,
     degraded: true,
+    cityVerified: !city,
+    notice: city ? `La base por ciudad no respondió; estos resultados en vivo no están filtrados por ${city}.` : undefined,
     data: fallback,
     pagination: { page, limit, total: fallback.length, pages: fallback.length ? 1 : 0 },
   });
@@ -42,11 +44,11 @@ export async function GET(request) {
 
     const { q, category, city, store, page, limit } = parsed.data;
     const sanitizedQ = sanitize(q);
-    fallbackContext = { page, limit, q: sanitizedQ, store };
-    if (store) return degradedResponse({ page, limit, q: sanitizedQ, store });
+    fallbackContext = { page, limit, q: sanitizedQ, store, city };
+    if (store) return degradedResponse({ page, limit, q: sanitizedQ, store, city });
 
     const result = await withTimeout(db.products.list({ q: sanitizedQ, category, city, page, limit }));
-    if (result.error) return degradedResponse({ page, limit, q: sanitizedQ });
+    if (result.error) return degradedResponse({ page, limit, q: sanitizedQ, city });
 
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });
   } catch {

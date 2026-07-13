@@ -66,7 +66,12 @@ export default async function BuscarPage({ searchParams }) {
       return [cityPayload, productsResult.value];
     }
     const fallback = query ? await getLiveFallbackProducts({ q: query, limit: 24 }).catch(() => []) : [];
-    return [cityPayload, { data: fallback, pagination: { total: fallback.length } }];
+    return [cityPayload, {
+      data: fallback,
+      degraded: true,
+      cityVerified: !city,
+      pagination: { total: fallback.length },
+    }];
   });
   const products = (result.data || [])
     .map(toProductCard)
@@ -138,11 +143,18 @@ export default async function BuscarPage({ searchParams }) {
           </div>
 
           {(query || city) && (
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-zinc-500">
-                {total.toLocaleString('es-CO')} productos encontrados{city ? ` en ${city}` : ''}
-              </p>
-              <Link href="/ciudades" className="text-sm text-emerald-400 hover:text-emerald-300">Ver cobertura</Link>
+            <div className="mb-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-zinc-500">
+                  {total.toLocaleString('es-CO')} productos encontrados{city && result.cityVerified !== false ? ` en ${city}` : ''}
+                </p>
+                <Link href="/ciudades" className="text-sm text-emerald-400 hover:text-emerald-300">Ver cobertura</Link>
+              </div>
+              {city && result.cityVerified === false && (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                  La base por ciudad no respondió. Mostramos precios vivos disponibles, pero todavía no están verificados específicamente para {city}.
+                </div>
+              )}
             </div>
           )}
 
