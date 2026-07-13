@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getSchedulerStatus } from '@/services/scrapers/scheduler';
 import { db, supabaseAdmin } from '@/services/database';
+import { withTimeout } from '@/services/fallbackCatalog';
 
 export async function GET() {
   const [scheduler, jobs, runs] = await Promise.allSettled([
     Promise.resolve(getSchedulerStatus()),
-    db.scraping.listJobs({ limit: 50 }),
-    supabaseAdmin ? supabaseAdmin.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(50) : Promise.resolve({ data: [] }),
+    withTimeout(db.scraping.listJobs({ limit: 50 }), 1500, 'scraper jobs timeout'),
+    supabaseAdmin
+      ? withTimeout(supabaseAdmin.from('scraping_runs').select('*').order('started_at', { ascending: false }).limit(50), 1500, 'scraper runs timeout')
+      : Promise.resolve({ data: [] }),
   ]);
   return NextResponse.json({
     success: true,

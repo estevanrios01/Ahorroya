@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/services/database';
+import { withTimeout } from '@/services/fallbackCatalog';
 
 function getDb() {
   return supabaseAdmin || supabase;
@@ -7,7 +8,11 @@ function getDb() {
 
 async function safeCount(client, table, apply = (query) => query) {
   try {
-    const { count, error } = await apply(client.from(table).select('*', { count: 'exact', head: true }));
+    const { count, error } = await withTimeout(
+      apply(client.from(table).select('*', { count: 'planned', head: true })),
+      1200,
+      `${table} count timeout`
+    );
     if (error) return 0;
     return count || 0;
   } catch {
@@ -17,12 +22,11 @@ async function safeCount(client, table, apply = (query) => query) {
 
 async function getLatestPriceCapturedAt(client) {
   try {
-    const { data } = await client
-      .from('store_products')
-      .select('captured_at')
-      .order('captured_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data } = await withTimeout(
+      client.from('store_products').select('captured_at').order('captured_at', { ascending: false }).limit(1).maybeSingle(),
+      1200,
+      'latest price timeout'
+    );
     return data?.captured_at || null;
   } catch {
     return null;
@@ -58,11 +62,11 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
   }
 
-  const { data: cached } = await client
-    .from('operational_metrics')
-    .select('payload, updated_at')
-    .eq('key', 'quality_report')
-    .maybeSingle();
+  const { data: cached } = await withTimeout(
+    client.from('operational_metrics').select('payload, updated_at').eq('key', 'quality_report').maybeSingle(),
+    1200,
+    'quality cache timeout'
+  ).catch(() => ({ data: null }));
 
   if (cached?.payload) {
     const summary = cached.payload;
