@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import ChunkRecovery from '../components/system/ChunkRecovery';
+import ClientCacheReset from '../components/system/ClientCacheReset';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className="dark">
       <body className={`${inter.className} min-h-screen bg-zinc-950 text-zinc-100 antialiased`}>
+        <ClientCacheReset />
         <ChunkRecovery />
         {children}
       </body>
