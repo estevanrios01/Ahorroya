@@ -16,8 +16,8 @@ jobs:
       VERCEL_ORG_ID: team_YA1ShaAog7tbOlVYJIkegWsq
       VERCEL_PROJECT_ID: prj_qF5YCNFeh951EBi9GXoJsAvGiUuP
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20.19.0
           cache: "npm"
