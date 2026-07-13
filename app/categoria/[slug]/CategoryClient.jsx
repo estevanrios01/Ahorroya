@@ -57,7 +57,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
       const res = await fetch(`/api/categories/products?slug=${category.slug}&page=${nextPage}&limit=24`);
       const json = await res.json();
       if (json.success && json.data?.length > 0) {
-        setProducts(prev => [...prev, ...json.data]);
+        setProducts((prev) => [...prev, ...json.data]);
         setPage(nextPage);
         setHasMore(products.length + json.data.length < initialTotal);
       } else {
@@ -102,21 +102,22 @@ export default function CategoryClient({ category, initialProducts, initialTotal
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
-      <Container className="py-6 sm:py-8 pb-16">
+      <main>
+        <Container className="py-6 pb-16 sm:py-8">
         <PageControls backHref="/categorias" forwardHref={`/buscar?q=${encodeURIComponent(category.name)}`} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-3 sm:gap-4 mb-4">
-            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center flex-shrink-0">
+          <div className="mb-4 flex items-center gap-3 sm:gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-emerald-600/30 bg-emerald-600/20 sm:h-14 sm:w-14">
               <Icon size={24} className="text-emerald-400" />
             </div>
             <div>
-              <nav className="flex items-center gap-1.5 text-xs text-zinc-600 mb-1">
-                <Link href="/" className="hover:text-zinc-400 transition-colors">Inicio</Link>
+              <nav className="mb-1 flex items-center gap-1.5 text-xs text-zinc-600">
+                <Link href="/" className="transition-colors hover:text-zinc-400">Inicio</Link>
                 <span>/</span>
-                <span className="text-zinc-400">Categorías</span>
+                <span className="text-zinc-400">Categorias</span>
               </nav>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-100">{category.name}</h1>
-              {category.description && <p className="text-sm text-zinc-500 mt-0.5">{category.description}</p>}
+              <h1 className="text-xl font-bold text-zinc-100 sm:text-2xl lg:text-3xl">{category.name}</h1>
+              {category.description && <p className="mt-0.5 text-sm text-zinc-500">{category.description}</p>}
             </div>
           </div>
           <Badge variant="default" size="md">{total || displayProducts.length} productos</Badge>
@@ -124,15 +125,15 @@ export default function CategoryClient({ category, initialProducts, initialTotal
 
         {degraded && (
           <div className="mb-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Mostrando productos relacionados mientras actualizamos esta categoría.
+            Mostrando productos relacionados mientras actualizamos esta categoria.
           </div>
         )}
 
         {(displayProducts.length > 0 || loading) && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {displayProducts.map((p, i) => (
               <motion.div key={p.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
-                <ProductCardPremium product={p} />
+                <ProductCardPremium product={p} eager={i < 4} />
               </motion.div>
             ))}
             {loading && Array.from({ length: displayProducts.length ? 4 : 8 }).map((_, i) => <ProductCardSkeleton key={`sk-${i}`} />)}
@@ -140,18 +141,19 @@ export default function CategoryClient({ category, initialProducts, initialTotal
         )}
 
         {displayProducts.length === 0 && !loading && (
-          <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 py-16 text-center text-zinc-500">
             <Search size={42} className="mx-auto mb-3 text-zinc-600" />
-            <p className="text-base font-medium text-zinc-300">Categoría en actualización</p>
-            <p className="text-sm mt-1">Busca un producto puntual para compararlo entre comercios disponibles.</p>
+            <p className="text-base font-medium text-zinc-300">Categoria en actualizacion</p>
+            <p className="mt-1 text-sm">Busca un producto puntual para compararlo entre comercios disponibles.</p>
             <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
               Buscar productos
             </Link>
           </div>
         )}
 
-        {hasMore && <div ref={loaderRef} className="h-12 mt-4" />}
-      </Container>
+        {hasMore && <div ref={loaderRef} className="mt-4 h-12" />}
+        </Container>
+      </main>
       <Footer />
     </div>
   );

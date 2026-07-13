@@ -1,35 +1,23 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
-import { Search, Heart, ShoppingBag, User, MapPin, Menu, X, LogOut, ChevronDown, Settings } from 'lucide-react';
+import { Search, Heart, ShoppingBag, MapPin, Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
   const router = useRouter();
-  const { carrito, user, logout, setIsCarritoAbierto } = useSupermarketStore();
+  const { carrito, setIsCarritoAbierto } = useSupermarketStore();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
   function handleSearch(e) {
@@ -72,9 +60,16 @@ export default function Header() {
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Buscar productos, marcas..."
-              className="w-full bg-zinc-900/80 border border-zinc-800/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+              className="w-full bg-zinc-900/80 border border-zinc-800/80 rounded-xl pl-10 pr-11 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
               aria-label="Buscar productos"
             />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+              aria-label="Ejecutar busqueda"
+            >
+              <Search size={15} />
+            </button>
           </form>
 
           <div className="flex items-center gap-1">
@@ -98,59 +93,6 @@ export default function Header() {
                 </span>
               )}
             </button>
-
-            {user && (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-zinc-800/80 transition-all ml-1"
-                  aria-label="Menu de usuario"
-                >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-600/20">
-                    {user.email?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
-                    >
-                      <div className="p-4 border-b border-zinc-800">
-                        <p className="text-sm font-medium text-zinc-100 truncate">{user.email}</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">Mi cuenta</p>
-                      </div>
-                      <div className="p-1.5">
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all">
-                          <User size={16} /> Mi Perfil
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all">
-                          <Heart size={16} /> Mis Favoritos
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all">
-                          <ShoppingBag size={16} /> Mis Listas
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all">
-                          <Settings size={16} /> Configuracion
-                        </button>
-                      </div>
-                      <div className="p-1.5 border-t border-zinc-800">
-                        <button
-                          onClick={logout}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
-                        >
-                          <LogOut size={16} /> Cerrar sesion
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
 
             <button
               onClick={() => setMobileMenu(!mobileMenu)}
@@ -181,9 +123,16 @@ export default function Header() {
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     placeholder="Buscar productos..."
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-11 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50"
                     aria-label="Buscar productos"
                   />
+                  <button
+                    type="submit"
+                    className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                    aria-label="Ejecutar busqueda"
+                  >
+                    <Search size={15} />
+                  </button>
                 </div>
               </form>
               <div className="grid grid-cols-3 gap-2">

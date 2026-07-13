@@ -3,8 +3,8 @@ import { db } from '@/services/database';
 import { fallbackCategories, withTimeout } from '@/services/fallbackCatalog';
 
 export async function GET() {
-  const result = await withTimeout(db.categories.list(), 1800, 'categories timeout').catch((error) => ({ error }));
-  if (result.error) {
+  const result = await withTimeout(db.categories.list(), 700, 'categories timeout').catch((error) => ({ error }));
+  if (result.error || !result.data?.length) {
     return NextResponse.json({
       success: true,
       degraded: true,

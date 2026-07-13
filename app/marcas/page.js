@@ -1,8 +1,27 @@
 import Link from 'next/link';
 import { getAllBrands } from '../../services/catalog/CatalogService';
+import { getLiveFallbackProducts } from '../../services/liveFallbackProducts';
+import { withTimeout } from '../../services/fallbackCatalog';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
+import PageControls from '../../components/layout/PageControls';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
+
+export const dynamic = 'force-dynamic';
+
+async function loadBrands() {
+  const result = await withTimeout(getAllBrands(), 700, 'brands timeout').catch(() => ({ brands: [] }));
+  if (result.brands?.length) return result.brands;
+
+  const products = await getLiveFallbackProducts({ limit: 24 }).catch(() => []);
+  return [...new Map(products
+    .map((product) => product.brands)
+    .filter((brand) => brand?.name && brand?.slug)
+    .map((brand) => [brand.slug, { ...brand, productCount: null }])).values()]
+    .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+}
 
 export async function generateMetadata() {
   return {
@@ -21,7 +40,7 @@ export async function generateMetadata() {
 }
 
 export default async function MarcasPage() {
-  const { brands } = await getAllBrands();
+  const brands = await loadBrands();
 
   return (
     <>
@@ -31,7 +50,9 @@ export default async function MarcasPage() {
       ]} />
       <WebSiteJsonLd />
       <div className="min-h-screen bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-16">
+        <Header />
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-16">
+          <PageControls forwardHref="/buscar" />
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-1">
               <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Inicio</Link>
@@ -62,7 +83,8 @@ export default async function MarcasPage() {
               </Link>
             ))}
           </div>
-        </div>
+        </main>
+        <Footer />
       </div>
     </>
   );

@@ -4,8 +4,8 @@ import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
 
 export async function GET() {
-  const result = await withTimeout(db.brands.list(), 1800, 'brands timeout').catch((error) => ({ error }));
-  if (result.error) {
+  const result = await withTimeout(db.brands.list(), 700, 'brands timeout').catch((error) => ({ error }));
+  if (result.error || !result.data?.length) {
     const products = await getLiveFallbackProducts({ limit: 24 }).catch(() => []);
     const brands = [...new Map(products
       .map((product) => product.brands)

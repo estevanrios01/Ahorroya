@@ -23,7 +23,7 @@ const CATEGORY_INCLUDE_TERMS = {
   lacteos: ['leche', 'queso', 'yogur', 'yoghurt', 'kumis', 'mantequilla', 'crema'],
   carnes: ['pollo', 'carne', 'res', 'cerdo', 'huevo', 'salchicha', 'jamon'],
   aseo: ['detergente', 'jabon', 'limpiador', 'lavaloza', 'cloro', 'suavizante'],
-  bebes: ['panal', 'pañal', 'formula', 'bebe', 'pañito', 'panito'],
+  bebes: ['panal', 'panales', 'formula', 'bebe', 'panito', 'panitos'],
   mascotas: ['perro', 'gato', 'mascota', 'concentrado'],
   bebidas: ['agua', 'gaseosa', 'jugo', 'bebida', 'nectar', 'te '],
 };
@@ -32,15 +32,23 @@ const CATEGORY_EXCLUDE_TERMS = {
   lacteos: ['extractor', 'materna', 'biberon', 'tetero', 'chocolatina'],
   carnes: ['mascota', 'perro', 'gato'],
   farmacia: ['juguete'],
+  bebes: ['pinata', 'pinatas', 'cambiador', 'pared', 'diorama', 'aventuras'],
 };
 
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 async function loadCategory(slug) {
-  const result = await withTimeout(getCategoryBySlug(slug), 800, 'category timeout').catch(() => ({ category: null }));
+  const result = await withTimeout(getCategoryBySlug(slug), 500, 'category timeout').catch(() => ({ category: null }));
   return result.category || getFallbackCategory(slug);
 }
 
 async function loadCategoryProducts(slug) {
-  const result = await withTimeout(getProductsByCategory(slug), 1000, 'category products timeout')
+  const result = await withTimeout(getProductsByCategory(slug), 700, 'category products timeout')
     .catch(() => ({ products: [], pagination: { total: 0 } }));
 
   if (result.products?.length) {
@@ -62,7 +70,7 @@ async function loadCategoryProducts(slug) {
       const key = product.id || product.slug;
       if (!key || seen.has(key)) return false;
       seen.add(key);
-      const text = `${product.name || ''} ${product.brands?.name || ''}`.toLowerCase();
+      const text = normalizeText(`${product.name || ''} ${product.brands?.name || ''}`);
       return terms.some((term) => text.includes(term)) && !excludedTerms.some((term) => text.includes(term));
     })
     .slice(0, 24);
@@ -108,7 +116,7 @@ export default async function CategoryPage({ params }) {
       <CategoryJsonLd category={category} products={visibleProducts || []} />
       <BreadcrumbJsonLd items={[
         { name: 'Inicio', url: '/' },
-        { name: 'Categorías', url: '/categorias' },
+        { name: 'Categorias', url: '/categorias' },
         { name: category.name },
       ]} />
       <WebSiteJsonLd />

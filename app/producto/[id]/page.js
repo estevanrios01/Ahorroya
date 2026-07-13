@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getProductBySlug } from '../../../services/catalog/CatalogService';
-import { getLiveFallbackProductBySlug } from '../../../services/liveFallbackProducts';
+import { getLiveFallbackProductBySlug, getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import { withTimeout } from '../../../services/fallbackCatalog';
 import ProductDetailClient from './ProductDetailClient';
 import { ProductJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
@@ -66,18 +67,35 @@ function normalizeProduct(product) {
   };
 }
 
-async function loadProduct(slug) {
-  const result = await withTimeout(getProductBySlug(slug), 800, 'product timeout').catch(() => ({ product: null }));
-  if (result.product) return normalizeProduct(result.product);
-  const liveProduct = await withTimeout(getLiveFallbackProductBySlug(slug), 3000, 'live product timeout').catch(() => null);
-  return normalizeProduct(liveProduct);
-}
+const loadProduct = cache(async function loadProduct(slug) {
+  const broadQuery = slug.split('-')[0];
+  const [result, liveResult, broadLiveProducts] = await Promise.all([
+    withTimeout(getProductBySlug(slug), 800, 'product timeout').catch(() => ({ product: null })),
+    withTimeout(getLiveFallbackProductBySlug(slug), 8000, 'live product timeout').catch(() => null),
+    withTimeout(getLiveFallbackProducts({ q: broadQuery, limit: 24 }), 8000, 'broad live product timeout').catch(() => []),
+  ]);
+  const databaseProduct = normalizeProduct(result.product);
+  const broadMatch = broadLiveProducts.find((product) => product.slug === slug);
+  const liveProduct = normalizeProduct(broadMatch || liveResult);
+
+  if (!databaseProduct) return liveProduct;
+  if (!liveProduct) return databaseProduct;
+
+  const pricesByStore = new Map();
+  for (const price of databaseProduct.prices || []) pricesByStore.set(price.storeSlug, price);
+  for (const price of liveProduct.prices || []) pricesByStore.set(price.storeSlug, price);
+
+  return normalizeProduct({
+    ...databaseProduct,
+    ...liveProduct,
+    prices: [...pricesByStore.values()],
+    images: [...new Set([...(liveProduct.images || []), ...(databaseProduct.images || [])])],
+  });
+});
 
 export async function generateMetadata({ params }) {
   const id = (await params).id;
-  const result = await withTimeout(getProductBySlug(id), 700, 'product metadata timeout').catch(() => ({ product: null }));
-  const product = normalizeProduct(result.product) || { name: id.replace(/-/g, ' '), slug: id, prices: [] };
-  if (!product) return { title: 'Producto no encontrado - AhorroYa' };
+  const product = await loadProduct(id) || { name: id.replace(/-/g, ' '), slug: id, prices: [] };
 
   const prices = product.prices || [];
   const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;

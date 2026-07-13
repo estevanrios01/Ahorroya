@@ -20,6 +20,7 @@ export default function BrandClient({ brand, products }) {
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
+      <main>
       <Container className="py-6 sm:py-8 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -52,7 +53,7 @@ export default function BrandClient({ brand, products }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {categoryProducts.map((p, i) => (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % 24) * 0.02 }}>
-                    <ProductCardPremium product={p} />
+                    <ProductCardPremium product={p} eager={i < 4} />
                   </motion.div>
                 ))}
               </div>
@@ -61,11 +62,15 @@ export default function BrandClient({ brand, products }) {
         ) : (
           <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800">
             <Package size={48} className="mx-auto mb-3 text-zinc-600" />
-            <p className="text-base font-medium text-zinc-400">Explorando productos de {brand.name}</p>
-            <p className="text-sm mt-1">Estamos cargando los productos disponibles</p>
+            <p className="text-base font-medium text-zinc-400">Sin productos verificables de {brand.name}</p>
+            <p className="text-sm mt-1">No publicamos precios ni imagenes que no podamos asociar a un comercio.</p>
+            <Link href={`/buscar?q=${encodeURIComponent(brand.name)}`} className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">
+              Buscar {brand.name}
+            </Link>
           </div>
         )}
       </Container>
+      </main>
       <Footer />
     </div>
   );

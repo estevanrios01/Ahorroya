@@ -16,7 +16,7 @@ export async function generateMetadata({ searchParams }) {
   const city = params?.city || '';
   return {
     metadataBase: new URL(SITE_URL),
-    title: q ? `"${q}" - Resultados de búsqueda | AhorroYa` : 'Buscar productos - AhorroYa',
+    title: q ? `"${q}" - Resultados de busqueda | AhorroYa` : 'Buscar productos - AhorroYa',
     description: `Busca productos y compara precios en supermercados y farmacias de Colombia.${q ? ` Resultados para "${q}".` : ''}${city ? ` Filtro en ${city}.` : ''}`,
     openGraph: {
       title: q ? `"${q}" - AhorroYa` : 'Buscar productos - AhorroYa',
@@ -29,7 +29,7 @@ export async function generateMetadata({ searchParams }) {
   };
 }
 
-const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Café', 'Huevos', 'Pan', 'Acetaminofén', 'Detergente'];
+const popularSearches = ['Arroz', 'Leche', 'Aceite', 'Cafe', 'Huevos', 'Pan', 'Acetaminofen', 'Detergente'];
 
 function toProductCard(product) {
   const listings = (product.store_products || []).filter((item) => item.available !== false && item.price != null);
@@ -58,8 +58,8 @@ export default async function BuscarPage({ searchParams }) {
   const query = params?.q || '';
   const city = params?.city || '';
   const [{ data: cities }, result] = await Promise.allSettled([
-    withTimeout(db.cities.list(), 1800, 'cities timeout'),
-    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 2500, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
+    withTimeout(db.cities.list(), 700, 'cities timeout'),
+    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 1200, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
   ]).then(async ([citiesResult, productsResult]) => {
     const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: fallbackCities };
     if (productsResult.status === 'fulfilled' && !productsResult.value?.error) {
@@ -87,28 +87,28 @@ export default async function BuscarPage({ searchParams }) {
       <WebSiteJsonLd />
       <div className="min-h-screen bg-zinc-950">
         <Header />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-16">
+        <main className="mx-auto max-w-7xl px-4 py-8 pb-16 sm:px-6 lg:px-8">
           <PageControls forwardHref="/categorias" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100 mb-2">
+          <h1 className="mb-2 text-2xl font-bold text-zinc-100 sm:text-3xl">
             {query ? `Resultados para "${query}"` : 'Buscar productos'}
           </h1>
-          <p className="text-zinc-500 mb-6">Compara productos por precio, ciudad y disponibilidad en comercios cercanos.</p>
+          <p className="mb-6 text-zinc-500">Compara productos por precio, ciudad y disponibilidad en comercios cercanos.</p>
 
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 sm:p-6 mb-8">
-            <form action="/buscar" method="GET" className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3">
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-6">
+            <form action="/buscar" method="GET" className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px_auto]">
               <input
                 type="text"
                 name="q"
                 defaultValue={query}
-                placeholder="Ej: arroz, leche, acetaminofén..."
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-all"
+                placeholder="Ej: arroz, leche, acetaminofen..."
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-sm text-zinc-100 transition-all placeholder:text-zinc-500 focus:border-emerald-500/50 focus:outline-none"
                 aria-label="Buscar productos"
                 autoFocus={!query}
               />
               <select
                 name="city"
                 defaultValue={city}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-sm text-zinc-100 transition-all focus:border-emerald-500/50 focus:outline-none"
                 aria-label="Filtrar por ciudad"
               >
                 <option value="">Todas las ciudades</option>
@@ -118,7 +118,7 @@ export default async function BuscarPage({ searchParams }) {
               </select>
               <button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-6 py-3.5 rounded-xl transition-colors"
+                className="rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
               >
                 Buscar
               </button>
@@ -126,13 +126,13 @@ export default async function BuscarPage({ searchParams }) {
 
             {!query && !city && (
               <div className="mt-4">
-                <p className="text-xs text-zinc-500 mb-2">Busquedas populares:</p>
+                <p className="mb-2 text-xs text-zinc-500">Busquedas populares:</p>
                 <div className="flex flex-wrap gap-2">
                   {popularSearches.map((search) => (
                     <Link
                       key={search}
                       href={`/buscar?q=${encodeURIComponent(search)}`}
-                      className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
+                      className="rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
                     >
                       {search}
                     </Link>
@@ -152,7 +152,7 @@ export default async function BuscarPage({ searchParams }) {
               </div>
               {city && result.cityVerified === false && (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                  La base por ciudad no respondió. Mostramos precios vivos disponibles, pero todavía no están verificados específicamente para {city}.
+                  La base por ciudad no respondio. Mostramos precios vivos disponibles, pero todavia no estan verificados especificamente para {city}.
                 </div>
               )}
             </div>
@@ -161,31 +161,31 @@ export default async function BuscarPage({ searchParams }) {
           {products.length > 0 && <ProductGrid products={products} />}
 
           {(query || city) && products.length === 0 && (
-            <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl">
-              <p className="text-zinc-500 mb-2">No encontramos productos con esos filtros.</p>
+            <div className="rounded-2xl border border-dashed border-zinc-800 py-12 text-center">
+              <p className="mb-2 text-zinc-500">No encontramos productos con esos filtros.</p>
               <p className="text-sm text-zinc-600">
-                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorías</Link>.
+                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorias</Link>.
               </p>
             </div>
           )}
 
           {!query && !city && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Link href="/categorias" className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group">
-                <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Categorías</h3>
-                <p className="text-sm text-zinc-500 mt-1">Explora productos por categoría</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Link href="/categorias" className="group rounded-xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all hover:border-emerald-500/30">
+                <h3 className="font-semibold text-zinc-200 transition-colors group-hover:text-emerald-400">Categorias</h3>
+                <p className="mt-1 text-sm text-zinc-500">Explora productos por categoria</p>
               </Link>
-              <Link href="/marcas" className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group">
-                <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Marcas</h3>
-                <p className="text-sm text-zinc-500 mt-1">Encuentra tus marcas favoritas</p>
+              <Link href="/marcas" className="group rounded-xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all hover:border-emerald-500/30">
+                <h3 className="font-semibold text-zinc-200 transition-colors group-hover:text-emerald-400">Marcas</h3>
+                <p className="mt-1 text-sm text-zinc-500">Encuentra tus marcas favoritas</p>
               </Link>
-              <Link href="/ciudades" className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group">
-                <h3 className="font-semibold text-zinc-200 group-hover:text-emerald-400 transition-colors">Cobertura</h3>
-                <p className="text-sm text-zinc-500 mt-1">Verifica tu ciudad</p>
+              <Link href="/ciudades" className="group rounded-xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all hover:border-emerald-500/30">
+                <h3 className="font-semibold text-zinc-200 transition-colors group-hover:text-emerald-400">Cobertura</h3>
+                <p className="mt-1 text-sm text-zinc-500">Verifica tu ciudad</p>
               </Link>
             </div>
           )}
-        </div>
+        </main>
         <Footer />
       </div>
     </>

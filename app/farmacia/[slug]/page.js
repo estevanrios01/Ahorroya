@@ -8,12 +8,12 @@ import { StoreJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../component
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 async function loadStore(slug) {
-  const result = await withTimeout(getStoreBySlug(slug), 800, 'pharmacy timeout').catch(() => ({ store: null }));
+  const result = await withTimeout(getStoreBySlug(slug), 500, 'pharmacy timeout').catch(() => ({ store: null }));
   return result.store || getFallbackStore(slug);
 }
 
 async function loadStoreProducts(slug) {
-  const result = await withTimeout(getProductsByStore(slug), 1000, 'pharmacy products timeout')
+  const result = await withTimeout(getProductsByStore(slug), 700, 'pharmacy products timeout')
     .catch(() => ({ products: [], pagination: { total: 0 } }));
 
   if (result.products?.length) {

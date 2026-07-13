@@ -43,16 +43,25 @@ export default function FavoritosPage() {
     });
   }
 
+  function goBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push('/buscar');
+  }
+
   return (
     <>
       <BreadcrumbJsonLd items={[{ name: 'Inicio', url: '/' }, { name: 'Favoritos' }]} />
       <WebSiteJsonLd />
       <div className="min-h-screen bg-zinc-950">
         <Header />
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-16">
+        <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-16">
           <div className="flex items-center gap-3 mb-6">
             <button
-              onClick={() => router.back()}
+              type="button"
+              onClick={goBack}
               className="p-2 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
               aria-label="Volver"
             >
@@ -115,7 +124,7 @@ export default function FavoritosPage() {
               ))}
             </div>
           )}
-        </div>
+        </main>
         <Footer />
       </div>
     </>

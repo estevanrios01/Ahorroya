@@ -7,22 +7,32 @@ import { useRouter } from 'next/navigation';
 export default function PageControls({ backHref = '/', forwardHref, className = '' }) {
   const router = useRouter();
 
+  function goBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(backHref);
+  }
+
+  const backLabel = backHref === '/' ? 'Inicio' : 'Seccion';
+
   return (
     <div className={`mb-5 flex flex-wrap items-center gap-2 ${className}`}>
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={goBack}
         className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100"
       >
         <ArrowLeft size={14} />
-        Atrás
+        Atras
       </button>
       <Link
         href={backHref}
         className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100"
       >
         <Home size={14} />
-        Inicio
+        {backLabel}
       </Link>
       {forwardHref && (
         <Link

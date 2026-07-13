@@ -19,7 +19,7 @@ export default function ProductGrid({ products, loading = false, columns = 4 }) 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       {products.map((product, i) => (
-        <ProductCardPremium key={product.id || i} product={product} />
+        <ProductCardPremium key={product.id || i} product={product} eager={i < 4} />
       ))}
     </div>
   );

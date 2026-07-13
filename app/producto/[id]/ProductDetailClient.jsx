@@ -18,6 +18,12 @@ import { Section } from '../../../packages/ui/src/components/section';
 import ProductGrid from '../../../components/product/ProductGrid';
 
 const formatPrice = (v) => v != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v) : '';
+const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'la-rebaja', 'locatel', 'pasteur', 'colsubsidio']);
+
+function storeHref(storeSlug) {
+  const route = PHARMACY_SLUGS.has(storeSlug) ? 'farmacia' : 'supermercado';
+  return `/${route}/${storeSlug}`;
+}
 
 export default function ProductDetailClient({ product }) {
   const router = useRouter();
@@ -33,7 +39,13 @@ export default function ProductDetailClient({ product }) {
   const maxPrice = prices.length > 0 ? Math.max(...prices.map(p => p.price)) : null;
   const avgPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p.price, 0) / prices.length) : null;
 
-  const history = prices.map(p => ({ date: p.store, price: p.price }));
+  const history = (product.history || product.priceHistory || [])
+    .map((entry) => ({
+      date: entry.date || entry.captured_at || entry.created_at,
+      price: Number(entry.price || entry.value || 0),
+    }))
+    .filter((entry) => entry.date && entry.price > 0)
+    .sort((left, right) => new Date(left.date) - new Date(right.date));
   const trendingDown = history.length > 1 && history[0]?.price > history[history.length - 1]?.price;
 
   const similarProducts = product.similar || [];
@@ -97,12 +109,23 @@ export default function ProductDetailClient({ product }) {
     document.getElementById('comparativa-precios')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function goBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(`/buscar?q=${encodeURIComponent(product.name)}`);
+  }
+
+  const storesCount = product.totalStores || product.prices?.length || 0;
+  const storesLabel = storesCount === 1 ? 'comercio' : 'comercios';
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Header />
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <nav className="flex items-center gap-2 text-xs text-zinc-600 mb-4">
-          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-100 transition-colors">
+          <button type="button" onClick={goBack} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-100 transition-colors">
             <ArrowLeft size={14} /> Volver
           </button>
           <span className="text-zinc-700">/</span>
@@ -180,7 +203,7 @@ export default function ProductDetailClient({ product }) {
                 </Link>
               )}
               <span className="text-zinc-600">•</span>
-              <span className="text-zinc-400">{product.totalStores || product.prices?.length || 0} comercios</span>
+              <span className="text-zinc-400">{storesCount} {storesLabel}</span>
               {product.presentation?.weight && (
                 <>
                   <span className="text-zinc-600">•</span>
@@ -255,7 +278,7 @@ export default function ProductDetailClient({ product }) {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-zinc-100">Comparativa de precios</h2>
-              <span className="text-xs text-zinc-500">{product.prices?.length || 0} comercios</span>
+              <span className="text-xs text-zinc-500">{product.prices?.length || 0} {product.prices?.length === 1 ? 'comercio' : 'comercios'}</span>
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
               {(product.prices || []).sort((a, b) => a.price - b.price).map((p, i) => (
@@ -270,7 +293,7 @@ export default function ProductDetailClient({ product }) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Link href={`/supermercado/${p.storeSlug}`} className="hover:underline">
+                      <Link href={storeHref(p.storeSlug)} className="hover:underline">
                         <h3 className={`text-sm font-medium truncate ${i === 0 ? 'text-emerald-400' : 'text-zinc-100'}`}>{p.store}</h3>
                       </Link>
                       {i === 0 && <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />}
@@ -313,17 +336,27 @@ export default function ProductDetailClient({ product }) {
                 </div>
               )}
             </div>
-            <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} angle={-15} textAnchor="end" height={50} />
-                  <YAxis stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} width={55} />
-                  <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }} itemStyle={{ color: '#34d399' }} />
-                  <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={2.5} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 3 }} activeDot={{ r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {history.length > 1 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={history}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                    <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} angle={-15} textAnchor="end" height={50} />
+                    <YAxis stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} width={55} />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }} itemStyle={{ color: '#34d399' }} />
+                    <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={2.5} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 3 }} activeDot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-5 text-center">
+                <Package size={28} className="mb-3 text-zinc-600" />
+                <p className="text-sm font-medium text-zinc-300">Historial temporal no disponible</p>
+                <p className="mt-1 max-w-sm text-xs leading-5 text-zinc-500">
+                  Mostramos la comparativa actual por comercio. La tendencia aparecera cuando existan capturas historicas verificadas para este producto.
+                </p>
+              </div>
+            )}
           </motion.div>
         </div>
 

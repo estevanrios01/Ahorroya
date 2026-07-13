@@ -2,6 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import ChunkRecovery from '../components/system/ChunkRecovery';
 import ClientCacheReset from '../components/system/ClientCacheReset';
+import ListaCompras from '../components/ui/ListaCompras';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -49,6 +50,7 @@ export default function RootLayout({ children }) {
         <ClientCacheReset />
         <ChunkRecovery />
         {children}
+        <ListaCompras />
       </body>
     </html>
   );

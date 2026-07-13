@@ -1,7 +1,9 @@
 import { supabase } from '../../lib/supabase';
+import { isDatabaseAvailable, markDatabaseFailure } from '../databaseCircuit';
 
 function handleError(error, context) {
   if (!error) return null;
+  markDatabaseFailure(error);
   if (typeof console !== 'undefined') console.error(`[CatalogService] ${context}:`, error.message);
   return error.message;
 }
@@ -17,7 +19,7 @@ function completeFirst(products, limit) {
 }
 
 export async function getAllProducts({ q, category, page = 1, limit = 20 } = {}) {
-  if (!supabase) return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
+  if (!isDatabaseAvailable(supabase)) return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
   let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
   if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
   if (category) query = query.eq('category_id', category);
@@ -29,9 +31,9 @@ export async function getAllProducts({ q, category, page = 1, limit = 20 } = {})
 }
 
 export async function getProductBySlug(slug) {
-  if (!supabase) return { product: null };
+  if (!isDatabaseAvailable(supabase)) return { product: null };
   const { data, error } = await supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single();
-  if (error) return { product: null, error: error.message };
+  if (error) { handleError(error, 'getProductBySlug'); return { product: null, error: error.message }; }
   const [{ data: prices }, { data: imageRows }] = await Promise.all([
     supabase.from('store_products').select('*, stores!inner(name, slug, logo, website)').eq('master_product_id', data.id).eq('available', true).order('price'),
     supabase.from('product_images').select('url,thumbnail_url,is_primary,alt').eq('master_product_id', data.id).order('is_primary', { ascending: false }),
@@ -42,50 +44,50 @@ export async function getProductBySlug(slug) {
 }
 
 export async function getProductById(id) {
-  if (!supabase) return { product: null };
+  if (!isDatabaseAvailable(supabase)) return { product: null };
   const { data, error } = await supabase.from('master_products').select('*').eq('id', id).single();
   if (error) return { product: null };
   return { product: data };
 }
 
 export async function getAllStores({ page = 1, limit = 50 } = {}) {
-  if (!supabase) return { stores: [] };
+  if (!isDatabaseAvailable(supabase)) return { stores: [] };
   const { data, count, error } = await supabase.from('stores').select('*', { count: 'exact' }).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
   if (error) { handleError(error, 'getAllStores'); return { stores: [] }; }
   return { stores: data || [], pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) } };
 }
 
 export async function getStoreBySlug(slug) {
-  if (!supabase) return { store: null };
+  if (!isDatabaseAvailable(supabase)) return { store: null };
   const { data, error } = await supabase.from('stores').select('*').eq('slug', slug).single();
-  if (error) return { store: null };
+  if (error) { handleError(error, 'getStoreBySlug'); return { store: null }; }
   return { store: data };
 }
 
 export async function getAllPharmacies() {
-  if (!supabase) return { stores: [] };
+  if (!isDatabaseAvailable(supabase)) return { stores: [] };
   const { data, error } = await supabase.from('stores').select('*').eq('status', 'active').or('category.eq.Farmacia,category.eq.Droguer%C3%ADa').order('name');
   if (error) { handleError(error, 'getAllPharmacies'); return { stores: [] }; }
   return { stores: data || [] };
 }
 
 export async function getAllCategories() {
-  if (!supabase) return { categories: [] };
+  if (!isDatabaseAvailable(supabase)) return { categories: [] };
   const { data, error } = await supabase.from('categories').select('*').order('name');
   if (error) { handleError(error, 'getAllCategories'); return { categories: [] }; }
   return { categories: (data || []).map((category) => ({ ...category, productCount: null })) };
 }
 
 export async function getCategoryBySlug(slug) {
-  if (!supabase) return { category: null };
+  if (!isDatabaseAvailable(supabase)) return { category: null };
   const { data, error } = await supabase.from('categories').select('*').eq('slug', slug).single();
-  if (error) return { category: null };
+  if (error) { handleError(error, 'getCategoryBySlug'); return { category: null }; }
   const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('category_id', data.id).eq('status', 'active');
   return { category: { ...data, productCount: count || 0 } };
 }
 
 export async function getProductsByCategory(categorySlug, { page = 1, limit = 20 } = {}) {
-  if (!supabase) return { products: [] };
+  if (!isDatabaseAvailable(supabase)) return { products: [] };
   const { data: cat } = await supabase.from('categories').select('id').eq('slug', categorySlug).single();
   if (!cat) return { products: [] };
   const from = (page - 1) * limit;
@@ -95,22 +97,22 @@ export async function getProductsByCategory(categorySlug, { page = 1, limit = 20
 }
 
 export async function getAllBrands() {
-  if (!supabase) return { brands: [] };
+  if (!isDatabaseAvailable(supabase)) return { brands: [] };
   const { data, error } = await supabase.from('brands').select('id,name,slug,logo,country').order('name').limit(2000);
   if (error) { handleError(error, 'getAllBrands'); return { brands: [] }; }
   return { brands: (data || []).map((brand) => ({ ...brand, productCount: null })) };
 }
 
 export async function getBrandBySlug(slug) {
-  if (!supabase) return { brand: null };
+  if (!isDatabaseAvailable(supabase)) return { brand: null };
   const { data, error } = await supabase.from('brands').select('*').eq('slug', slug).single();
-  if (error) return { brand: null };
+  if (error) { handleError(error, 'getBrandBySlug'); return { brand: null }; }
   const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('brand_id', data.id).eq('status', 'active');
   return { brand: { ...data, productCount: count || 0 } };
 }
 
 export async function getProductsByBrand(brandSlug, { page = 1, limit = 20 } = {}) {
-  if (!supabase) return { products: [] };
+  if (!isDatabaseAvailable(supabase)) return { products: [] };
   const { data: brand } = await supabase.from('brands').select('id').eq('slug', brandSlug).single();
   if (!brand) return { products: [] };
   const from = (page - 1) * limit;
@@ -120,7 +122,7 @@ export async function getProductsByBrand(brandSlug, { page = 1, limit = 20 } = {
 }
 
 export async function getAllCities() {
-  if (!supabase) return { cities: [] };
+  if (!isDatabaseAvailable(supabase)) return { cities: [] };
   const { data, error } = await supabase
     .from('branches')
     .select('city, department, store_id, stores(category)')
@@ -173,8 +175,9 @@ export async function getCity(slug) {
 }
 
 export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {}) {
-  if (!supabase) return { products: [] };
-  const { data: store } = await supabase.from('stores').select('id,website').eq('slug', storeSlug).single();
+  if (!isDatabaseAvailable(supabase)) return { products: [] };
+  const { data: store, error: storeError } = await supabase.from('stores').select('id,website').eq('slug', storeSlug).single();
+  if (storeError) markDatabaseFailure(storeError);
   if (!store) return { products: [] };
   const from = (page - 1) * limit;
   const requestedLimit = Math.min(limit * 2, 96);
@@ -219,7 +222,7 @@ export async function getCategory(slug) {
 }
 
 export async function getAllDepartments() {
-  if (!supabase) return { departments: [] };
+  if (!isDatabaseAvailable(supabase)) return { departments: [] };
   const { data, error } = await supabase.from('branches').select('department').eq('status', 'active').not('department', 'is', null);
   if (error) { handleError(error, 'getAllDepartments'); return { departments: [] }; }
   const seen = new Set();
@@ -240,7 +243,7 @@ export async function getDepartment(slug) {
 }
 
 export async function searchProducts(query, { page = 1, limit = 20 } = {}) {
-  if (!supabase) return { results: [], total: 0 };
+  if (!isDatabaseAvailable(supabase)) return { results: [], total: 0 };
   const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
   if (error) { handleError(error, 'searchProducts'); return { results: [], total: 0 }; }
   return { results: data || [], total: count || 0 };

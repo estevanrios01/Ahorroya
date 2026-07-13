@@ -5,6 +5,7 @@ import CiudadesClient from './CiudadesClient';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import PageControls from '../../components/layout/PageControls';
+import { fallbackCities, withTimeout } from '../../services/fallbackCatalog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -25,11 +26,19 @@ export async function generateMetadata() {
 }
 
 export default async function CiudadesPage() {
-  const { cities: ciudades } = await getAllCities();
+  const result = await withTimeout(getAllCities(), 700, 'cities timeout').catch(() => ({ cities: [] }));
+  const ciudades = result.cities?.length
+    ? result.cities
+    : fallbackCities.map((city) => ({
+        ...city,
+        storeCount: null,
+        supermarketCount: null,
+        pharmacyCount: null,
+      }));
 
-  const totalStores = ciudades.reduce((acc, c) => acc + (c.storeCount || 0), 0);
   const supermarketCount = ciudades.reduce((acc, c) => acc + (c.supermarketCount || 0), 0);
   const pharmacyCount = ciudades.reduce((acc, c) => acc + (c.pharmacyCount || 0), 0);
+  const coverageVerified = ciudades.some((city) => Number.isFinite(city.storeCount));
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -83,11 +92,11 @@ export default async function CiudadesPage() {
               <div className="text-xs text-zinc-500 mt-1">Ciudades</div>
             </div>
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{supermarketCount.toLocaleString('es-CO')}</div>
+              <div className="text-2xl font-bold text-emerald-400">{coverageVerified ? supermarketCount.toLocaleString('es-CO') : '-'}</div>
               <div className="text-xs text-zinc-500 mt-1">Supermercados</div>
             </div>
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{pharmacyCount.toLocaleString('es-CO')}</div>
+              <div className="text-2xl font-bold text-emerald-400">{coverageVerified ? pharmacyCount.toLocaleString('es-CO') : '-'}</div>
               <div className="text-xs text-zinc-500 mt-1">Farmacias</div>
             </div>
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-center">

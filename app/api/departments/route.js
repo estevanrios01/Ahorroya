@@ -3,8 +3,8 @@ import { db } from '@/services/database';
 import { fallbackCities, withTimeout } from '@/services/fallbackCatalog';
 
 export async function GET() {
-  const result = await withTimeout(db.departments.list(), 1800, 'departments timeout').catch((error) => ({ error }));
-  if (result.error) {
+  const result = await withTimeout(db.departments.list(), 700, 'departments timeout').catch((error) => ({ error }));
+  if (result.error || !result.data?.length) {
     const departments = [...new Map(fallbackCities.map((city) => [
       city.department,
       {

@@ -74,9 +74,9 @@ export default function ListaCompras() {
             <span className="text-zinc-400">Total estimado:</span>
             <span className="text-2xl font-bold text-emerald-400">${total.toLocaleString('es-CO')}</span>
           </div>
-          <button className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={carrito.length === 0} aria-label="Trazar ruta de compras">
-            Trazar Ruta de Compras
-          </button>
+          <p className="text-xs leading-5 text-zinc-500">
+            Total calculado con el mejor precio visible al agregar cada producto. Confirma disponibilidad y precio final en el comercio.
+          </p>
         </div>
       </div>
     </div>

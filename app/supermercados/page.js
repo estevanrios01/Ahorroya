@@ -25,7 +25,7 @@ export async function generateMetadata() {
 
 async function getSupermarkets() {
   try {
-    const result = await withTimeout(db.stores.list({ limit: 200 }), 2500, 'stores timeout');
+    const result = await withTimeout(db.stores.list({ limit: 200 }), 700, 'stores timeout');
     const stores = (result.data || []).filter((store) => store.category === 'Supermercado');
     if (!stores.length) return fallbackSupermarkets;
     return stores

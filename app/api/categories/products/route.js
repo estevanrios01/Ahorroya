@@ -41,7 +41,7 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: 'slug requerido' }, { status: 400 });
   }
 
-  const { products } = await withTimeout(getProductsByCategory(slug, { page, limit }), 1800, 'category products timeout')
+  const { products } = await withTimeout(getProductsByCategory(slug, { page, limit }), 700, 'category products timeout')
     .catch(() => ({ products: [] }));
   if (!products?.length) {
     const seen = new Set();
@@ -50,6 +50,7 @@ export async function GET(request) {
     const fallback = (await getLiveFallbackProducts({
       q: CATEGORY_SEARCH_TERMS[slug] || slug,
       limit,
+      page,
     }).catch(() => []))
       .filter((product) => {
         const key = product.id || product.slug;
