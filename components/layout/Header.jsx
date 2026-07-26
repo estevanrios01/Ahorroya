@@ -4,15 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
-import { Search, Heart, ShoppingBag, MapPin, Menu, X, ChevronDown } from 'lucide-react';
+import { Search, Heart, ShoppingBag, MapPin, Menu, X, ChevronDown, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AuthModal from '../ui/AuthModal';
 
 export default function Header() {
   const router = useRouter();
-  const { carrito, setIsCarritoAbierto } = useSupermarketStore();
+  const carrito = useSupermarketStore((state) => state.carrito);
+  const setIsCarritoAbierto = useSupermarketStore((state) => state.setIsCarritoAbierto);
+  const user = useSupermarketStore((state) => state.user);
+  const logout = useSupermarketStore((state) => state.logout);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -73,6 +78,25 @@ export default function Header() {
           </form>
 
           <div className="flex items-center gap-1">
+            {user ? (
+              <button
+                onClick={logout}
+                className="hidden sm:flex items-center gap-1.5 p-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/80 transition-all"
+                aria-label={`Cerrar sesión (${user.email})`}
+                title={user.email}
+              >
+                <LogOut size={18} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 p-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/80 transition-all"
+                aria-label="Iniciar sesión"
+              >
+                <User size={18} />
+              </button>
+            )}
+
             <button
               onClick={() => router.push('/favoritos')}
               className="relative p-2.5 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/80 transition-all"
@@ -140,10 +164,27 @@ export default function Header() {
                 <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorias</Link>
                 <Link href="/supermercados" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Tiendas</Link>
               </div>
+              {user ? (
+                <button
+                  onClick={logout}
+                  className="sm:hidden w-full flex items-center justify-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors"
+                >
+                  <LogOut size={16} /> Cerrar sesión
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="sm:hidden w-full flex items-center justify-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors"
+                >
+                  <User size={16} /> Iniciar sesión
+                </button>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
     </header>
   );
 }

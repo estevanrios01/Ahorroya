@@ -11,7 +11,7 @@ export default function AuthModal({ onClose }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { setUser } = useSupermarketStore();
+  const setUser = useSupermarketStore((state) => state.setUser);
   const emailRef = useRef(null);
 
   const handleKeyDown = useCallback((e) => {

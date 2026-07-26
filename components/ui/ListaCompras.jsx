@@ -5,7 +5,10 @@ import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 
 export default function ListaCompras() {
-  const { carrito, isCarritoAbierto, setIsCarritoAbierto, removerDelCarrito } = useSupermarketStore();
+  const carrito = useSupermarketStore((state) => state.carrito);
+  const isCarritoAbierto = useSupermarketStore((state) => state.isCarritoAbierto);
+  const setIsCarritoAbierto = useSupermarketStore((state) => state.setIsCarritoAbierto);
+  const removerDelCarrito = useSupermarketStore((state) => state.removerDelCarrito);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') setIsCarritoAbierto(false);

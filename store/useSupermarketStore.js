@@ -29,7 +29,7 @@ export const useSupermarketStore = create(persist((set, get) => ({
 
   logout: async () => {
     await supabase?.auth.signOut();
-    set({ user: null, carrito: [] });
+    set({ user: null });
   },
 
   getResultadosOrdenados: () => {
@@ -80,3 +80,17 @@ export const useSupermarketStore = create(persist((set, get) => ({
   }),
   partialize: (state) => ({ carrito: state.carrito }),
 }));
+
+// `user` was previously write-only: AuthModal called setUser() right after a
+// fresh login/signup, but nothing ever hydrated it from an existing Supabase
+// session, so a returning user with a valid session still showed as logged
+// out until they logged in again. This runs once per browser tab (module is
+// a singleton) and keeps `user` in sync with the real auth state.
+if (typeof window !== 'undefined' && supabase) {
+  supabase.auth.getSession().then(({ data }) => {
+    if (data?.session?.user) useSupermarketStore.setState({ user: data.session.user });
+  });
+  supabase.auth.onAuthStateChange((_event, session) => {
+    useSupermarketStore.setState({ user: session?.user || null });
+  });
+}
