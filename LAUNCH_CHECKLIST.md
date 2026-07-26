@@ -95,7 +95,7 @@
 | M31 | Sin `generateStaticParams` | Pendiente de agregar. | 🟡 PENDIENTE |
 | M32 | Buscar en page.js dirige a ruta inexistente | Creada `app/buscar/page.js`. | ✅ FIXED |
 | M33 | Link a `/admin` en footer da 404 | Creada `app/admin/page.js`. | ✅ FIXED |
-| M34 | `favorites` sin userId real | Pendiente de implementar auth real. | 🟡 PENDIENTE |
+| M34 | `favorites` sin userId real | `/api/favorites` sí tiene lógica real con auth (requiere Bearer token, gateado en `proxy.js`), pero nada en la UI lo llama -- `lib/useFavorites.js` es 100% localStorage, sin servidor. No es solo "falta implementar" -- ya existe un backend con auth real que nadie usa, en paralelo a un mecanismo local que sí funciona y coincide con la filosofía ya establecida del proyecto ("la app funciona sin cuenta"). Decidir si favoritos deben sincronizar entre dispositivos vía cuenta es una decisión de producto, no un bug -- y probarlo requiere la base de datos real. | 🟡 PENDIENTE (decisión de producto) |
 | M35 | Duplicación de constantes en spell-correction | Pendiente de unificar. | 🟡 PENDIENTE |
 
 ---
