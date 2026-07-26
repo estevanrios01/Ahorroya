@@ -19,8 +19,11 @@ async function handleGet(request, { params }) {
     }
     return NextResponse.json({ success: false, error: 'Producto no encontrado' }, { status: 404 });
   }
-  const { data: prices } = await withTimeout(db.products.getPrices(product.id), 1800, 'prices timeout').catch(() => ({ data: [] }));
-  return NextResponse.json({ success: true, data: { ...product, prices } });
+  const [{ data: prices }, { data: history }] = await Promise.all([
+    withTimeout(db.products.getPrices(product.id), 1800, 'prices timeout').catch(() => ({ data: [] })),
+    withTimeout(db.products.getPriceHistory(product.id), 1800, 'history timeout').catch(() => ({ data: [] })),
+  ]);
+  return NextResponse.json({ success: true, data: { ...product, prices, history } });
 }
 
 export const GET = withErrorHandling(handleGet);

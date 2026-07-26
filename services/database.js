@@ -187,9 +187,9 @@ export const db = {
       return { data: (data || []).filter((row) => !row.stores?.website || row.url !== row.stores.website) };
     },
 
-    async getPriceHistory(storeProductId) {
+    async getPriceHistory(productId) {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.from('store_product_history').select('*').eq('store_product_id', storeProductId).order('captured_at', { ascending: false }).limit(365);
+      const { data, error } = await supabase.rpc('get_product_price_history', { p_product_id: productId });
       if (error) return handleError(error, 'products.getPriceHistory');
       return { data: [...(data || [])].reverse() };
     },
