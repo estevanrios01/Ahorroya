@@ -1,18 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-
-function loadEnv() {
-  const envPath = path.resolve(__dirname, '../.env.local');
-  if (!fs.existsSync(envPath)) return;
-  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    if (!line || line.trim().startsWith('#') || !line.includes('=')) continue;
-    const index = line.indexOf('=');
-    process.env[line.slice(0, index).trim()] ||= line.slice(index + 1).trim();
-  }
-}
+const { loadEnv, rest, upsertBatch, insertBatch, slug, makeCryptoId, numericEqual } = require('./lib/supabase-rest');
 
 loadEnv();
 
+const cryptoId = makeCryptoId('ahorroya-real');
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TARGET_PRODUCTS = Number(process.env.OLIMPICA_TARGET_PRODUCTS || 2000);
@@ -24,61 +14,6 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
 }
 
-function slug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 180);
-}
-
-async function rest(pathname, { method = 'GET', body, prefer = '', returnMinimal = false } = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-    body: body == null ? undefined : JSON.stringify(body),
-  });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${method} ${pathname}: ${text}`);
-  return returnMinimal || !text ? null : JSON.parse(text);
-}
-
-async function upsertBatch(table, rows, onConflict, { returning = true } = {}) {
-  const out = [];
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const result = await rest(`${table}?on_conflict=${encodeURIComponent(onConflict)}&select=*`, {
-      method: 'POST',
-      body: batch,
-      prefer: `resolution=merge-duplicates,return=${returning ? 'representation' : 'minimal'}`,
-      returnMinimal: !returning,
-    });
-    if (Array.isArray(result)) out.push(...result);
-    console.log(`${table}: ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}`);
-  }
-  return out;
-}
-
-async function insertBatch(table, rows) {
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    await rest(table, {
-      method: 'POST',
-      body: batch,
-      prefer: 'return=minimal',
-      returnMinimal: true,
-    });
-    console.log(`${table}: ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}`);
-  }
-}
-
 async function fetchExistingListings(ids) {
   const rows = [];
   for (let i = 0; i < ids.length; i += BATCH_SIZE) {
@@ -88,13 +23,6 @@ async function fetchExistingListings(ids) {
     if (Array.isArray(result)) rows.push(...result);
   }
   return new Map(rows.map((row) => [row.id, row]));
-}
-
-function numericEqual(left, right) {
-  const a = left == null ? null : Number(left);
-  const b = right == null ? null : Number(right);
-  if (a == null && b == null) return true;
-  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.01;
 }
 
 function listingChanged(previous, next) {
@@ -289,13 +217,6 @@ async function main() {
     priceEvents: SKIP_PRICE_HISTORY ? 'skipped' : historyRows.length,
     store: store.slug,
   });
-}
-
-function cryptoId(input) {
-  const hex = require('crypto').createHash('sha1').update(`ahorroya-real:${input}`).digest('hex').slice(0, 32).split('');
-  hex[12] = '5';
-  hex[16] = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
-  return `${hex.slice(0, 8).join('')}-${hex.slice(8, 12).join('')}-${hex.slice(12, 16).join('')}-${hex.slice(16, 20).join('')}-${hex.slice(20, 32).join('')}`;
 }
 
 main().catch((error) => {

@@ -1,15 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-function loadEnv() {
-  const envPath = path.resolve(__dirname, '../.env.local');
-  if (!fs.existsSync(envPath)) return;
-  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    if (!line || line.trim().startsWith('#') || !line.includes('=')) continue;
-    const index = line.indexOf('=');
-    process.env[line.slice(0, index).trim()] ||= line.slice(index + 1).trim();
-  }
-}
+const { loadEnv } = require('./lib/supabase-rest');
 
 loadEnv();
 
@@ -18,17 +7,30 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
 
+// Distinct from lib/supabase-rest's rest(): this diagnostic script needs the
+// Content-Range header for counts, which the shared helper doesn't expose.
 async function rest(pathname, prefer = '') {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-  });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${pathname}: ${text}`);
-  return { data: text ? JSON.parse(text) : null, range: response.headers.get('content-range') };
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          ...(prefer ? { Prefer: prefer } : {}),
+        },
+      });
+      const text = await response.text();
+      if (!response.ok) throw new Error(`${pathname}: ${text}`);
+      return { data: text ? JSON.parse(text) : null, range: response.headers.get('content-range') };
+    } catch (error) {
+      lastError = error;
+      const retryable = /PGRST002|schema cache|statement timeout|ECONNRESET|terminated|fetch failed/i.test(String(error.message || error));
+      if (!retryable || attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+  throw lastError;
 }
 
 async function count(filter, label, branchFilter = '') {

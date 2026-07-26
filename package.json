@@ -27,8 +27,6 @@
     "data:populate": "node scripts/populate-national-catalog.js",
     "data:bulk-vtex": "node scripts/import-vtex-bulk.js",
     "data:audit": "node scripts/data-audit.js",
-    "data:backfill-branches": "node scripts/backfill-branch-coverage.js",
-    "data:backfill-low": "node scripts/backfill-low-branches.js",
     "scrape": "node scripts/actualizador-precios.js",
     "prices:live": "node scripts/sync-live-prices.js",
     "prices:makro": "node scripts/import-makro-offers.js",

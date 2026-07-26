@@ -1,8 +1,7 @@
 const cheerio = require('cheerio');
-const dotenv = require('dotenv');
-const path = require('path');
+const { loadEnv, rest } = require('./lib/supabase-rest');
 
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+loadEnv();
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,23 +23,6 @@ function assertEnv() {
   if (!SUPABASE_URL || !SERVICE_KEY) {
     throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
   }
-}
-
-async function rest(pathname, { method = 'GET', body, prefer } = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-    body: body == null ? undefined : JSON.stringify(body),
-  });
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!response.ok) throw new Error(`${method} ${pathname}: ${data?.message || text}`);
-  return data;
 }
 
 async function selectOne(table, filters) {
