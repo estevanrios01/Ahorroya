@@ -18,6 +18,7 @@ import { Section } from '../../../packages/ui/src/components/section';
 import ProductGrid from '../../../components/product/ProductGrid';
 import { useFavorites } from '../../../lib/useFavorites';
 import { formatPrice } from '../../../lib/formatPrice';
+import { getHistoricalMin, getHistoricalMax, getTrend } from '../../../lib/priceHistoryStats';
 
 const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'la-rebaja', 'locatel', 'pasteur', 'colsubsidio']);
 
@@ -48,7 +49,9 @@ export default function ProductDetailClient({ product }) {
     }))
     .filter((entry) => entry.date && entry.price > 0)
     .sort((left, right) => new Date(left.date) - new Date(right.date));
-  const trendingDown = history.length > 1 && history[0]?.price > history[history.length - 1]?.price;
+  const trend = getTrend(history);
+  const historicalMin = getHistoricalMin(history);
+  const historicalMax = getHistoricalMax(history);
 
   const similarProducts = product.similar || [];
 
@@ -304,27 +307,35 @@ export default function ProductDetailClient({ product }) {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-zinc-100">Historial de precios</h2>
-              {history.length > 1 && (
+              {history.length > 1 && trend !== 'stable' && (
                 <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
-                  trendingDown ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                  trend === 'down' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                 }`}>
-                  {trendingDown ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
-                  {trendingDown ? 'Bajando' : 'Subiendo'}
+                  {trend === 'down' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                  {trend === 'down' ? 'Bajando' : 'Subiendo'}
                 </div>
               )}
             </div>
             {history.length > 1 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={history}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                    <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} angle={-15} textAnchor="end" height={50} />
-                    <YAxis stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} width={55} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }} itemStyle={{ color: '#34d399' }} />
-                    <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={2.5} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 3 }} activeDot={{ r: 5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <>
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={history}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} angle={-15} textAnchor="end" height={50} />
+                      <YAxis stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 200', 'dataMax + 200']} width={55} />
+                      <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: '#fafafa' }} itemStyle={{ color: '#34d399' }} />
+                      <Line type="monotone" dataKey="price" stroke="#059669" strokeWidth={2.5} dot={{ fill: '#09090b', stroke: '#059669', strokeWidth: 2, r: 3 }} activeDot={{ r: 5 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                {(historicalMin != null || historicalMax != null) && (
+                  <div className="mt-3 flex items-center justify-center gap-4 text-xs text-zinc-500">
+                    {historicalMin != null && <span>Mínimo histórico: <span className="text-zinc-300 font-medium">{formatPrice(historicalMin)}</span></span>}
+                    {historicalMax != null && <span>Máximo histórico: <span className="text-zinc-300 font-medium">{formatPrice(historicalMax)}</span></span>}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-5 text-center">
                 <Package size={28} className="mb-3 text-zinc-600" />
