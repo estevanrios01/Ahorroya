@@ -15,6 +15,14 @@ const SEARCH_TERMS = (process.env.FARMATODO_TERMS || process.argv[3] || '')
 const SKIP_PRODUCT_IMAGES = process.env.IMPORT_SKIP_PRODUCT_IMAGES === '1';
 const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
 const IMPORT_CITY_PRICES = process.env.FARMATODO_CITY_PRICES !== '0';
+// Scope which of the cities Farmatodo's own price-by-city data already
+// covers get imported, e.g. for a city-by-city rollout. Values must match
+// CITY_BY_CODE's real codes below -- this only filters existing real data,
+// it does not invent city codes Farmatodo doesn't actually expose.
+const CITY_CODES = (process.env.FARMATODO_CITY_CODES || '')
+  .split(',')
+  .map((value) => value.trim().toUpperCase())
+  .filter(Boolean);
 
 const ALGOLIA_APP_ID = 'VCOJEYD2PO';
 const ALGOLIA_API_KEY = 'eb9544fe7bfe7ec4c1aa5e5bf7740feb';
@@ -248,7 +256,10 @@ async function main() {
 
   const branchRows = [];
   if (IMPORT_CITY_PRICES) {
-    for (const [code, [city, department]] of Object.entries(CITY_BY_CODE)) {
+    const cityCodeEntries = CITY_CODES.length
+      ? Object.entries(CITY_BY_CODE).filter(([code]) => CITY_CODES.includes(code))
+      : Object.entries(CITY_BY_CODE);
+    for (const [code, [city, department]] of cityCodeEntries) {
       branchRows.push({
         id: cryptoId(`branch:${store.id}:${code}`),
         store_id: store.id,

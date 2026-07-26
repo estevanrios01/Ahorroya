@@ -11,6 +11,14 @@ const STORE_IDS = (process.env.MAKRO_STORE_IDS || '')
   .split(',')
   .map((value) => Number(value.trim()))
   .filter(Boolean);
+// City-name filter, for scoping a rollout to specific cities (e.g. a Cali/
+// Valle del Cauca pilot) without needing to know each retailer's internal
+// numeric store IDs ahead of time -- those aren't discoverable without
+// live network access to the retailer's own API.
+const CITIES = (process.env.MAKRO_CITIES || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 const SKIP_PRODUCT_IMAGES = process.env.IMPORT_SKIP_PRODUCT_IMAGES === '1';
 const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
 
@@ -189,8 +197,10 @@ function buildBranchRow(store, branch) {
 async function main() {
   const store = await getStore();
   const allStores = await fetchMakroStores();
-  const selectedStores = STORE_IDS.length
-    ? allStores.filter((branch) => STORE_IDS.includes(Number(branch.storeNo)))
+  const normalizedCities = new Set(CITIES.map((city) => normalizeCity(city)));
+  const selectedStores = STORE_IDS.length || normalizedCities.size
+    ? allStores.filter((branch) =>
+        STORE_IDS.includes(Number(branch.storeNo)) || normalizedCities.has(normalizeCity(branch.province)))
     : allStores;
 
   const branchRows = selectedStores.map((branch) => buildBranchRow(store, branch));
