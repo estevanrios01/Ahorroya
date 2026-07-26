@@ -63,7 +63,7 @@ function normalizeProduct(product) {
     bestStore: best?.store,
     totalStores: new Set(sortedPrices.map((price) => price.storeSlug)).size,
     savingsPercent,
-    presentation: product.presentation || product.unit || product.short_name || '',
+    presentation: { weight: product.unit || product.short_name || '' },
   };
 }
 

@@ -16,6 +16,7 @@ import { Badge, DiscountBadge } from '../../../packages/ui/src/components/badge'
 import { Button } from '../../../packages/ui/src/components/button';
 import { Section } from '../../../packages/ui/src/components/section';
 import ProductGrid from '../../../components/product/ProductGrid';
+import { useFavorites } from '../../../lib/useFavorites';
 
 const formatPrice = (v) => v != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v) : '';
 const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'la-rebaja', 'locatel', 'pasteur', 'colsubsidio']);
@@ -29,8 +30,9 @@ export default function ProductDetailClient({ product }) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomed, setZoomed] = useState(false);
-  const [liked, setLiked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { isFavorite, toggleFavorite: toggleFavoriteStored } = useFavorites();
+  const liked = isFavorite(product.id);
 
   const images = product.images?.length > 0 ? product.images : product.image ? [product.image] : [];
   const prices = product.prices || [];
@@ -55,41 +57,16 @@ export default function ProductDetailClient({ product }) {
     document.title = `${product.name} - Precio en ${stores} ${stores === 1 ? 'comercio' : 'comercios'} | AhorroYa`;
   }, [product.name, product.prices?.length, product.totalStores]);
 
-  useEffect(() => {
-    const syncFavorite = () => {
-      try {
-        const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
-        setLiked(Array.isArray(stored) && stored.some((item) => item.id === product.id));
-      } catch {
-        setLiked(false);
-      }
-    };
-
-    queueMicrotask(syncFavorite);
-    window.addEventListener('storage', syncFavorite);
-    return () => window.removeEventListener('storage', syncFavorite);
-  }, [product.id]);
-
   function toggleFavorite() {
-    try {
-      const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
-      const favorites = Array.isArray(stored) ? stored : [];
-      const exists = favorites.some((item) => item.id === product.id);
-      const next = exists
-        ? favorites.filter((item) => item.id !== product.id)
-        : [{
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            brand: product.brand,
-            price: bestPrice,
-            oldPrice: product.prices?.find((price) => price.price === bestPrice)?.oldPrice,
-          }, ...favorites].slice(0, 100);
-      window.localStorage.setItem('ahorroya:favorites', JSON.stringify(next));
-      setLiked(!exists);
-    } catch {
-      setLiked((value) => !value);
-    }
+    toggleFavoriteStored({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      brand: product.brand,
+      price: bestPrice,
+      oldPrice: product.prices?.find((price) => price.price === bestPrice)?.oldPrice,
+      image: product.image,
+    });
   }
 
   async function shareProduct() {

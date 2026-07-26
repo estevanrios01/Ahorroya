@@ -34,7 +34,7 @@ async function loadStoreProducts(slug) {
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
-  const store = getFallbackStore(slug) || await loadStore(slug);
+  const store = await loadStore(slug);
   if (!store) return { title: 'No encontrado - AhorroYa' };
 
   return {

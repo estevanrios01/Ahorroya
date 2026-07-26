@@ -4,8 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingBag, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
+import { useFavorites } from '../../lib/useFavorites';
 
 const formatPrice = (value) =>
   value != null
@@ -19,15 +20,19 @@ function getPresentation(value) {
 }
 
 export default function ProductCardPremium({ product, eager = false }) {
-  const [liked, setLiked] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const { carrito, agregarAlCarrito } = useSupermarketStore();
+  const carrito = useSupermarketStore((state) => state.carrito);
+  const agregarAlCarrito = useSupermarketStore((state) => state.agregarAlCarrito);
+  const { isFavorite, toggleFavorite: toggleFavoriteStored } = useFavorites();
+  const liked = isFavorite(product.id);
 
-  const offers = Array.isArray(product.store_products)
-    ? product.store_products
-      .filter((offer) => offer.available !== false && offer.price != null)
-      .sort((left, right) => Number(left.price) - Number(right.price))
-    : [];
+  const offers = useMemo(() => (
+    Array.isArray(product.store_products)
+      ? product.store_products
+        .filter((offer) => offer.available !== false && offer.price != null)
+        .sort((left, right) => Number(left.price) - Number(right.price))
+      : []
+  ), [product.store_products]);
   const bestOffer = offers[0] || null;
   const comparisonCount = product.storesCount || offers.length || 0;
   const storeLabel = product.bestStore || bestOffer?.stores?.name || bestOffer?.store?.name || '';
@@ -46,42 +51,16 @@ export default function ProductCardPremium({ product, eager = false }) {
   const presentation = getPresentation(product.presentation);
   const inShoppingList = carrito.some((item) => item.id === product.id);
 
-  useEffect(() => {
-    const syncFavorite = () => {
-      try {
-        const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
-        setLiked(Array.isArray(stored) && stored.some((item) => item.id === product.id));
-      } catch {
-        setLiked(false);
-      }
-    };
-
-    queueMicrotask(syncFavorite);
-    window.addEventListener('storage', syncFavorite);
-    return () => window.removeEventListener('storage', syncFavorite);
-  }, [product.id]);
-
   function toggleFavorite() {
-    try {
-      const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
-      const favorites = Array.isArray(stored) ? stored : [];
-      const exists = favorites.some((item) => item.id === product.id);
-      const next = exists
-        ? favorites.filter((item) => item.id !== product.id)
-        : [{
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            brand: product.brand,
-            price: product.price,
-            oldPrice: product.oldPrice,
-            image: product.image,
-          }, ...favorites].slice(0, 100);
-      window.localStorage.setItem('ahorroya:favorites', JSON.stringify(next));
-      setLiked(!exists);
-    } catch {
-      setLiked((value) => !value);
-    }
+    toggleFavoriteStored({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      brand: product.brand,
+      price: product.price,
+      oldPrice: product.oldPrice,
+      image: product.image,
+    });
   }
 
   function addToShoppingList() {

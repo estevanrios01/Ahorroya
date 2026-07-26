@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/layout/Header';
@@ -8,6 +7,7 @@ import Footer from '../../components/layout/Footer';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { Heart, ArrowLeft, Trash2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useFavorites } from '../../lib/useFavorites';
 
 const formatPrice = (value) =>
   value != null
@@ -16,32 +16,8 @@ const formatPrice = (value) =>
 
 export default function FavoritosPage() {
   const router = useRouter();
-  const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const syncFavorites = () => {
-      try {
-        const stored = JSON.parse(window.localStorage.getItem('ahorroya:favorites') || '[]');
-        setFavorites(Array.isArray(stored) ? stored : []);
-      } catch {
-        setFavorites([]);
-      }
-      setLoading(false);
-    };
-
-    queueMicrotask(syncFavorites);
-    window.addEventListener('storage', syncFavorites);
-    return () => window.removeEventListener('storage', syncFavorites);
-  }, []);
-
-  function removeFavorite(productId) {
-    setFavorites((prev) => {
-      const next = prev.filter((favorite) => favorite.id !== productId);
-      window.localStorage.setItem('ahorroya:favorites', JSON.stringify(next));
-      return next;
-    });
-  }
+  const { favorites, isReady, removeFavorite } = useFavorites();
+  const loading = !isReady;
 
   function goBack() {
     if (window.history.length > 1) {
