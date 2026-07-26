@@ -22,7 +22,7 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "db:check": "node scripts/db-check.js",
-    "db:link": "npx supabase link --project-ref vnfiqibpgpfsevfplvdp",
+    "db:link": "npx supabase link --project-ref clfmgshvzebfkoczimdt",
     "db:push": "npx supabase db push",
     "data:populate": "node scripts/populate-national-catalog.js",
     "data:bulk-vtex": "node scripts/import-vtex-bulk.js",
