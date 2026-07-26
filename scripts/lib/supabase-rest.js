@@ -137,6 +137,27 @@ function numericEqual(left, right) {
   return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.01;
 }
 
+// None of the importers had any anomaly detection on price changes -- a
+// scraper misreading a price (decimal shift, wrong field) would write
+// straight through with nothing flagging it. Non-blocking by design: this
+// only logs, it never skips a write, so a real (if unusual) price change
+// still lands. threshold=0.6 matches packages/pricing-engine's
+// isPriceAnomaly, which already had a test suite for this exact rule.
+function isPriceAnomaly(previous, current, threshold = 0.6) {
+  if (!previous || !Number.isFinite(previous) || previous <= 0) return false;
+  if (!Number.isFinite(current)) return false;
+  return Math.abs(current - previous) / previous > threshold;
+}
+
+function logPriceAnomalies(changedListings, existingListings, label) {
+  for (const row of changedListings) {
+    const previous = existingListings.get(row.id)?.price;
+    if (isPriceAnomaly(previous, row.price)) {
+      console.warn(`[${label}] posible precio anómalo: ${previous} -> ${row.price} (sku ${row.sku || row.id})`);
+    }
+  }
+}
+
 module.exports = {
   loadEnv,
   requireEnv,
@@ -147,4 +168,6 @@ module.exports = {
   fixMojibake,
   makeCryptoId,
   numericEqual,
+  isPriceAnomaly,
+  logPriceAnomalies,
 };

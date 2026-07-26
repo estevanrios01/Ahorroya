@@ -1,4 +1,4 @@
-const { loadEnv, rest, upsertBatch, insertBatch, slug, makeCryptoId, numericEqual } = require('./lib/supabase-rest');
+const { loadEnv, rest, upsertBatch, insertBatch, slug, makeCryptoId, numericEqual, logPriceAnomalies } = require('./lib/supabase-rest');
 
 loadEnv();
 
@@ -197,6 +197,7 @@ async function main() {
     }));
   const existingListings = await fetchExistingListings(listingRows.map((row) => row.id));
   const changedListings = listingRows.filter((row) => listingChanged(existingListings.get(row.id), row));
+  logPriceAnomalies(changedListings, existingListings, 'olimpica');
   await upsertBatch('store_products', changedListings, 'id', { returning: false });
 
   const historyRows = changedListings.map((row) => ({

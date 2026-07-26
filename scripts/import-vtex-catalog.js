@@ -1,5 +1,5 @@
 const { Agent } = require('undici');
-const { loadEnv, rest, upsertBatch, insertBatch, slug, fixMojibake, makeCryptoId, numericEqual } = require('./lib/supabase-rest');
+const { loadEnv, rest, upsertBatch, insertBatch, slug, fixMojibake, makeCryptoId, numericEqual, logPriceAnomalies } = require('./lib/supabase-rest');
 const { extractPresentation } = require('./lib/normalize');
 
 loadEnv();
@@ -394,6 +394,7 @@ async function main() {
 
   const existingListings = await fetchExistingListings(listings.map((row) => row.id));
   const changedListings = listings.filter((row) => listingChanged(existingListings.get(row.id), row));
+  logPriceAnomalies(changedListings, existingListings, config.slug);
   const historyRows = SKIP_PRICE_HISTORY ? [] : changedListings
     .filter((row) => listingChanged(existingListings.get(row.id), row))
     .map((row) => ({

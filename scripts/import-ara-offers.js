@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const cheerio = require('cheerio');
-const { loadEnv, rest, upsertBatch, insertBatch, slug, makeCryptoId, numericEqual } = require('./lib/supabase-rest');
+const { loadEnv, rest, upsertBatch, insertBatch, slug, makeCryptoId, numericEqual, logPriceAnomalies } = require('./lib/supabase-rest');
 
 loadEnv();
 
@@ -249,6 +249,7 @@ async function main() {
 
   const existingListings = await fetchExistingListings(uniqueListings.map((row) => row.id));
   const changedListings = uniqueListings.filter((row) => listingChanged(existingListings.get(row.id), row));
+  logPriceAnomalies(changedListings, existingListings, 'ara');
   const historyRows = SKIP_PRICE_HISTORY ? [] : changedListings
     .filter((row) => listingChanged(existingListings.get(row.id), row))
     .map((row) => ({
