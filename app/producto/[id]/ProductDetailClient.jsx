@@ -281,9 +281,9 @@ export default function ProductDetailClient({ product }) {
               <span className="text-xs text-zinc-500">{product.prices?.length || 0} {product.prices?.length === 1 ? 'comercio' : 'comercios'}</span>
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {(product.prices || []).sort((a, b) => a.price - b.price).map((p, i) => (
+              {[...(product.prices || [])].sort((a, b) => a.price - b.price).map((p, i) => (
                 <motion.div
-                  key={i}
+                  key={p.id || p.storeSlug}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 * i }}

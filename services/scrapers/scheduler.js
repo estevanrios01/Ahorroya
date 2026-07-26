@@ -4,7 +4,6 @@ import { evaluateAlerts } from '../../lib/observability/alerts';
 import { RETAILER_CONFIGS, createScraper } from './config';
 
 const logger = createLogger({ service: 'scheduler' });
-const DEFAULT_INTERVAL = 6 * 3600000;
 
 const runningJobs = new Map();
 const jobQueue = [];
@@ -158,41 +157,25 @@ async function runScraper(store, options) {
   }
 }
 
-const scheduledTimers = new Map();
-
-export function scheduleAll(retailers = RETAILER_CONFIGS.map(c => c.name), intervalMs = DEFAULT_INTERVAL) {
-  logger.info(`Scheduling scrapers for: ${retailers.join(', ')} every ${intervalMs / 60000}min`);
-  for (const store of retailers) scheduleScraper(store, intervalMs);
-}
-
-export function scheduleScraper(store, intervalMs = DEFAULT_INTERVAL) {
-  if (scheduledTimers.has(store)) clearInterval(scheduledTimers.get(store));
-  const config = RETAILER_CONFIGS.find(c => c.name === store);
-  const run = () => enqueueJob(store, { query: config?.defaultQuery || 'arroz', limit: 100 });
-  setTimeout(run, 5000);
-  const timer = setInterval(run, intervalMs);
-  scheduledTimers.set(store, timer);
-  logger.info(`Scheduled ${store} every ${intervalMs / 60000}min`);
-}
-
-export function stopScheduler() {
-  for (const [store, timer] of scheduledTimers) {
-    clearInterval(timer);
-    logger.info(`Stopped scheduler for ${store}`);
-  }
-  scheduledTimers.clear();
-}
+// NOTE: there is no cron-style scheduling here anymore. This module used to
+// export scheduleAll/scheduleScraper/stopScheduler built on setInterval, but
+// nothing ever called them, and setInterval timers can't survive across
+// invocations on a serverless platform (Vercel) anyway -- they were dead
+// code that only misrepresented this as an active background scheduler.
+// Real recurring scraping runs through the GitHub Actions workflows
+// (.github/workflows/*.yml) calling scripts/*.js directly. This module only
+// still serves the request-triggered path: POST /api/scrapers/trigger enqueues
+// jobs, GET /api/scrapers/status reports on them.
 
 export function getSchedulerStatus() {
-  const nextRuns = {};
-  for (const [store] of scheduledTimers) nextRuns[store] = { scheduled: true, running: runningJobs.has(store) };
+  const scrapers = {};
   for (const config of RETAILER_CONFIGS) {
-    if (!nextRuns[config.name]) nextRuns[config.name] = { scheduled: false, running: runningJobs.has(config.name) };
+    scrapers[config.name] = { scheduled: false, running: runningJobs.has(config.name) };
   }
   return {
     running: [...runningJobs.keys()],
     queueLength: jobQueue.length,
-    scrapers: nextRuns,
+    scrapers,
     alerts: evaluateAlerts(),
     timestamp: new Date().toISOString(),
   };

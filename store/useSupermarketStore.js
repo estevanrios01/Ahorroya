@@ -1,7 +1,8 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
-export const useSupermarketStore = create((set, get) => ({
+export const useSupermarketStore = create(persist((set, get) => ({
   searchQuery: '',
   results: [],
   isLoading: false,
@@ -71,4 +72,11 @@ export const useSupermarketStore = create((set, get) => ({
       set({ isLoading: false, results: [] });
     }
   },
+}), {
+  name: 'ahorroya:carrito',
+  storage: createJSONStorage(() => {
+    if (typeof window === 'undefined') throw new Error('no window (SSR)');
+    return window.localStorage;
+  }),
+  partialize: (state) => ({ carrito: state.carrito }),
 }));
