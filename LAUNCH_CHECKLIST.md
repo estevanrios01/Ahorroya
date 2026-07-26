@@ -45,7 +45,7 @@
 | H09 | Enlaces a ciudades con acentos rotos | Footer ahora usa slugs pre-normalizados. | ✅ FIXED |
 | H10 | Memory leaks en 8+ archivos | 4 archivos tenían el mismo patrón `Promise.race([promise, setTimeout(...)])` sin `clearTimeout`: el timer del lado perdedor quedaba vivo hasta vencer aunque la promesa real ya hubiera resuelto. `services/fallbackCatalog.js` (usado por 23 archivos) ya limpia el timer; `lib/observability/health.js`, `app/api/health/route.js` y `app/api/products/route.js` tenían copias locales del mismo bug, ahora importan la versión compartida ya corregida. | 🟠 PARCIAL (4 archivos corregidos, 2026-07-26) |
 | H11 | Race conditions en 3 archivos | `services/liveFallbackProducts.js`: `getCruzVerdeSession` dedupeaba mal sesiones concurrentes (cada invocación con sesión vencida disparaba su propio login contra Cruz Verde); ahora comparte la promesa en vuelo. Quedan por auditar los otros 2 archivos originales del hallazgo. | 🟠 PARCIAL (1/3, 2026-07-26) |
-| H12 | 16/18 rutas sin validación de input | Pendiente de agregar validación. | 🟠 PENDIENTE |
+| H12 | 16/18 rutas sin validación de input | `/api/search` no usaba `searchSchema` (a diferencia de `/api/products`): `limit`/`page` sin cota (`?limit=999999` posible) y `q` sin `sanitize()`. Ahora usa el mismo schema y sanitize que `/api/products`. Resto de rutas no re-auditado. | 🟠 PARCIAL (1/16, 2026-07-26) |
 | H13 | Sin logging en 17/18 rutas | Pendiente de agregar logging wrapper. | 🟠 PENDIENTE |
 | H14 | Sin monitoreo externo | Pendiente de integrar Sentry. | 🟠 PENDIENTE |
 | H15 | Sin backups ni recovery | Pendiente de configurar. | 🟠 PENDIENTE |
