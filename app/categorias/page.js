@@ -33,8 +33,8 @@ export default function CategoriasPage() {
         <main className="mx-auto max-w-7xl px-4 py-8 pb-16 sm:px-6 lg:px-8">
           <PageControls forwardHref="/buscar" />
           <div className="mb-8 max-w-3xl">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-400">Explorar catalogo</p>
-            <h1 className="text-3xl font-bold text-zinc-100 sm:text-4xl">Categorias principales</h1>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-400">Explorar catálogo</p>
+            <h1 className="text-3xl font-bold text-zinc-100 sm:text-4xl">Categorías principales</h1>
             <p className="mt-3 text-sm leading-6 text-zinc-500">
               Encuentra productos por tipo de compra y compara precios disponibles entre supermercados y farmacias.
             </p>

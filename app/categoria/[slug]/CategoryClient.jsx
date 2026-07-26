@@ -114,7 +114,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
               <nav className="mb-1 flex items-center gap-1.5 text-xs text-zinc-600">
                 <Link href="/" className="transition-colors hover:text-zinc-400">Inicio</Link>
                 <span>/</span>
-                <span className="text-zinc-400">Categorias</span>
+                <span className="text-zinc-400">Categorías</span>
               </nav>
               <h1 className="text-xl font-bold text-zinc-100 sm:text-2xl lg:text-3xl">{category.name}</h1>
               {category.description && <p className="mt-0.5 text-sm text-zinc-500">{category.description}</p>}

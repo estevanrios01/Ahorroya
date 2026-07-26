@@ -166,7 +166,7 @@ export default async function BuscarPage({ searchParams }) {
             <div className="rounded-2xl border border-dashed border-zinc-800 py-12 text-center">
               <p className="mb-2 text-zinc-500">No encontramos productos con esos filtros.</p>
               <p className="text-sm text-zinc-600">
-                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorias</Link>.
+                Prueba con otra ciudad o explora <Link href="/categorias" className="text-emerald-500 hover:text-emerald-400">categorías</Link>.
               </p>
             </div>
           )}
@@ -174,7 +174,7 @@ export default async function BuscarPage({ searchParams }) {
           {!query && !city && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Link href="/categorias" className="group rounded-xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all hover:border-emerald-500/30">
-                <h3 className="font-semibold text-zinc-200 transition-colors group-hover:text-emerald-400">Categorias</h3>
+                <h3 className="font-semibold text-zinc-200 transition-colors group-hover:text-emerald-400">Categorías</h3>
                 <p className="mt-1 text-sm text-zinc-500">Explora productos por categoria</p>
               </Link>
               <Link href="/marcas" className="group rounded-xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all hover:border-emerald-500/30">

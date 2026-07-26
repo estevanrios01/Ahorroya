@@ -161,7 +161,7 @@ export default function Header() {
               </form>
               <div className="grid grid-cols-3 gap-2">
                 <Link href="/ciudades" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Ciudades</Link>
-                <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorias</Link>
+                <Link href="/categorias" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Categorías</Link>
                 <Link href="/supermercados" className="text-center text-sm text-zinc-400 hover:text-zinc-100 bg-zinc-900/80 rounded-xl py-2.5 transition-colors">Tiendas</Link>
               </div>
               {user ? (
