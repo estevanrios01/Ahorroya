@@ -105,6 +105,7 @@ const SOURCES = [
 const FARMATODO_APP_ID = 'VCOJEYD2PO';
 const FARMATODO_SEARCH_KEY = 'eb9544fe7bfe7ec4c1aa5e5bf7740feb';
 let cruzVerdeSession = null;
+let cruzVerdeSessionPromise = null;
 
 function fixMojibake(value) {
   if (typeof value !== 'string') return value;
@@ -273,27 +274,40 @@ function normalizeCruzVerdeProduct(hit, source) {
   };
 }
 
+// Concurrent requests can all observe an expired/missing session at once
+// (this runs per-invocation on Vercel, so "concurrent" is the common case,
+// not an edge case). Without dedup, each one fires its own login call
+// against Cruz Verde. Share the in-flight request instead.
 async function getCruzVerdeSession(timeoutMs) {
   if (cruzVerdeSession?.expiresAt > Date.now()) return cruzVerdeSession.cookie;
+  if (cruzVerdeSessionPromise) return cruzVerdeSessionPromise;
 
-  const response = await fetch('https://api.cruzverde.com.co/customer-service/login', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Origin: 'https://www.cruzverde.com.co',
-      Referer: 'https://www.cruzverde.com.co/',
-      'User-Agent': 'Mozilla/5.0 AhorroYaLiveFallback/1.0',
-    },
-    body: '{}',
-    signal: AbortSignal.timeout(timeoutMs),
-    cache: 'no-store',
-  });
-  if (!response.ok) return null;
+  cruzVerdeSessionPromise = (async () => {
+    const response = await fetch('https://api.cruzverde.com.co/customer-service/login', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Origin: 'https://www.cruzverde.com.co',
+        Referer: 'https://www.cruzverde.com.co/',
+        'User-Agent': 'Mozilla/5.0 AhorroYaLiveFallback/1.0',
+      },
+      body: '{}',
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
 
-  const cookie = response.headers.get('set-cookie')?.split(';')[0] || null;
-  if (cookie) cruzVerdeSession = { cookie, expiresAt: Date.now() + 20 * 60 * 1000 };
-  return cookie;
+    const cookie = response.headers.get('set-cookie')?.split(';')[0] || null;
+    if (cookie) cruzVerdeSession = { cookie, expiresAt: Date.now() + 20 * 60 * 1000 };
+    return cookie;
+  })();
+
+  try {
+    return await cruzVerdeSessionPromise;
+  } finally {
+    cruzVerdeSessionPromise = null;
+  }
 }
 
 function parseMakroPrice(value) {

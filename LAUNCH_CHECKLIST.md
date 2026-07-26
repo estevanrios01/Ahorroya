@@ -1,9 +1,14 @@
 # LAUNCH CHECKLIST — AhorroYa
 
-> Generada: 2026-07-09 | Actualizada: ✅ Fixes aplicados
-> Build: ✅ 0 errores, 0 errores TypeScript, 4 warnings (pre-existentes)
-> Lint: ✅ 0 errores, 4 warnings (pre-existentes)
-> Tests: ✅ 4/5 suites pasan (1 suite de integración requiere servidor corriendo)
+> Generada: 2026-07-09 | Última verificación contra código real: 2026-07-26
+> Build: ✅ 0 errores | Lint: ✅ 0 errores | Tests: ✅ 9/10 suites (1 skip, integración con servidor)
+>
+> NOTA: este documento quedó desactualizado durante varias sesiones de trabajo —
+> varios ítems marcados "PENDIENTE" abajo ya estaban resueltos en el código
+> cuando se verificaron el 2026-07-26 (ver notas inline). Solo se re-verificó
+> la sección de CRÍTICOS línea por línea contra el código actual; ALTOS y
+> MEDIOS todavía pueden contener el mismo tipo de desactualización y merecen
+> una pasada de verificación propia antes de confiar en su estado.
 
 ---
 
@@ -15,13 +20,13 @@
 | C02 | `CategoryGrid.jsx` template literal con `"` en vez de `` ` `` | Cambiado a backticks. | ✅ FIXED |
 | C03 | Sin CORS headers | Agregados en next.config.mjs. | ✅ FIXED |
 | C04 | Sin middleware de auth | `proxy.ts` ya existe y se usa correctamente (Next.js 16). | ✅ FIXED (ya funcionaba) |
-| C05 | Sin rate limiting | Pendiente de implementar. | 🔴 PENDIENTE |
-| C06 | 3 imports fantasma en `CatalogService.js` | Pendiente de eliminar. | 🔴 PENDIENTE (requiere cambios en lógica) |
-| C07 | Home page 100% client-side | Pendiente de convertir a Server Component. | 🔴 PENDIENTE (cambio arquitectónico) |
+| C05 | Sin rate limiting | `lib/rate-limit.js` (in-memory, 60 req/min por IP) montado en `proxy.js` para todo `/api/*`. | ✅ FIXED (verificado 2026-07-26) |
+| C06 | 3 imports fantasma en `CatalogService.js` | Archivo real es `services/catalog/CatalogService.js`; los 2 imports actuales se usan ambos. | ✅ FIXED (verificado 2026-07-26) |
+| C07 | Home page 100% client-side | `app/page.js` no tiene `'use client'` ni `dynamic(..., {ssr:false})` — server component real. | ✅ FIXED (verificado 2026-07-26) |
 | C08 | Sin Content-Security-Policy header | Agregado en next.config.mjs. | ✅ FIXED |
 | C09 | Sin Strict-Transport-Security header | Agregado en next.config.mjs. | ✅ FIXED |
-| C10 | `drizzle-orm@0.38.4` con CVE-2025-40222 | Pendiente de actualizar. | 🔴 PENDIENTE |
-| C11 | 17/18 API routes sin try/catch | Pendiente de agregar wrappers. | 🔴 PENDIENTE (cambio lógica) |
+| C10 | `drizzle-orm@0.38.4` con CVE-2025-40222 | Solo queda en `packages/database` (paquete no conectado a la app), ya en `^0.45.2`. | ✅ FIXED (verificado 2026-07-26) |
+| C11 | 17/18 API routes sin try/catch | Las 28 rutas actuales usan `lib/api-handler.js` o `try {}` propio. | ✅ FIXED (verificado 2026-07-26) |
 
 ---
 
@@ -39,16 +44,16 @@
 | H08 | Fake price history chart | Pendiente de reemplazar con datos reales. | 🟠 PENDIENTE |
 | H09 | Enlaces a ciudades con acentos rotos | Footer ahora usa slugs pre-normalizados. | ✅ FIXED |
 | H10 | Memory leaks en 8+ archivos | Pendiente de agregar TTL/límites. | 🟠 PENDIENTE |
-| H11 | Race conditions en 3 archivos | Pendiente de agregar locks. | 🟠 PENDIENTE |
+| H11 | Race conditions en 3 archivos | `services/liveFallbackProducts.js`: `getCruzVerdeSession` dedupeaba mal sesiones concurrentes (cada invocación con sesión vencida disparaba su propio login contra Cruz Verde); ahora comparte la promesa en vuelo. Quedan por auditar los otros 2 archivos originales del hallazgo. | 🟠 PARCIAL (1/3, 2026-07-26) |
 | H12 | 16/18 rutas sin validación de input | Pendiente de agregar validación. | 🟠 PENDIENTE |
 | H13 | Sin logging en 17/18 rutas | Pendiente de agregar logging wrapper. | 🟠 PENDIENTE |
 | H14 | Sin monitoreo externo | Pendiente de integrar Sentry. | 🟠 PENDIENTE |
 | H15 | Sin backups ni recovery | Pendiente de configurar. | 🟠 PENDIENTE |
-| H16 | Sin CSRF protection | Pendiente de implementar. | 🟠 PENDIENTE |
+| H16 | Sin CSRF protection | `lib/csrf.js` (`csrfProtection`) montado en `proxy.js` para todo `/api/*`. | ✅ FIXED (verificado 2026-07-26) |
 | H17 | Dockerfile: `--only=production` | Cambiado a `npm ci` sin flag. | ✅ FIXED |
 | H18 | `jest` y `@swc/jest` faltantes | Agregados a devDependencies. | ✅ FIXED |
 | H19 | Formato error inconsistente en APIs | Pendiente de estandarizar. | 🟠 PENDIENTE |
-| H20 | PostCSS vulnerable (vía Next.js) | Pendiente de actualizar postcss. | 🟠 PENDIENTE |
+| H20 | PostCSS vulnerable (vía Next.js) | `postcss@8.5.23` instalado, por encima del rango vulnerable. | ✅ FIXED (verificado 2026-07-26) |
 | H21 | not-found.js sin metadata | Agregado metadata con title y robots. | ✅ FIXED |
 | H22 | Admin app usa `<a>` en vez de `<Link>` | Pendiente (apps/admin/ es repositorio separado). | 🟠 PENDIENTE |
 
@@ -73,7 +78,7 @@
 | M13 | Productos hardcodeados en page.js | Pendiente de importar desde servicio. | 🟡 PENDIENTE |
 | M14-M15 | Formato response inconsistente | Pendiente de unificar. | 🟡 PENDIENTE |
 | M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
-| M17 | Sin timeouts en API routes | Pendiente de agregar. | 🟡 PENDIENTE |
+| M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
 | M18 | Password en docker-compose.yml | Pendiente de usar variables de entorno. | 🟡 PENDIENTE |
 | M19 | `.env.example` revela patrones | Pendiente de limpiar. | 🟡 PENDIENTE |
 | M20 | `.gitignore` incompleto | Mejorado, agregadas entradas. | ✅ FIXED |
@@ -99,13 +104,18 @@
 
 | Severidad | Total | FIXED | PENDIENTE |
 |-----------|-------|-------|-----------|
-| 🔴 Crítico | 11 | 5 | 6 |
-| 🟠 Alto | 22 | 9 | 13 |
-| 🟡 Medio | 35 | 13 | 22 |
+| 🔴 Crítico | 11 | 10 | 1 |
+| 🟠 Alto | 22 | 12 | 9 (+1 parcial) |
+| 🟡 Medio | 35 | 14 | 21 |
 | 🔵 Bajo | 30 | 0 | 30 |
-| **Total** | **98** | **27** | **71** |
+| **Total** | **98** | **36** | **61** (+1 parcial) |
 
-**27 issues fixed automáticamente.** Resto requiere cambios de lógica de negocio, integración con servicios externos, o decisiones de producto.
+Conteo re-verificado el 2026-07-26 contra el código real (no solo contra este
+documento). El único crítico genuinamente pendiente (C01) requiere rotar un
+token manualmente en el dashboard de Vercel — no es algo resoluble por código.
+🟠 y 🟡 solo se corrigieron puntualmente (H11, H16, H20, M17); el resto de esas
+dos secciones no se re-auditó línea por línea y puede tener la misma
+desactualización que ya se encontró en 🔴.
 
 ---
 
