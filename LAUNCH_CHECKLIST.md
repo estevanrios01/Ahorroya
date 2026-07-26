@@ -55,7 +55,7 @@
 | H19 | Formato error inconsistente en APIs | Revisadas las 28 rutas: todas usan el mismo sobre `{ success, data?, error?, degraded? }` con status HTTP apropiado. Ya estandarizado. | ✅ FIXED (verificado 2026-07-26) |
 | H20 | PostCSS vulnerable (vía Next.js) | `postcss@8.5.23` instalado, por encima del rango vulnerable. | ✅ FIXED (verificado 2026-07-26) |
 | H21 | not-found.js sin metadata | Agregado metadata con title y robots. | ✅ FIXED |
-| H22 | Admin app usa `<a>` en vez de `<Link>` | Pendiente (apps/admin/ es repositorio separado). | 🟠 PENDIENTE |
+| H22 | Admin app usa `<a>` en vez de `<Link>` | `apps/admin/app/layout.tsx` convertido a `next/link`. | ✅ FIXED (2026-07-26) |
 
 ---
 
@@ -80,12 +80,12 @@
 | M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
 | M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
 | M18 | Password en docker-compose.yml | Ya usa `${POSTGRES_PASSWORD:-change_me}` (env var con default placeholder obvio), no un secreto fijo. Archivo es solo para Postgres local de desarrollo. | ✅ FIXED (verificado 2026-07-26) |
-| M19 | `.env.example` revela patrones | Pendiente de limpiar. | 🟡 PENDIENTE |
+| M19 | `.env.example` revela patrones | Todos los placeholders son genéricos (`TU_PROYECTO`, `change_me`, `your_secret_here`, `example@sentry.io`) — no revelan nada real. | ✅ FIXED (verificado 2026-07-26) |
 | M20 | `.gitignore` incompleto | Mejorado, agregadas entradas. | ✅ FIXED |
 | M21 | `package.json` name = `next-temp` | Cambiado a `@ahorroya/web`. | ✅ FIXED |
 | M22 | Version mismatch scraper-framework-v2 | Resuelto: `packages/scraper` y `packages/scraper-framework-v2` eran selectores CSS inventados para ~50 retailers sin integración real, sin importadores en ningún lado del repo. Eliminados. | ✅ FIXED |
 | M23 | `apps/worker` sin package.json | Resuelto: era código roto (el script `worker` en package.json apuntaba a un `.js` que no existía, solo había `.ts`; cero package.json, cero uso en CI). Eliminado junto con `apps/api` (mismo problema: package.json de Next.js sobre una estructura de router Express incompatible). | ✅ FIXED |
-| M24 | Admin app navegación `<a>` tags | Pendiente (apps/admin/ separado). | 🟡 PENDIENTE |
+| M24 | Admin app navegación `<a>` tags | Mismo fix que H22. | ✅ FIXED (2026-07-26) |
 | M25 | Array index como React key | Revisados los 5 usos restantes: 4 son sobre arrays estáticos que nunca reordenan (galería de imágenes, skeletons, stats fijas) — index como key es correcto ahí. El único real era `dashboard-ejecutivo/page.js`: `data.alerts` se re-consulta por polling y puede cambiar de orden/contenido entre renders; cambiado a `${alert.rule}-${alert.timestamp}`. | ✅ FIXED (2026-07-26) |
 | M26 | Precio formateado sin utility centralizada | `formatPrice` estaba duplicado idéntico en 4 archivos (`ProductCardPremium.jsx`, `ProductDetailClient.jsx`, `producto/[id]/page.js`, `favoritos/page.js`) más una quinta variante ad-hoc en `ListaCompras.jsx` (`$` + `toLocaleString` crudo, sin `Intl.NumberFormat`). Consolidado en `lib/formatPrice.js`, los 5 puntos ahora lo importan. | ✅ FIXED (2026-07-26) |
 | M27 | Ciudades en footer sin slugify | Footer ahora usa slugs correctos. | ✅ FIXED |
@@ -96,7 +96,7 @@
 | M32 | Buscar en page.js dirige a ruta inexistente | Creada `app/buscar/page.js`. | ✅ FIXED |
 | M33 | Link a `/admin` en footer da 404 | Creada `app/admin/page.js`. | ✅ FIXED |
 | M34 | `favorites` sin userId real | `/api/favorites` sí tiene lógica real con auth (requiere Bearer token, gateado en `proxy.js`), pero nada en la UI lo llama -- `lib/useFavorites.js` es 100% localStorage, sin servidor. No es solo "falta implementar" -- ya existe un backend con auth real que nadie usa, en paralelo a un mecanismo local que sí funciona y coincide con la filosofía ya establecida del proyecto ("la app funciona sin cuenta"). Decidir si favoritos deben sincronizar entre dispositivos vía cuenta es una decisión de producto, no un bug -- y probarlo requiere la base de datos real. | 🟡 PENDIENTE (decisión de producto) |
-| M35 | Duplicación de constantes en spell-correction | Pendiente de unificar. | 🟡 PENDIENTE |
+| M35 | Duplicación de constantes en spell-correction | `services/ai-engine/application/suggestions.ts` (sin ningún import en la app real) tenía además una feature de sinónimos (ej. "dolor" → Acetaminofén/Ibuprofeno/Naproxeno) que `/api/ai/suggest` nunca tuvo. Portada al route real, probada en vivo con el dev server. | ✅ FIXED (2026-07-26) |
 
 ---
 
