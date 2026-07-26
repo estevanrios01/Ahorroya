@@ -39,7 +39,7 @@
 | H03 | Pages sin metadataBase | Agregado en todas las páginas. | ✅ FIXED |
 | H04 | dashboard-ejecutivo sin metadata | Agregado metadata completo. | ✅ FIXED |
 | H05 | Breadcrumb JSON-LD con links rotos | `/supermercados`, `/farmacias`, `/categorias` etc. ahora existen. | ✅ FIXED |
-| H06 | 10+ fuentes de datos divergentes | Pendiente de unificar en CatalogService. | 🟠 PENDIENTE |
+| H06 | 10+ fuentes de datos divergentes | Confirmado real: `services/catalog/CatalogService.js` y `services/database.js` implementan ~20 operaciones CRUD duplicadas contra las mismas tablas (ej. `getStoreBySlug` vs `db.stores.getBySlug`, mismo query, distinto shape de retorno). Muestreo no encontró divergencia de comportamiento peligrosa, solo duplicación mecánica. NO lo fusioné: es un refactor de alcance amplio (toca casi todas las páginas/rutas) que no puedo verificar en vivo en este sandbox (la red hacia Supabase está bloqueada aquí). Requiere hacerse con acceso real a la base para probar cada call site antes/después. | 🟠 INVESTIGADO, PENDIENTE DE FUSIONAR (2026-07-26) |
 | H07 | Botones sin onClick | Revisados los ~20 `<button>` del repo (Header, Hero, ListaCompras, AuthModal, ProductCardPremium, favoritos, error.js, etc.): todos tienen `onClick` real o son `type="submit"` dentro de un `<form>` con `onSubmit`. | ✅ FIXED (verificado 2026-07-26) |
 | H08 | Fake price history chart | No era fake: el chart en `ProductDetailClient.jsx` y el estado vacío ya eran reales, pero nada llamaba a `get_product_price_history()` (existía desde la migración 00002) ni al método `getPriceHistory` de `services/database.js` (dead code, tomaba `storeProductId` en vez de `productId`). Reescrito para llamar al RPC real y conectado en `/api/products/[slug]/route.js`. | ✅ FIXED (2026-07-26) |
 | H09 | Enlaces a ciudades con acentos rotos | Footer ahora usa slugs pre-normalizados. | ✅ FIXED |
@@ -79,14 +79,14 @@
 | M14-M15 | Formato response inconsistente | Pendiente de unificar. | 🟡 PENDIENTE |
 | M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
 | M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
-| M18 | Password en docker-compose.yml | Pendiente de usar variables de entorno. | 🟡 PENDIENTE |
+| M18 | Password en docker-compose.yml | Ya usa `${POSTGRES_PASSWORD:-change_me}` (env var con default placeholder obvio), no un secreto fijo. Archivo es solo para Postgres local de desarrollo. | ✅ FIXED (verificado 2026-07-26) |
 | M19 | `.env.example` revela patrones | Pendiente de limpiar. | 🟡 PENDIENTE |
 | M20 | `.gitignore` incompleto | Mejorado, agregadas entradas. | ✅ FIXED |
 | M21 | `package.json` name = `next-temp` | Cambiado a `@ahorroya/web`. | ✅ FIXED |
 | M22 | Version mismatch scraper-framework-v2 | Resuelto: `packages/scraper` y `packages/scraper-framework-v2` eran selectores CSS inventados para ~50 retailers sin integración real, sin importadores en ningún lado del repo. Eliminados. | ✅ FIXED |
 | M23 | `apps/worker` sin package.json | Resuelto: era código roto (el script `worker` en package.json apuntaba a un `.js` que no existía, solo había `.ts`; cero package.json, cero uso en CI). Eliminado junto con `apps/api` (mismo problema: package.json de Next.js sobre una estructura de router Express incompatible). | ✅ FIXED |
 | M24 | Admin app navegación `<a>` tags | Pendiente (apps/admin/ separado). | 🟡 PENDIENTE |
-| M25 | Array index como React key | Pendiente de reemplazar con IDs. | 🟡 PENDIENTE |
+| M25 | Array index como React key | Revisados los 5 usos restantes: 4 son sobre arrays estáticos que nunca reordenan (galería de imágenes, skeletons, stats fijas) — index como key es correcto ahí. El único real era `dashboard-ejecutivo/page.js`: `data.alerts` se re-consulta por polling y puede cambiar de orden/contenido entre renders; cambiado a `${alert.rule}-${alert.timestamp}`. | ✅ FIXED (2026-07-26) |
 | M26 | Precio formateado sin utility centralizada | Pendiente de crear `formatPrice()`. | 🟡 PENDIENTE |
 | M27 | Ciudades en footer sin slugify | Footer ahora usa slugs correctos. | ✅ FIXED |
 | M28 | `Link` import sin usar en varias pages | Eliminados imports no usados. | ✅ FIXED |

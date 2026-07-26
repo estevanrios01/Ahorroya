@@ -136,8 +136,8 @@ export default function DashboardOperacionalPage() {
             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Alertas</h2>
             {data?.alerts?.length > 0 ? (
               <div className="space-y-2">
-                {data.alerts.slice(0, 10).map((alert, i) => (
-                  <div key={i} className={`text-xs p-2 rounded-lg ${alert.level === 'critical' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'}`}>
+                {data.alerts.slice(0, 10).map((alert) => (
+                  <div key={`${alert.rule}-${alert.timestamp}`} className={`text-xs p-2 rounded-lg ${alert.level === 'critical' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'}`}>
                     <span className="font-semibold">{alert.rule}</span>: {alert.detail}
                     <span className="text-zinc-600 ml-2">{new Date(alert.timestamp).toLocaleTimeString('es-CO')}</span>
                   </div>
