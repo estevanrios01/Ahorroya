@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
+import { formatPrice } from '../../lib/formatPrice';
 
 export default function ListaCompras() {
   const carrito = useSupermarketStore((state) => state.carrito);
@@ -58,7 +59,7 @@ export default function ListaCompras() {
                 <div>
                   <h4 className="text-zinc-100 font-medium">{item.producto_nombre || item.name}</h4>
                   <p className="text-zinc-500 text-sm">{item.cadena_nombre || item.store}</p>
-                  <p className="text-emerald-400 font-bold mt-1">${(item.precio || item.price || 0).toLocaleString('es-CO')}</p>
+                  <p className="text-emerald-400 font-bold mt-1">{formatPrice(item.precio || item.price || 0)}</p>
                 </div>
                 <button
                   onClick={() => removerDelCarrito(item.id)}
@@ -75,7 +76,7 @@ export default function ListaCompras() {
         <div className="p-6 border-t border-zinc-800 bg-zinc-900">
           <div className="flex justify-between items-center mb-4">
             <span className="text-zinc-400">Total estimado:</span>
-            <span className="text-2xl font-bold text-emerald-400">${total.toLocaleString('es-CO')}</span>
+            <span className="text-2xl font-bold text-emerald-400">{formatPrice(total)}</span>
           </div>
           <p className="text-xs leading-5 text-zinc-500">
             Total calculado con el mejor precio visible al agregar cada producto. Confirma disponibilidad y precio final en el comercio.

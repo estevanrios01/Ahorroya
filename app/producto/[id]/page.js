@@ -5,6 +5,7 @@ import { getLiveFallbackProductBySlug, getLiveFallbackProducts } from '../../../
 import { withTimeout } from '../../../services/fallbackCatalog';
 import ProductDetailClient from './ProductDetailClient';
 import { ProductJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
+import { formatPrice } from '../../../lib/formatPrice';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
@@ -99,7 +100,6 @@ export async function generateMetadata({ params }) {
 
   const prices = product.prices || [];
   const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;
-  const formatPrice = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
   const priceText = bestPrice ? ` Desde ${formatPrice(bestPrice)}.` : '';
 
   return {

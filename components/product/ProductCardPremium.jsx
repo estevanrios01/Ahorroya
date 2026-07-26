@@ -7,11 +7,7 @@ import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { useFavorites } from '../../lib/useFavorites';
-
-const formatPrice = (value) =>
-  value != null
-    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value)
-    : '';
+import { formatPrice } from '../../lib/formatPrice';
 
 function getPresentation(value) {
   if (!value) return '';

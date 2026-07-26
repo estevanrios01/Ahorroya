@@ -46,7 +46,7 @@
 | H10 | Memory leaks en 8+ archivos | 4 archivos tenían el mismo patrón `Promise.race([promise, setTimeout(...)])` sin `clearTimeout`: el timer del lado perdedor quedaba vivo hasta vencer aunque la promesa real ya hubiera resuelto. `services/fallbackCatalog.js` (usado por 23 archivos) ya limpia el timer; `lib/observability/health.js`, `app/api/health/route.js` y `app/api/products/route.js` tenían copias locales del mismo bug, ahora importan la versión compartida ya corregida. | 🟠 PARCIAL (4 archivos corregidos, 2026-07-26) |
 | H11 | Race conditions en 3 archivos | `services/liveFallbackProducts.js`: `getCruzVerdeSession` dedupeaba mal sesiones concurrentes (cada invocación con sesión vencida disparaba su propio login contra Cruz Verde); ahora comparte la promesa en vuelo. Quedan por auditar los otros 2 archivos originales del hallazgo. | 🟠 PARCIAL (1/3, 2026-07-26) |
 | H12 | 16/18 rutas sin validación de input | `/api/search` no usaba `searchSchema` (a diferencia de `/api/products`): `limit`/`page` sin cota (`?limit=999999` posible) y `q` sin `sanitize()`. Ahora usa el mismo schema y sanitize que `/api/products`. Resto de rutas no re-auditado. | 🟠 PARCIAL (1/16, 2026-07-26) |
-| H13 | Sin logging en 17/18 rutas | Pendiente de agregar logging wrapper. | 🟠 PENDIENTE |
+| H13 | Sin logging en 17/18 rutas | 27/28 rutas ya usan `withErrorHandling` (`lib/api-handler.js`), que loguea con `logger.error`. La única excepción, `/api/products`, tiene su propio catch para degradar a resultados en vivo en vez de un 500 genérico — pero no logueaba nada; ahora sí. | ✅ FIXED (2026-07-26) |
 | H14 | Sin monitoreo externo | Pendiente de integrar Sentry. | 🟠 PENDIENTE |
 | H15 | Sin backups ni recovery | Pendiente de configurar. | 🟠 PENDIENTE |
 | H16 | Sin CSRF protection | `lib/csrf.js` (`csrfProtection`) montado en `proxy.js` para todo `/api/*`. | ✅ FIXED (verificado 2026-07-26) |
@@ -87,7 +87,7 @@
 | M23 | `apps/worker` sin package.json | Resuelto: era código roto (el script `worker` en package.json apuntaba a un `.js` que no existía, solo había `.ts`; cero package.json, cero uso en CI). Eliminado junto con `apps/api` (mismo problema: package.json de Next.js sobre una estructura de router Express incompatible). | ✅ FIXED |
 | M24 | Admin app navegación `<a>` tags | Pendiente (apps/admin/ separado). | 🟡 PENDIENTE |
 | M25 | Array index como React key | Revisados los 5 usos restantes: 4 son sobre arrays estáticos que nunca reordenan (galería de imágenes, skeletons, stats fijas) — index como key es correcto ahí. El único real era `dashboard-ejecutivo/page.js`: `data.alerts` se re-consulta por polling y puede cambiar de orden/contenido entre renders; cambiado a `${alert.rule}-${alert.timestamp}`. | ✅ FIXED (2026-07-26) |
-| M26 | Precio formateado sin utility centralizada | Pendiente de crear `formatPrice()`. | 🟡 PENDIENTE |
+| M26 | Precio formateado sin utility centralizada | `formatPrice` estaba duplicado idéntico en 4 archivos (`ProductCardPremium.jsx`, `ProductDetailClient.jsx`, `producto/[id]/page.js`, `favoritos/page.js`) más una quinta variante ad-hoc en `ListaCompras.jsx` (`$` + `toLocaleString` crudo, sin `Intl.NumberFormat`). Consolidado en `lib/formatPrice.js`, los 5 puntos ahora lo importan. | ✅ FIXED (2026-07-26) |
 | M27 | Ciudades en footer sin slugify | Footer ahora usa slugs correctos. | ✅ FIXED |
 | M28 | `Link` import sin usar en varias pages | Eliminados imports no usados. | ✅ FIXED |
 | M29 | `getAllProducts` import sin usar | Eliminado. | ✅ FIXED |

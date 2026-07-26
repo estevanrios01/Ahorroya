@@ -8,11 +8,7 @@ import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../components/seo/JsonLd';
 import { Heart, ArrowLeft, Trash2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useFavorites } from '../../lib/useFavorites';
-
-const formatPrice = (value) =>
-  value != null
-    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value)
-    : '';
+import { formatPrice } from '../../lib/formatPrice';
 
 export default function FavoritosPage() {
   const router = useRouter();

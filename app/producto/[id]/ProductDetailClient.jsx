@@ -17,8 +17,8 @@ import { Button } from '../../../packages/ui/src/components/button';
 import { Section } from '../../../packages/ui/src/components/section';
 import ProductGrid from '../../../components/product/ProductGrid';
 import { useFavorites } from '../../../lib/useFavorites';
+import { formatPrice } from '../../../lib/formatPrice';
 
-const formatPrice = (v) => v != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v) : '';
 const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'la-rebaja', 'locatel', 'pasteur', 'colsubsidio']);
 
 function storeHref(storeSlug) {

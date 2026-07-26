@@ -4,6 +4,7 @@ import { searchSchema, sanitize } from '@/lib/zod';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { getProductsByStore } from '@/services/catalog/CatalogService';
 import { withTimeout } from '@/services/fallbackCatalog';
+import logger from '@/lib/logger';
 
 async function degradedResponse({ page = 1, limit = 20, q = '', store = '', city = '' } = {}) {
   const fallback = await getLiveFallbackProducts({ q, limit, store, page }).catch(() => []);
@@ -58,7 +59,8 @@ export async function GET(request) {
     if (result.error) return degradedResponse({ page, limit, q: sanitizedQ, city });
 
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });
-  } catch {
+  } catch (error) {
+    await logger.error({ err: error?.message, path: '/api/products' }, 'Unhandled error, falling back to degraded response');
     return degradedResponse(fallbackContext);
   }
 }
