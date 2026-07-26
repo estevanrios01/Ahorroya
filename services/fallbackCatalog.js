@@ -9,7 +9,7 @@ export const fallbackStores = [
   { name: 'Metro', slug: 'metro', category: 'Supermercado', type: 'supermercado', description: 'Supermercado con productos de mercado, frescos y hogar.' },
   { name: 'Farmatodo', slug: 'farmatodo', category: 'Farmacia', type: 'farmacia', description: 'Farmacia y tienda de conveniencia con medicamentos, dermocosmetica y cuidado personal.' },
   { name: 'Cruz Verde', slug: 'cruz-verde', category: 'Farmacia', type: 'farmacia', description: 'Farmacia nacional con medicamentos, bienestar, belleza y cuidado personal.' },
-  { name: 'La Rebaja', slug: 'la-rebaja', category: 'Farmacia', type: 'farmacia', description: 'Drogueria con medicamentos, cuidado personal y productos de salud.' },
+  { name: 'La Rebaja', slug: 'larebaja', category: 'Farmacia', type: 'farmacia', description: 'Drogueria con medicamentos, cuidado personal y productos de salud.' },
   { name: 'Locatel', slug: 'locatel', category: 'Farmacia', type: 'farmacia', description: 'Farmacia y tienda de salud con productos medicos y cuidado personal.' },
   { name: 'Pasteur', slug: 'pasteur', category: 'Farmacia', type: 'farmacia', description: 'Drogueria con cobertura regional y productos de salud.' },
   { name: 'Colsubsidio', slug: 'colsubsidio', category: 'Farmacia', type: 'farmacia', description: 'Droguerias con medicamentos, bienestar y servicios complementarios.' },
@@ -44,8 +44,7 @@ export function withTimeout(promise, ms = 2500, label = 'timeout') {
 }
 
 export function getFallbackStore(slug) {
-  const canonicalSlug = slug === 'larebaja' ? 'la-rebaja' : slug;
-  return fallbackStores.find((store) => store.slug === canonicalSlug) || null;
+  return fallbackStores.find((store) => store.slug === slug) || null;
 }
 
 export function getFallbackCategory(slug) {

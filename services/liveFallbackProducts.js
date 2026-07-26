@@ -4,7 +4,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 const DISCOVERY_QUERIES = ['arroz', 'aceite', 'leche', 'huevos', 'detergente', 'pollo'];
 const PHARMACY_DISCOVERY_QUERIES = ['acetaminofen', 'ibuprofeno', 'vitamina', 'shampoo', 'crema', 'protector solar'];
-const PHARMACY_SOURCE_SLUGS = new Set(['la-rebaja', 'colsubsidio', 'locatel', 'pasteur', 'farmatodo', 'cruz-verde']);
+const PHARMACY_SOURCE_SLUGS = new Set(['larebaja', 'colsubsidio', 'locatel', 'pasteur', 'farmatodo', 'cruz-verde']);
 const DISCOVERY_INCLUDE_TERMS = [
   'arroz', 'aceite', 'leche', 'huevo', 'detergente', 'pollo', 'pasta', 'cafe', 'azucar',
   'galleta', 'crema', 'queso', 'yogur', 'atun', 'frijol', 'lenteja',
@@ -58,7 +58,7 @@ const SOURCES = [
   },
   {
     name: 'La Rebaja',
-    slug: 'la-rebaja',
+    slug: 'larebaja',
     endpoint: 'https://www.larebajavirtual.com/api/catalog_system/pub/products/search',
   },
   {
@@ -389,8 +389,7 @@ function normalizeAraProduct(element, $, source) {
 
 function getSourceBySlug(sourceSlug) {
   if (!sourceSlug) return null;
-  const canonicalSlug = sourceSlug === 'larebaja' ? 'la-rebaja' : sourceSlug;
-  return SOURCES.find((source) => source.slug === canonicalSlug) || null;
+  return SOURCES.find((source) => source.slug === sourceSlug) || null;
 }
 
 function interleaveBatches(batches, limit) {

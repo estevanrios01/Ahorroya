@@ -21,7 +21,7 @@ const storeLogos = {
   olimpica: { initials: 'OL', gradient: 'from-yellow-600 to-yellow-700' },
   'cruz-verde': { initials: 'CV', gradient: 'from-emerald-600 to-emerald-800' },
   farmatodo: { initials: 'FT', gradient: 'from-green-500 to-green-700' },
-  'la-rebaja': { initials: 'LR', gradient: 'from-red-500 to-red-700' },
+  larebaja: { initials: 'LR', gradient: 'from-red-500 to-red-700' },
   pasteur: { initials: 'PA', gradient: 'from-blue-500 to-blue-700' },
   colsubsidio: { initials: 'CS', gradient: 'from-yellow-500 to-orange-600' },
   locatel: { initials: 'LO', gradient: 'from-rose-600 to-rose-800' },

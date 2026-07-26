@@ -16,7 +16,7 @@ const RETAILERS = [
   { name: 'makro', label: 'Makro', type: 'supermarket', baseUrl: 'https://www.makro.com.co', searchUrl: 'https://www.makro.com.co/buscar?q={q}', query: 'detergente' },
   { name: 'farmatodo', label: 'Farmatodo', type: 'pharmacy', baseUrl: 'https://www.farmatodo.com.co', searchUrl: 'https://www.farmatodo.com.co/buscar?q={q}', query: 'acetaminofen' },
   { name: 'cruz-verde', label: 'Cruz Verde', type: 'pharmacy', baseUrl: 'https://www.cruzverde.com.co', searchUrl: 'https://www.cruzverde.com.co/buscar?q={q}', query: 'ibuprofeno' },
-  { name: 'la-rebaja', label: 'La Rebaja', type: 'pharmacy', baseUrl: 'https://www.larebaja.com.co', searchUrl: 'https://www.larebaja.com.co/buscar?q={q}', query: 'vitamina' },
+  { name: 'larebaja', label: 'La Rebaja', type: 'pharmacy', baseUrl: 'https://www.larebaja.com.co', searchUrl: 'https://www.larebaja.com.co/buscar?q={q}', query: 'vitamina' },
 ];
 
 function assertEnv() {

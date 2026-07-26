@@ -23,7 +23,7 @@ const staticRoutes = [
 const dynamicSlugs = {
   '/producto/': ['arroz-diana-premium', 'arroz-roa-fortificado', 'leche-entera-colanta', 'aceite-gourmet-900ml', 'pan-bimbo-artesano', 'acetaminofen-mk-500mg', 'jabon-liquido-rey', 'ibuprofeno-mk-400mg', 'detergente-fab-1kg', 'cafe-sello-rojo-500g', 'huevos-santa-reyes-x30', 'coca-cola-25l'],
   '/supermercado/': ['exito', 'd1', 'jumbo', 'olimpica', 'ara', 'carulla', 'makro'],
-  '/farmacia/': ['cruz-verde', 'farmatodo', 'la-rebaja'],
+  '/farmacia/': ['cruz-verde', 'farmatodo', 'larebaja'],
   '/categoria/': ['despensa', 'farmacia', 'lacteos', 'panaderia', 'aseo', 'medicamentos-otc', 'bebidas', 'mercado', 'carnes', 'bebes', 'mascotas'],
   '/marca/': ['diana', 'colanta', 'gourmet', 'bimbo', 'mk', 'roa', 'sello-rojo', 'coca-cola', 'rey', 'fab', 'santa-reyes', 'familia'],
   '/ciudad/': ['cali', 'bogota', 'medellin', 'barranquilla', 'cartagena', 'bucaramanga', 'pereira', 'manizales', 'ibague', 'cucuta', 'villavicencio', 'santa-marta', 'neiva', 'pasto', 'armenia'],

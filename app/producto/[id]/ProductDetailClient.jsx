@@ -20,7 +20,7 @@ import { useFavorites } from '../../../lib/useFavorites';
 import { formatPrice } from '../../../lib/formatPrice';
 import { getHistoricalMin, getHistoricalMax, getTrend } from '../../../lib/priceHistoryStats';
 
-const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'la-rebaja', 'locatel', 'pasteur', 'colsubsidio']);
+const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'locatel', 'pasteur', 'colsubsidio']);
 
 function storeHref(storeSlug) {
   const route = PHARMACY_SLUGS.has(storeSlug) ? 'farmacia' : 'supermercado';
