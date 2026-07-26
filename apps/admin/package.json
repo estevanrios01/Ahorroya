@@ -10,5 +10,12 @@
     "next": "^16",
     "react": "^19",
     "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17"
+  },
+  "overrides": {
+    "postcss": "^8.5.23",
+    "sharp": "^0.35.3"
   }
 }

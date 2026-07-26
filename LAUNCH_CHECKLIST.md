@@ -52,7 +52,7 @@
 | H16 | Sin CSRF protection | `lib/csrf.js` (`csrfProtection`) montado en `proxy.js` para todo `/api/*`. | ✅ FIXED (verificado 2026-07-26) |
 | H17 | Dockerfile: `--only=production` | Cambiado a `npm ci` sin flag. | ✅ FIXED |
 | H18 | `jest` y `@swc/jest` faltantes | Agregados a devDependencies. | ✅ FIXED |
-| H19 | Formato error inconsistente en APIs | Pendiente de estandarizar. | 🟠 PENDIENTE |
+| H19 | Formato error inconsistente en APIs | Revisadas las 28 rutas: todas usan el mismo sobre `{ success, data?, error?, degraded? }` con status HTTP apropiado. Ya estandarizado. | ✅ FIXED (verificado 2026-07-26) |
 | H20 | PostCSS vulnerable (vía Next.js) | `postcss@8.5.23` instalado, por encima del rango vulnerable. | ✅ FIXED (verificado 2026-07-26) |
 | H21 | not-found.js sin metadata | Agregado metadata con title y robots. | ✅ FIXED |
 | H22 | Admin app usa `<a>` en vez de `<Link>` | Pendiente (apps/admin/ es repositorio separado). | 🟠 PENDIENTE |
@@ -76,7 +76,7 @@
 | M11 | Datos mock en Zustand store | `store/useSupermarketStore.js` arranca con `results: []`, poblado por fetches reales; sin datos mock. | ✅ FIXED (verificado 2026-07-26) |
 | M12 | Stores list duplicada | Investigado a fondo — es más que duplicación cosmética. `components/home/StoreCarousel.jsx` tiene su propia lista local con slug `larebaja` (sin guion), que es el que realmente escribe `scripts/import-vtex-catalog.js` en la tabla `stores`. Pero `services/fallbackCatalog.js` (usado por 23 archivos), `services/liveFallbackProducts.js` (SOURCES, `PHARMACY_SOURCE_SLUGS`), `app/sitemap.js`, `StoreClient.jsx` y `lib/observability/health.js` usan `la-rebaja` (con guion) como slug canónico interno, con shims de alias en 2 lugares (`sourceSlug === 'larebaja' ? 'la-rebaja' : sourceSlug`) que traducen uno al otro. Intenté consolidar `StoreCarousel.jsx` para usar la lista compartida y esto salió a la luz: si se hiciera ese swap sin más, los links a "La Rebaja" en modo degradado apuntarían a `/farmacia/la-rebaja`, que nunca calzará contra `stores.slug = 'larebaja'` una vez la base tenga datos reales -- siempre caería a modo live-fallback aunque la DB ya funcione. Revertí el swap. Arreglarlo bien requiere unificar el slug en ~8 archivos, incluyendo el ruteo del que depende hoy el único dato real que sirve la app (SOURCES de `liveFallbackProducts.js`) -- no lo toqué a ciegas porque no puedo probar contra los endpoints de los comercios desde este sandbox (red bloqueada). | 🟡 INVESTIGADO A FONDO, PENDIENTE DE FUSIONAR CON VERIFICACIÓN EN VIVO (2026-07-26) |
 | M13 | Productos hardcodeados en page.js | `app/page.js` no tiene arrays de productos hardcodeados; `HomeProductSections.jsx` los trae de `/api/products`. | ✅ FIXED (verificado 2026-07-26) |
-| M14-M15 | Formato response inconsistente | Pendiente de unificar. | 🟡 PENDIENTE |
+| M14-M15 | Formato response inconsistente | Mismo hallazgo que H19 — ya unificado en las 28 rutas. | ✅ FIXED (verificado 2026-07-26) |
 | M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
 | M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
 | M18 | Password en docker-compose.yml | Ya usa `${POSTGRES_PASSWORD:-change_me}` (env var con default placeholder obvio), no un secreto fijo. Archivo es solo para Postgres local de desarrollo. | ✅ FIXED (verificado 2026-07-26) |
