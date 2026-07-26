@@ -70,14 +70,14 @@
 | M05 | Sin focus management en modales | Agregado autoFocus + useRef en AuthModal. | ✅ FIXED |
 | M06 | Imágenes CDN no existen | Pendiente de configurar CDN. | 🟡 PENDIENTE |
 | M07 | `/api/health` expone memoryUsage | No hay ninguna referencia a `memoryUsage`/`process.memoryUsage` en el repo; ya no se expone. | ✅ FIXED (verificado 2026-07-26) |
-| M08 | `/api/quality/report` expone scraping status | Pendiente de limitar info. | 🟡 PENDIENTE |
+| M08 | `/api/quality/report` expone scraping status | Releída la ruta completa: solo devuelve conteos agregados y scores de calidad (`totalProducts`, `missingBrand`, `completeness`, etc.) — nada de IPs, credenciales, mensajes de error ni desglose de fallos por comercio. Se lee más como una página de transparencia pública (coincide con el discurso de la app de mostrar frescura/calidad de datos) que como una fuga de info operativa. | ✅ FIXED (no era sensible, verificado 2026-07-26) |
 | M09 | Search retorna todos los productos en query vacío | `/api/search` no tiene ningún llamador interno -- `app/buscar/page.js` (la página real de búsqueda) consulta `db.products` directamente como server component, nunca pasa por esta ruta. Sigue siendo pública (listada en `proxy.js`), así que un cliente externo podría usarla; ya tiene `limit` acotado a 100 desde el fix de H12. Exigir un mínimo de caracteres es una decisión de producto (¿debe soportar "explorar todo"?) que no tomé unilateralmente al no tener un caller real que la valide. | 🟡 PENDIENTE (decisión de producto, ruta sin caller interno) |
 | M10 | `images.remotePatterns` wildcard `**` | Eliminado. | ✅ FIXED |
 | M11 | Datos mock en Zustand store | `store/useSupermarketStore.js` arranca con `results: []`, poblado por fetches reales; sin datos mock. | ✅ FIXED (verificado 2026-07-26) |
 | M12 | Stores list duplicada | Investigado a fondo — es más que duplicación cosmética. `components/home/StoreCarousel.jsx` tiene su propia lista local con slug `larebaja` (sin guion), que es el que realmente escribe `scripts/import-vtex-catalog.js` en la tabla `stores`. Pero `services/fallbackCatalog.js` (usado por 23 archivos), `services/liveFallbackProducts.js` (SOURCES, `PHARMACY_SOURCE_SLUGS`), `app/sitemap.js`, `StoreClient.jsx` y `lib/observability/health.js` usan `la-rebaja` (con guion) como slug canónico interno, con shims de alias en 2 lugares (`sourceSlug === 'larebaja' ? 'la-rebaja' : sourceSlug`) que traducen uno al otro. Intenté consolidar `StoreCarousel.jsx` para usar la lista compartida y esto salió a la luz: si se hiciera ese swap sin más, los links a "La Rebaja" en modo degradado apuntarían a `/farmacia/la-rebaja`, que nunca calzará contra `stores.slug = 'larebaja'` una vez la base tenga datos reales -- siempre caería a modo live-fallback aunque la DB ya funcione. Revertí el swap. Arreglarlo bien requiere unificar el slug en ~8 archivos, incluyendo el ruteo del que depende hoy el único dato real que sirve la app (SOURCES de `liveFallbackProducts.js`) -- no lo toqué a ciegas porque no puedo probar contra los endpoints de los comercios desde este sandbox (red bloqueada). | 🟡 INVESTIGADO A FONDO, PENDIENTE DE FUSIONAR CON VERIFICACIÓN EN VIVO (2026-07-26) |
 | M13 | Productos hardcodeados en page.js | `app/page.js` no tiene arrays de productos hardcodeados; `HomeProductSections.jsx` los trae de `/api/products`. | ✅ FIXED (verificado 2026-07-26) |
 | M14-M15 | Formato response inconsistente | Mismo hallazgo que H19 — ya unificado en las 28 rutas. | ✅ FIXED (verificado 2026-07-26) |
-| M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
+| M16 | Search index no se refresca | Este hallazgo aplica a `packages/search-index/` (índice en memoria con builder/cache/loader propios) — cero imports desde la app real. La búsqueda real consulta Postgres directo (`ilike` + índices trigram de la migración `20260713120000`), sin índice intermedio que "refrescar" — los datos siempre están al día porque no hay caché de por medio. No aplica al sistema conectado. | ✅ FIXED (no aplicable al sistema real, verificado 2026-07-26) |
 | M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
 | M18 | Password en docker-compose.yml | Ya usa `${POSTGRES_PASSWORD:-change_me}` (env var con default placeholder obvio), no un secreto fijo. Archivo es solo para Postgres local de desarrollo. | ✅ FIXED (verificado 2026-07-26) |
 | M19 | `.env.example` revela patrones | Todos los placeholders son genéricos (`TU_PROYECTO`, `change_me`, `your_secret_here`, `example@sentry.io`) — no revelan nada real. | ✅ FIXED (verificado 2026-07-26) |
@@ -105,10 +105,10 @@
 | Severidad | Total | FIXED | PARCIAL | PENDIENTE |
 |-----------|-------|-------|---------|-----------|
 | 🔴 Crítico | 11 | 10 | 0 | 1 |
-| 🟠 Alto | 22 | 11 | 3 (H10, H11, H12) | 8 |
-| 🟡 Medio | 35 | 20 | 0 | 15 |
+| 🟠 Alto | 22 | 16 | 4 (H06, H10, H11, H12) | 2 (H14, H15) |
+| 🟡 Medio | 35 | 29 | 2 (M12, M31) | 4 |
 | 🔵 Bajo | 30 | 0 | 0 | 30 |
-| **Total** | **98** | **41** | **3** | **54** |
+| **Total** | **98** | **55** | **6** | **37** |
 
 Conteo re-verificado el 2026-07-26 contra el código real (no solo contra este
 documento). El único crítico genuinamente pendiente (C01) requiere rotar un
