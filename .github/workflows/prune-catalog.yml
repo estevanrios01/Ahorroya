@@ -1,0 +1,23 @@
+name: Prune Catalog
+
+on:
+  # Same emergency pause as live-prices.yml and scrapers.yml -- re-enable
+  # once the Supabase project is confirmed healthy under real write volume.
+  # schedule:
+  #   - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20.19.0
+      - run: npm ci --include=optional
+      - run: npm run data:prune
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

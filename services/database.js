@@ -57,6 +57,13 @@ function preferCompleteProducts(products) {
 
 export const db = {
   products: {
+    async listPromotions({ limit = 20 } = {}) {
+      if (!isDatabaseAvailable(supabase)) return { data: [] };
+      const { data, error } = await supabase.rpc('list_active_promotions', { p_limit: limit });
+      if (error) return handleError(error, 'products.listPromotions');
+      return { data: data || [] };
+    },
+
     async list({ q, category, city, page = 1, limit = 20 } = {}) {
       if (!isDatabaseAvailable(supabase)) return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       if (city) {
