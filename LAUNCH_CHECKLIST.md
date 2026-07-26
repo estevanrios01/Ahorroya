@@ -79,7 +79,7 @@
 | M20 | `.gitignore` incompleto | Mejorado, agregadas entradas. | ✅ FIXED |
 | M21 | `package.json` name = `next-temp` | Cambiado a `@ahorroya/web`. | ✅ FIXED |
 | M22 | Version mismatch scraper-framework-v2 | Resuelto: `packages/scraper` y `packages/scraper-framework-v2` eran selectores CSS inventados para ~50 retailers sin integración real, sin importadores en ningún lado del repo. Eliminados. | ✅ FIXED |
-| M23 | `apps/worker` sin package.json | Pendiente de crear o eliminar. | 🟡 PENDIENTE |
+| M23 | `apps/worker` sin package.json | Resuelto: era código roto (el script `worker` en package.json apuntaba a un `.js` que no existía, solo había `.ts`; cero package.json, cero uso en CI). Eliminado junto con `apps/api` (mismo problema: package.json de Next.js sobre una estructura de router Express incompatible). | ✅ FIXED |
 | M24 | Admin app navegación `<a>` tags | Pendiente (apps/admin/ separado). | 🟡 PENDIENTE |
 | M25 | Array index como React key | Pendiente de reemplazar con IDs. | 🟡 PENDIENTE |
 | M26 | Precio formateado sin utility centralizada | Pendiente de crear `formatPrice()`. | 🟡 PENDIENTE |

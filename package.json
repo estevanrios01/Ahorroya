@@ -34,8 +34,7 @@
     "prices:ara": "node scripts/import-ara-offers.js",
     "images:cleanup": "node scripts/cleanup-noncommercial-images.js",
     "data:cleanup-synthetic": "node scripts/cleanup-synthetic-listings.js",
-    "prices:freshness": "node scripts/check-price-freshness.js",
-    "worker": "node apps/worker/src/index.js"
+    "prices:freshness": "node scripts/check-price-freshness.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

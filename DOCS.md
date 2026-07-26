@@ -16,10 +16,8 @@ ahorroya/
 │   ├── dashboard-ejecutivo/# Dashboard KPIs nacionales
 │   └── page.js             # Home page
 ├── apps/
-│   ├── admin/              # Panel administrativo CMS (17 secciones)
-│   ├── mobile/             # App móvil Expo + React Native
-│   ├── api/                # API standalone (puerto 4000)
-│   └── worker/             # Worker de procesamiento batch
+│   ├── admin/              # Mockup de panel admin (18 páginas, datos hardcodeados, sin backend real)
+│   └── mobile/             # Scaffold de app móvil Expo + React Native, no compilado ni desplegado
 ├── packages/ (24)
 │   ├── database/           # Drizzle ORM schema (14 tablas) -- no wired into the app yet
 │   ├── catalog-core/       # DDD: MasterProduct, DuplicateDetector
@@ -93,13 +91,6 @@ ahorroya/
 | GET | `/api/ai/recommend` | Recomendaciones IA |
 | GET | `/api/ai/suggest` | Sugerencias búsqueda |
 | GET | `/api/scrape` | Ejecutar scraping |
-
-### Standalone API (`apps/api/`, puerto 4000)
-
-| Ruta | Propósito |
-|------|-----------|
-| `/products` | CRUD productos |
-| `/search` | Búsqueda |
 
 ## Frontend Routes
 
