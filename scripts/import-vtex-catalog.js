@@ -1,5 +1,6 @@
 const { Agent } = require('undici');
 const { loadEnv, rest, upsertBatch, insertBatch, slug, fixMojibake, makeCryptoId, numericEqual } = require('./lib/supabase-rest');
+const { extractPresentation } = require('./lib/normalize');
 
 loadEnv();
 
@@ -266,6 +267,20 @@ function primaryCategory(product) {
   return parts[1] || parts[0] || 'Supermercado';
 }
 
+const GENERIC_UNITS = new Set(['un', 'und', 'unid', 'unidad', 'u']);
+
+// VTEX's own measurementUnit is often just a generic "un" even when the
+// product name has a real package size in it (e.g. "Arroz Diana 500g"). Only
+// fall back to the name-derived size when VTEX's unit isn't already a
+// specific one -- retailer data wins when it's actually specific.
+function resolveUnit(vtexUnit, name) {
+  const normalized = String(vtexUnit || '').trim().toLowerCase();
+  if (normalized && !GENERIC_UNITS.has(normalized)) return vtexUnit;
+  const presentation = extractPresentation(name);
+  if (presentation.quantity && presentation.unit) return `${presentation.quantity}${presentation.unit}`;
+  return vtexUnit || 'unidad';
+}
+
 function normalizeProduct(product) {
   const item = primaryItem(product);
   const offer = primaryOffer(item);
@@ -286,7 +301,7 @@ function normalizeProduct(product) {
     sku: item?.itemId || product.productId,
     image,
     description: product.metaTagDescription || product.description || null,
-    unit: item?.measurementUnit || product.measurement_unit?.[0] || 'unidad',
+    unit: resolveUnit(item?.measurementUnit || product.measurement_unit?.[0], name),
     price,
     originalPrice: originalPrice > price ? originalPrice : null,
     available: offer?.IsAvailable !== false && price > 0,

@@ -76,7 +76,7 @@ export class NormalizerPipeline {
             const regex = new RegExp(`\\b${alias}\\b`, "gi");
             result = result.replace(regex, canonical);
         }
-        return text;
+        return result;
     }
 
     resolveCategories(text: string): string {
