@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request) {
+async function handleGet(request) {
   const userId = request.headers.get('x-user-id');
   if (!userId) {
     return NextResponse.json({ success: false, error: 'Usuario no autenticado' }, { status: 401 });
@@ -12,3 +13,5 @@ export async function GET(request) {
   }
   return NextResponse.json({ success: true, message: 'Scraping iniciado', query, store: request.headers.get('x-store') || 'general' });
 }
+
+export const GET = withErrorHandling(handleGet);

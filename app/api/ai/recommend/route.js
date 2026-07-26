@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { aiRecommendSchema } from '@/lib/zod';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function POST(request) {
+async function handlePost(request) {
   const body = await request.json();
   const parsed = aiRecommendSchema.safeParse(body);
   if (!parsed.success) {
@@ -26,3 +27,5 @@ export async function POST(request) {
     data: { productId, productName, currentPrice, predictedPrice: Math.round(avgPrice), recommendation, reason, confidence, alternatives: [] },
   });
 }
+
+export const POST = withErrorHandling(handlePost);

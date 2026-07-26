@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET() {
+async function handleGet() {
   const result = await withTimeout(db.brands.list(), 700, 'brands timeout').catch((error) => ({ error }));
   if (result.error || !result.data?.length) {
     const products = await getLiveFallbackProducts({ limit: 24 }).catch(() => []);
@@ -19,3 +20,5 @@ export async function GET() {
   }));
   return NextResponse.json({ success: true, data: withCounts });
 }
+
+export const GET = withErrorHandling(handleGet);

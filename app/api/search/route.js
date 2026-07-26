@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request) {
+async function handleGet(request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
@@ -23,3 +24,5 @@ export async function GET(request) {
 
   return NextResponse.json({ success: true, query: q, results: result.data, total: result.total });
 }
+
+export const GET = withErrorHandling(handleGet);

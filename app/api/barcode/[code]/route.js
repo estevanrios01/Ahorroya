@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { barcodeSchema } from '@/lib/zod';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request, { params }) {
+async function handleGet(request, { params }) {
   const { code } = await params;
   const parsed = barcodeSchema.safeParse({ code });
   if (!parsed.success) {
@@ -20,3 +21,5 @@ export async function GET(request, { params }) {
 
   return NextResponse.json({ success: true, data: { code: parsed.data.code, ...result.data } });
 }
+
+export const GET = withErrorHandling(handleGet);

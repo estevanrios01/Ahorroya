@@ -1,22 +1,48 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { rateLimit } from './lib/rate-limit';
+import { csrfProtection } from './lib/csrf';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const PUBLIC_PATHS = [
-  '/', '/api/health', '/api/products', '/api/products/', '/api/search', '/api/stores',
-  '/api/stores/', '/api/promotions', '/api/categories', '/api/brands', '/api/cities',
-  '/api/departments', '/api/barcode/', '/api/ai/suggest', '/api/quality/report',
-  '/api/analytics/events', '/api/geo/nearby',
+// Exact-match public paths. NOTE: this must never contain a bare '/' -- since
+// config.matcher already restricts this proxy to /api/:path*, '/' would never
+// be matched as an exact path anyway, but pathname.startsWith('/') is true
+// for every possible path, which previously made isPublic always true and
+// silently disabled auth-gating for every single /api route.
+const PUBLIC_EXACT_PATHS = new Set([
+  '/api/health', '/api/products', '/api/search', '/api/stores', '/api/promotions',
+  '/api/categories', '/api/brands', '/api/cities', '/api/departments', '/api/ai/suggest',
+  '/api/quality/report', '/api/analytics/events', '/api/geo/nearby',
   '/api/observability/health', '/api/observability/metrics', '/api/observability/dashboard',
   '/api/scrapers/status', '/api/categories/products', '/dashboard-ejecutivo',
-];
+]);
+
+// Genuine path-parameter prefixes (/api/products/[slug], etc.) -- each must
+// be specific enough that it cannot accidentally swallow unrelated routes.
+const PUBLIC_PREFIX_PATHS = ['/api/products/', '/api/stores/', '/api/barcode/'];
+
+function isPublicPath(pathname) {
+  return PUBLIC_EXACT_PATHS.has(pathname) || PUBLIC_PREFIX_PATHS.some(p => pathname.startsWith(p));
+}
 
 const AUTH_REQUIRED_PATHS = [
-  '/api/favorites', '/api/images/upload', '/api/images/', '/api/scrape',
+  '/api/favorites', '/api/images/upload', '/api/images/', '/api/scrape', '/api/scrapers/trigger',
 ];
+
+// Every route downstream trusts x-user-id/x-user-role as "this request was
+// verified by the middleware". A client can set arbitrary headers on its own
+// request, so those two must always be stripped from the inbound request
+// before any auth check runs -- otherwise sending x-user-id: <anything>
+// impersonates a verified user on any route that doesn't itself re-check the
+// bearer token (this is how /api/scrapers/trigger used to be bypassable).
+function stripSpoofableHeaders(request) {
+  const headers = new Headers(request.headers);
+  headers.delete('x-user-id');
+  headers.delete('x-user-role');
+  return headers;
+}
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
@@ -29,10 +55,15 @@ export async function proxy(request) {
     });
   }
 
-  const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p));
+  if (pathname.startsWith('/api')) {
+    const csrfBlocked = csrfProtection(request);
+    if (csrfBlocked) return csrfBlocked;
+  }
+
+  const isPublic = isPublicPath(pathname);
   const isAuthRequired = AUTH_REQUIRED_PATHS.some(p => pathname.startsWith(p));
 
-  if (isPublic) return NextResponse.next();
+  if (isPublic) return NextResponse.next({ request: { headers: stripSpoofableHeaders(request) } });
 
   if (pathname.startsWith('/api') && isAuthRequired) {
     const authHeader = request.headers.get('authorization');
@@ -51,7 +82,7 @@ export async function proxy(request) {
     if (error || !user) {
       return NextResponse.json({ success: false, error: 'Token inválido o expirado' }, { status: 401 });
     }
-    const requestHeaders = new Headers(request.headers);
+    const requestHeaders = stripSpoofableHeaders(request);
     requestHeaders.set('x-user-id', user.id);
     requestHeaders.set('x-user-role', user.app_metadata?.role || 'user');
     return NextResponse.next({ request: { headers: requestHeaders } });
@@ -68,14 +99,14 @@ export async function proxy(request) {
         });
         const { data: { user } } = await supabase.auth.getUser(token);
         if (user) {
-          const requestHeaders = new Headers(request.headers);
+          const requestHeaders = stripSpoofableHeaders(request);
           requestHeaders.set('x-user-id', user.id);
           requestHeaders.set('x-user-role', user.app_metadata?.role || 'user');
           return NextResponse.next({ request: { headers: requestHeaders } });
         }
       }
     }
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: stripSpoofableHeaders(request) } });
   }
 
   return NextResponse.next();

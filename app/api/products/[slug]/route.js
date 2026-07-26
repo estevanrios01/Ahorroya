@@ -3,8 +3,9 @@ import { db } from '@/services/database';
 import { productSlugSchema } from '@/lib/zod';
 import { getLiveFallbackProductBySlug } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request, { params }) {
+async function handleGet(request, { params }) {
   const { slug } = await params;
   const parsed = productSlugSchema.safeParse({ slug });
   if (!parsed.success) {
@@ -21,3 +22,5 @@ export async function GET(request, { params }) {
   const { data: prices } = await withTimeout(db.products.getPrices(product.id), 1800, 'prices timeout').catch(() => ({ data: [] }));
   return NextResponse.json({ success: true, data: { ...product, prices } });
 }
+
+export const GET = withErrorHandling(handleGet);

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function POST(request) {
+async function handlePost(request) {
   const body = await request.json();
   const { name, properties } = body;
   if (!name || typeof name !== 'string') {
@@ -17,6 +18,9 @@ export async function POST(request) {
   return NextResponse.json({ success: true, data: event });
 }
 
-export async function GET() {
+async function handleGet() {
   return NextResponse.json({ success: true, data: { message: 'Analytics endpoint activo' } });
 }
+
+export const POST = withErrorHandling(handlePost);
+export const GET = withErrorHandling(handleGet);

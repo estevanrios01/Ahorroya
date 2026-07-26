@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function POST(request) {
+async function handlePost(request) {
   const userId = request.headers.get('x-user-id');
   if (!userId) {
     return NextResponse.json({ success: false, error: 'Usuario no autenticado' }, { status: 401 });
@@ -24,3 +25,5 @@ export async function POST(request) {
     data: { id: imageId, filename: file.name || 'sin-nombre', size: file.size, mimeType: file.type, url: `/api/images/${imageId}` },
   });
 }
+
+export const POST = withErrorHandling(handlePost);

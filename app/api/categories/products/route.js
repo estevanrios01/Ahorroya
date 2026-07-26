@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getProductsByCategory } from '../../../../services/catalog/CatalogService';
 import { getLiveFallbackProducts } from '../../../../services/liveFallbackProducts';
 import { withTimeout } from '../../../../services/fallbackCatalog';
+import { withErrorHandling } from '../../../../lib/api-handler';
 
 const CATEGORY_SEARCH_TERMS = {
   mercado: 'arroz',
@@ -31,7 +32,7 @@ const CATEGORY_EXCLUDE_TERMS = {
   farmacia: ['juguete'],
 };
 
-export async function GET(request) {
+async function handleGet(request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
   const page = parseInt(searchParams.get('page') || '1');
@@ -64,3 +65,5 @@ export async function GET(request) {
   }
   return NextResponse.json({ success: true, data: products });
 }
+
+export const GET = withErrorHandling(handleGet);

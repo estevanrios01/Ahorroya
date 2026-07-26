@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/services/database';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
 function getDb() {
   return supabaseAdmin || supabase;
@@ -62,7 +63,7 @@ function isTrustedCache(cached) {
   return Number.isFinite(updatedAt) && Date.now() - updatedAt < 15 * 60 * 1000;
 }
 
-export async function GET() {
+async function handleGet() {
   const client = getDb();
   if (!client) {
     return NextResponse.json({ success: false, error: 'Supabase no configurado' }, { status: 503 });
@@ -148,3 +149,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withErrorHandling(handleGet);

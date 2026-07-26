@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request) {
+async function handleGet(request) {
   const { searchParams } = new URL(request.url);
   const lat = parseFloat(searchParams.get('lat') || '0');
   const lng = parseFloat(searchParams.get('lng') || '0');
@@ -9,3 +10,5 @@ export async function GET(request) {
   }
   return NextResponse.json({ success: true, data: { center: { lat, lng }, stores: [] } });
 }
+
+export const GET = withErrorHandling(handleGet);

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { getSchedulerStatus } from '@/services/scrapers/scheduler';
 import { db, supabaseAdmin } from '@/services/database';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET() {
+async function handleGet() {
   const [scheduler, jobs, runs] = await Promise.allSettled([
     Promise.resolve(getSchedulerStatus()),
     withTimeout(db.scraping.listJobs({ limit: 50 }), 1500, 'scraper jobs timeout'),
@@ -21,3 +22,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withErrorHandling(handleGet);

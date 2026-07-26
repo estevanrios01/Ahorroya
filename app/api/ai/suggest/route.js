@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { aiSuggestSchema, sanitize } from '@/lib/zod';
+import { withErrorHandling } from '@/lib/api-handler';
 
 const corrections = {
   acetaminofen: 'Acetaminofén', ibuprofeno: 'Ibuprofeno', dole: 'Dolex',
   arros: 'Arroz', lche: 'Leche', panela: 'Panela', cafe: 'Café', gaseosa: 'Gaseosa',
 };
 
-export async function GET(request) {
+async function handleGet(request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') || '';
   const parsed = aiSuggestSchema.safeParse({ q });
@@ -23,3 +24,5 @@ export async function GET(request) {
   }
   return NextResponse.json({ success: true, data: suggestions });
 }
+
+export const GET = withErrorHandling(handleGet);

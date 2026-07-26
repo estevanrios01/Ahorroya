@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { barcodeScanSchema } from '@/lib/zod';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function POST(request) {
+async function handlePost(request) {
   const body = await request.json();
   const parsed = barcodeScanSchema.safeParse(body);
   if (!parsed.success) {
@@ -12,6 +13,9 @@ export async function POST(request) {
   return NextResponse.json({ success: true, data: scan });
 }
 
-export async function GET() {
+async function handleGet() {
   return NextResponse.json({ success: true, data: [] });
 }
+
+export const POST = withErrorHandling(handlePost);
+export const GET = withErrorHandling(handleGet);

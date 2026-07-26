@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../services/database';
+import { withErrorHandling } from '../../../lib/api-handler';
 
 function withTimeout(promise, ms = 1800) {
   return Promise.race([
@@ -25,7 +26,7 @@ async function checkDatabase() {
   }
 }
 
-export async function GET() {
+async function handleGet() {
   const database = await checkDatabase();
   const status = database.status === 'healthy' ? 'healthy' : 'degraded';
   return NextResponse.json({
@@ -38,3 +39,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withErrorHandling(handleGet);

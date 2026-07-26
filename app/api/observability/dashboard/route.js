@@ -5,6 +5,7 @@ import { getAlertHistory } from '@/lib/observability/alerts';
 import { getSchedulerStatus } from '@/services/scrapers/scheduler';
 import { db, supabaseAdmin } from '@/services/database';
 import { withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
 async function count(table, apply = q => q) {
   if (!supabaseAdmin) return 0;
@@ -59,7 +60,7 @@ async function getProductionSummary() {
   };
 }
 
-export async function GET() {
+async function handleGet() {
   const [metrics, health, alerts, scheduler, scrapingData, production] = await Promise.allSettled([
     Promise.resolve(getMetrics()),
     runHealthCheck(),
@@ -81,3 +82,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withErrorHandling(handleGet);

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { storeSlugSchema } from '@/lib/zod';
 import { getFallbackStore, withTimeout } from '@/services/fallbackCatalog';
+import { withErrorHandling } from '@/lib/api-handler';
 
-export async function GET(request, { params }) {
+async function handleGet(request, { params }) {
   const { slug } = await params;
   const parsed = storeSlugSchema.safeParse({ slug });
   if (!parsed.success) {
@@ -18,3 +19,5 @@ export async function GET(request, { params }) {
   const { data: branches } = await withTimeout(db.stores.getBranches(store.id), 1200, 'branches timeout').catch(() => ({ data: [] }));
   return NextResponse.json({ success: true, data: { ...store, branches } });
 }
+
+export const GET = withErrorHandling(handleGet);
