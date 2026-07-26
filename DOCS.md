@@ -20,10 +20,8 @@ ahorroya/
 │   ├── mobile/             # App móvil Expo + React Native
 │   ├── api/                # API standalone (puerto 4000)
 │   └── worker/             # Worker de procesamiento batch
-├── packages/ (26)
-│   ├── database/           # Drizzle ORM schema (14 tablas)
-│   ├── scraper/            # Scrapers v1 (8 comercios mock)
-│   ├── scraper-framework-v2/# Scrapers v2 (100+ plugins)
+├── packages/ (24)
+│   ├── database/           # Drizzle ORM schema (14 tablas) -- no wired into the app yet
 │   ├── catalog-core/       # DDD: MasterProduct, DuplicateDetector
 │   ├── normalization-engine/# Pipeline normalización productos
 │   ├── matching-engine/    # Estrategias matching (5 + hybrid)
@@ -158,13 +156,20 @@ ahorroya/
 
 ## Scrapers
 
-Arquitectura plugin-based (`packages/scraper-framework-v2/`):
+Dos rutas reales, ambas contra APIs/HTML de comercios de verdad (no hay un
+framework de plugins genérico -- ese código (`packages/scraper`,
+`packages/scraper-framework-v2`) era selectores CSS inventados para ~50
+retailers que nunca existieron como integración real, y se eliminó):
 
-- **Interface**: `ScraperPlugin` con método `scrape(page?)`
-- **Registry**: `PluginRegistry` para gestionar plugins
-- **Base HTTP**: `BaseHttpPlugin` con axios + cheerio
-- **100 plugins**: 50 supermercados + 50 farmacias colombianas
-- **Runner**: `ScrapingRunner` con rate limiting, aislamiento errores, estadísticas
+- **Importación batch** (`scripts/import-*.js`, disparada por
+  `.github/workflows/*.yml`): VTEX (`import-vtex-catalog.js` cubre Exito,
+  Carulla, Olimpica, Jumbo, Metro, La Rebaja, Colsubsidio, Locatel, Pasteur),
+  Algolia (Farmatodo), API propia de Makro, HTML de Ara. Comparten helpers en
+  `scripts/lib/supabase-rest.js`. Escriben directo a Supabase.
+- **Catálogo en vivo** (`services/liveFallbackProducts.js`): las mismas
+  fuentes consultadas en tiempo real por request cuando la base de datos no
+  tiene el producto, sin persistencia. Es lo que sirve hoy la mayoría del
+  tráfico mientras el catálogo persistido se termina de poblar.
 
 ## Catálogo Maestro
 
