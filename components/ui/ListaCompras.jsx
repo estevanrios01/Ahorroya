@@ -4,12 +4,14 @@ import { useEffect, useCallback } from 'react';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import { formatPrice } from '../../lib/formatPrice';
+import { useFocusTrap } from '../../lib/useFocusTrap';
 
 export default function ListaCompras() {
   const carrito = useSupermarketStore((state) => state.carrito);
   const isCarritoAbierto = useSupermarketStore((state) => state.isCarritoAbierto);
   const setIsCarritoAbierto = useSupermarketStore((state) => state.setIsCarritoAbierto);
   const removerDelCarrito = useSupermarketStore((state) => state.removerDelCarrito);
+  const trapRef = useFocusTrap(isCarritoAbierto);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') setIsCarritoAbierto(false);
@@ -34,7 +36,7 @@ export default function ListaCompras() {
         aria-hidden="true"
       ></div>
 
-      <div className="relative w-full max-w-md bg-zinc-950 border-l border-zinc-800 h-full flex flex-col shadow-2xl" role="document">
+      <div ref={trapRef} className="relative w-full max-w-md bg-zinc-950 border-l border-zinc-800 h-full flex flex-col shadow-2xl" role="document">
         <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
           <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
             <ShoppingBag className="text-emerald-400" /> Mi Lista Inteligente

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { X, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { useFocusTrap } from '../../lib/useFocusTrap';
 
 export default function AuthModal({ onClose }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +14,7 @@ export default function AuthModal({ onClose }) {
   const [error, setError] = useState(null);
   const setUser = useSupermarketStore((state) => state.setUser);
   const emailRef = useRef(null);
+  const trapRef = useFocusTrap();
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') onClose();
@@ -49,7 +51,7 @@ export default function AuthModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}>
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+      <div ref={trapRef} className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-100 transition-colors" aria-label="Cerrar">
           <X size={24} />
         </button>
