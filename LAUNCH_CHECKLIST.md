@@ -69,7 +69,7 @@
 | M04 | JSON-LD sin verificación de `p.oldPrice` | Agregado guard `p.oldPrice && p.oldPrice > p.price`. | ✅ FIXED |
 | M05 | Sin focus management en modales | Agregado autoFocus + useRef en AuthModal. | ✅ FIXED |
 | M06 | Imágenes CDN no existen | Pendiente de configurar CDN. | 🟡 PENDIENTE |
-| M07 | `/api/health` expone memoryUsage | Pendiente de limitar info. | 🟡 PENDIENTE |
+| M07 | `/api/health` expone memoryUsage | No hay ninguna referencia a `memoryUsage`/`process.memoryUsage` en el repo; ya no se expone. | ✅ FIXED (verificado 2026-07-26) |
 | M08 | `/api/quality/report` expone scraping status | Pendiente de limitar info. | 🟡 PENDIENTE |
 | M09 | Search retorna todos los productos en query vacío | Pendiente de exigir mínimo caracteres. | 🟡 PENDIENTE |
 | M10 | `images.remotePatterns` wildcard `**` | Eliminado. | ✅ FIXED |
