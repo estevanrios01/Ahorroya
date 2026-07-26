@@ -1,3 +1,10 @@
+-- Promoted from scripts/sql/search_products_by_city.sql, which was never
+-- added to supabase/migrations/ -- rebuilding the schema from this
+-- directory (as happened when the original project got stuck in WAL
+-- recovery and a fresh project was created) silently produced a database
+-- missing this function entirely, even though services/database.js calls
+-- it directly for every city-filtered product search.
+
 create index if not exists idx_branches_city_status
   on public.branches (city, status);
 
@@ -35,6 +42,7 @@ returns table (
 )
 language plpgsql
 security invoker
+set search_path = public, pg_temp
 as $$
 begin
   if coalesce(p_q, '') = '' then

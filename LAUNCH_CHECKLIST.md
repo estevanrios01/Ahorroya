@@ -40,7 +40,7 @@
 | H04 | dashboard-ejecutivo sin metadata | Agregado metadata completo. | ✅ FIXED |
 | H05 | Breadcrumb JSON-LD con links rotos | `/supermercados`, `/farmacias`, `/categorias` etc. ahora existen. | ✅ FIXED |
 | H06 | 10+ fuentes de datos divergentes | Pendiente de unificar en CatalogService. | 🟠 PENDIENTE |
-| H07 | Botones sin onClick | Pendiente de agregar handlers. | 🟠 PENDIENTE |
+| H07 | Botones sin onClick | Revisados los ~20 `<button>` del repo (Header, Hero, ListaCompras, AuthModal, ProductCardPremium, favoritos, error.js, etc.): todos tienen `onClick` real o son `type="submit"` dentro de un `<form>` con `onSubmit`. | ✅ FIXED (verificado 2026-07-26) |
 | H08 | Fake price history chart | Pendiente de reemplazar con datos reales. | 🟠 PENDIENTE |
 | H09 | Enlaces a ciudades con acentos rotos | Footer ahora usa slugs pre-normalizados. | ✅ FIXED |
 | H10 | Memory leaks en 8+ archivos | 4 archivos tenían el mismo patrón `Promise.race([promise, setTimeout(...)])` sin `clearTimeout`: el timer del lado perdedor quedaba vivo hasta vencer aunque la promesa real ya hubiera resuelto. `services/fallbackCatalog.js` (usado por 23 archivos) ya limpia el timer; `lib/observability/health.js`, `app/api/health/route.js` y `app/api/products/route.js` tenían copias locales del mismo bug, ahora importan la versión compartida ya corregida. | 🟠 PARCIAL (4 archivos corregidos, 2026-07-26) |
