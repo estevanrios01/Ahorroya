@@ -3,13 +3,7 @@ import { db } from '@/services/database';
 import { searchSchema, sanitize } from '@/lib/zod';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { getProductsByStore } from '@/services/catalog/CatalogService';
-
-function withTimeout(promise, ms = 2500) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('products timeout')), ms)),
-  ]);
-}
+import { withTimeout } from '@/services/fallbackCatalog';
 
 async function degradedResponse({ page = 1, limit = 20, q = '', store = '', city = '' } = {}) {
   const fallback = await getLiveFallbackProducts({ q, limit, store, page }).catch(() => []);
@@ -47,7 +41,7 @@ export async function GET(request) {
     const sanitizedQ = sanitize(q);
     fallbackContext = { page, limit, q: sanitizedQ, store, city };
     if (store && !city && !sanitizedQ) {
-      const storeResult = await withTimeout(getProductsByStore(store, { page, limit }), 1500).catch(() => null);
+      const storeResult = await withTimeout(getProductsByStore(store, { page, limit }), 1500, 'products timeout').catch(() => null);
       if (storeResult?.products?.length) {
         return NextResponse.json({
           success: true,
@@ -60,7 +54,7 @@ export async function GET(request) {
 
     if (store) return degradedResponse({ page, limit, q: sanitizedQ, store, city });
 
-    const result = await withTimeout(db.products.list({ q: sanitizedQ, category, city, page, limit }));
+    const result = await withTimeout(db.products.list({ q: sanitizedQ, category, city, page, limit }), 2500, 'products timeout');
     if (result.error) return degradedResponse({ page, limit, q: sanitizedQ, city });
 
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });

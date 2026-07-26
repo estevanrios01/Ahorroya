@@ -36,10 +36,11 @@ export const fallbackCities = [
 ];
 
 export function withTimeout(promise, ms = 2500, label = 'timeout') {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
-  ]);
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 export function getFallbackStore(slug) {

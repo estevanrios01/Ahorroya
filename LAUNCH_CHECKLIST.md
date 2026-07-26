@@ -43,7 +43,7 @@
 | H07 | Botones sin onClick | Pendiente de agregar handlers. | 🟠 PENDIENTE |
 | H08 | Fake price history chart | Pendiente de reemplazar con datos reales. | 🟠 PENDIENTE |
 | H09 | Enlaces a ciudades con acentos rotos | Footer ahora usa slugs pre-normalizados. | ✅ FIXED |
-| H10 | Memory leaks en 8+ archivos | Pendiente de agregar TTL/límites. | 🟠 PENDIENTE |
+| H10 | Memory leaks en 8+ archivos | 4 archivos tenían el mismo patrón `Promise.race([promise, setTimeout(...)])` sin `clearTimeout`: el timer del lado perdedor quedaba vivo hasta vencer aunque la promesa real ya hubiera resuelto. `services/fallbackCatalog.js` (usado por 23 archivos) ya limpia el timer; `lib/observability/health.js`, `app/api/health/route.js` y `app/api/products/route.js` tenían copias locales del mismo bug, ahora importan la versión compartida ya corregida. | 🟠 PARCIAL (4 archivos corregidos, 2026-07-26) |
 | H11 | Race conditions en 3 archivos | `services/liveFallbackProducts.js`: `getCruzVerdeSession` dedupeaba mal sesiones concurrentes (cada invocación con sesión vencida disparaba su propio login contra Cruz Verde); ahora comparte la promesa en vuelo. Quedan por auditar los otros 2 archivos originales del hallazgo. | 🟠 PARCIAL (1/3, 2026-07-26) |
 | H12 | 16/18 rutas sin validación de input | Pendiente de agregar validación. | 🟠 PENDIENTE |
 | H13 | Sin logging en 17/18 rutas | Pendiente de agregar logging wrapper. | 🟠 PENDIENTE |

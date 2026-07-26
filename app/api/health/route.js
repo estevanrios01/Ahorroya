@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../services/database';
 import { withErrorHandling } from '../../../lib/api-handler';
-
-function withTimeout(promise, ms = 1800) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('health timeout')), ms)),
-  ]);
-}
+import { withTimeout } from '../../../services/fallbackCatalog';
 
 async function checkDatabase() {
   if (!supabaseAdmin) return { status: 'not_configured', latencyMs: null };
   const started = Date.now();
   try {
     const { error } = await withTimeout(
-      supabaseAdmin.from('master_products').select('id', { count: 'planned', head: true }).limit(1)
+      supabaseAdmin.from('master_products').select('id', { count: 'planned', head: true }).limit(1),
+      1800,
+      'health timeout'
     );
     return {
       status: error ? 'degraded' : 'healthy',
