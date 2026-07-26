@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function PageControls({ backHref = '/', forwardHref, className = '' }) {
+export default function PageControls({ backHref = '/', backLabel, forwardHref, className = '' }) {
   const router = useRouter();
 
   function goBack() {
@@ -15,7 +15,7 @@ export default function PageControls({ backHref = '/', forwardHref, className = 
     router.push(backHref);
   }
 
-  const backLabel = backHref === '/' ? 'Inicio' : 'Seccion';
+  const label = backLabel || (backHref === '/' ? 'Inicio' : 'Seccion');
 
   return (
     <div className={`mb-5 flex flex-wrap items-center gap-2 ${className}`}>
@@ -32,7 +32,7 @@ export default function PageControls({ backHref = '/', forwardHref, className = 
         className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100"
       >
         <Home size={14} />
-        {backLabel}
+        {label}
       </Link>
       {forwardHref && (
         <Link

@@ -132,6 +132,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
         <Container className="relative -mt-12 pb-16 sm:-mt-20">
         <PageControls
           backHref={store.type === 'farmacia' ? '/farmacias' : '/supermercados'}
+          backLabel={store.type === 'farmacia' ? 'Farmacias' : 'Supermercados'}
           forwardHref="/buscar"
           className="pt-2"
         />

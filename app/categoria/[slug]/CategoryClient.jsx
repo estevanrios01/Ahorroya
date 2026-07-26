@@ -104,7 +104,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
       <Header />
       <main>
         <Container className="py-6 pb-16 sm:py-8">
-        <PageControls backHref="/categorias" forwardHref={`/buscar?q=${encodeURIComponent(category.name)}`} />
+        <PageControls backHref="/categorias" backLabel="Categorías" forwardHref={`/buscar?q=${encodeURIComponent(category.name)}`} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
           <div className="mb-4 flex items-center gap-3 sm:gap-4">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-emerald-600/30 bg-emerald-600/20 sm:h-14 sm:w-14">
