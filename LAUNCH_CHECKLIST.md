@@ -73,9 +73,9 @@
 | M08 | `/api/quality/report` expone scraping status | Pendiente de limitar info. | 🟡 PENDIENTE |
 | M09 | Search retorna todos los productos en query vacío | Pendiente de exigir mínimo caracteres. | 🟡 PENDIENTE |
 | M10 | `images.remotePatterns` wildcard `**` | Eliminado. | ✅ FIXED |
-| M11 | Datos mock en Zustand store | Pendiente de reemplazar. | 🟡 PENDIENTE |
+| M11 | Datos mock en Zustand store | `store/useSupermarketStore.js` arranca con `results: []`, poblado por fetches reales; sin datos mock. | ✅ FIXED (verificado 2026-07-26) |
 | M12 | Stores list duplicada | Pendiente de centralizar. | 🟡 PENDIENTE |
-| M13 | Productos hardcodeados en page.js | Pendiente de importar desde servicio. | 🟡 PENDIENTE |
+| M13 | Productos hardcodeados en page.js | `app/page.js` no tiene arrays de productos hardcodeados; `HomeProductSections.jsx` los trae de `/api/products`. | ✅ FIXED (verificado 2026-07-26) |
 | M14-M15 | Formato response inconsistente | Pendiente de unificar. | 🟡 PENDIENTE |
 | M16 | Search index no se refresca | Pendiente de agregar refresh. | 🟡 PENDIENTE |
 | M17 | Sin timeouts en API routes | Todos los `fetch()` server-side en `app/api` y `services` ya usan `AbortController` o `AbortSignal.timeout`. | ✅ FIXED (verificado 2026-07-26) |
@@ -102,13 +102,13 @@
 
 ## 📊 RESUMEN FINAL
 
-| Severidad | Total | FIXED | PENDIENTE |
-|-----------|-------|-------|-----------|
-| 🔴 Crítico | 11 | 10 | 1 |
-| 🟠 Alto | 22 | 12 | 9 (+1 parcial) |
-| 🟡 Medio | 35 | 14 | 21 |
-| 🔵 Bajo | 30 | 0 | 30 |
-| **Total** | **98** | **36** | **61** (+1 parcial) |
+| Severidad | Total | FIXED | PARCIAL | PENDIENTE |
+|-----------|-------|-------|---------|-----------|
+| 🔴 Crítico | 11 | 10 | 0 | 1 |
+| 🟠 Alto | 22 | 11 | 3 (H10, H11, H12) | 8 |
+| 🟡 Medio | 35 | 20 | 0 | 15 |
+| 🔵 Bajo | 30 | 0 | 0 | 30 |
+| **Total** | **98** | **41** | **3** | **54** |
 
 Conteo re-verificado el 2026-07-26 contra el código real (no solo contra este
 documento). El único crítico genuinamente pendiente (C01) requiere rotar un
