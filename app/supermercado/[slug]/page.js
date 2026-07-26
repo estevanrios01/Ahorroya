@@ -1,9 +1,13 @@
 import { notFound } from 'next/navigation';
 import { getStoreBySlug, getProductsByStore } from '../../../services/catalog/CatalogService';
-import { getFallbackStore, withTimeout } from '../../../services/fallbackCatalog';
+import { fallbackStores, getFallbackStore, withTimeout } from '../../../services/fallbackCatalog';
 import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import StoreClient from './StoreClient';
 import { StoreJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
+
+export function generateStaticParams() {
+  return fallbackStores.filter((store) => store.category !== 'Farmacia').map((store) => ({ slug: store.slug }));
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 

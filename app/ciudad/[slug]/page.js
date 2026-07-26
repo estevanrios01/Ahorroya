@@ -1,7 +1,12 @@
 import { notFound } from 'next/navigation';
 import { getCity } from '../../../services/catalog/CatalogService';
+import { fallbackCities } from '../../../services/fallbackCatalog';
 import CityClient from './CityClient';
 import { BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
+
+export function generateStaticParams() {
+  return fallbackCities.map((city) => ({ slug: city.slug }));
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 

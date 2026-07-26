@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getProductsByCategory } from '../../../services/catalog/CatalogService';
-import { getFallbackCategory, withTimeout } from '../../../services/fallbackCatalog';
+import { fallbackCategories, getFallbackCategory, withTimeout } from '../../../services/fallbackCatalog';
 import { getLiveFallbackProducts } from '../../../services/liveFallbackProducts';
 import CategoryClient from './CategoryClient';
 import { CategoryJsonLd, BreadcrumbJsonLd, WebSiteJsonLd } from '../../../components/seo/JsonLd';
@@ -80,6 +80,10 @@ async function loadCategoryProducts(slug) {
     pagination: { total: liveProducts.length },
     degraded: true,
   };
+}
+
+export function generateStaticParams() {
+  return fallbackCategories.map((category) => ({ slug: category.slug }));
 }
 
 export async function generateMetadata({ params }) {
