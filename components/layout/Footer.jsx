@@ -111,7 +111,7 @@ export default function Footer() {
               <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Plataforma</h3>
               <ul className="space-y-2.5">
                 <li><Link href="/marcas" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">Marcas</Link></li>
-                <li><Link href="/dashboard-ejecutivo" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">Dashboard KPIs</Link></li>
+                <li><Link href="/dashboard-ejecutivo" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">Dashboard Operacional</Link></li>
                 <li><Link href="/admin" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">Panel Admin</Link></li>
                 <li><Link href="/api/health" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">API Status</Link></li>
               </ul>

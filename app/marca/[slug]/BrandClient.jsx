@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Package, ShoppingBag, Globe, ChevronRight } from 'lucide-react';
 import Header from '../../../components/layout/Header';
@@ -10,12 +11,12 @@ import { Badge } from '../../../packages/ui/src/components/badge';
 import { Container } from '../../../packages/ui/src/components/container';
 
 export default function BrandClient({ brand, products }) {
-  const groupedCategories = products.reduce((acc, p) => {
+  const groupedCategories = useMemo(() => products.reduce((acc, p) => {
     const cat = p.category || 'Otros';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(p);
     return acc;
-  }, {});
+  }, {}), [products]);
 
   return (
     <div className="min-h-screen bg-zinc-950">

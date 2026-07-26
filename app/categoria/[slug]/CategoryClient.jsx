@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, ShoppingCart, Pill, Milk, Beef, Home, Wine, Baby, Dog } from 'lucide-react';
 import Header from '../../../components/layout/Header';
@@ -83,7 +83,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
   }, [hasMore, loading, loadMore]);
 
   const Icon = iconMap[category.icon] || ShoppingCart;
-  const displayProducts = (products.length > 0 ? products : initialProducts).map((item) => {
+  const displayProducts = useMemo(() => (products.length > 0 ? products : initialProducts).map((item) => {
     if (!item.store_products?.length) return item;
     const availablePrices = item.store_products
       .filter((entry) => entry.available !== false && entry.price != null)
@@ -97,7 +97,7 @@ export default function CategoryClient({ category, initialProducts, initialTotal
       storesCount: new Set(availablePrices.map((entry) => entry.store_id || entry.stores?.slug)).size,
       presentation: item.presentation || item.unit || item.short_name || '',
     };
-  });
+  }), [products, initialProducts]);
 
   return (
     <div className="min-h-screen bg-zinc-950">

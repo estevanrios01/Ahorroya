@@ -112,10 +112,13 @@ function StoreGrid({ categories, type, limit }) {
   );
 }
 
+const SUPERMARKET_CATEGORIES = ['Supermercado'];
+const PHARMACY_CATEGORIES = ['Farmacia', 'Drogueria', 'Droguería'];
+
 export function SupermarketCarousel() {
-  return <StoreGrid categories={['Supermercado']} type="supermercado" limit={12} />;
+  return <StoreGrid categories={SUPERMARKET_CATEGORIES} type="supermercado" limit={12} />;
 }
 
 export function PharmacyCarousel() {
-  return <StoreGrid categories={['Farmacia', 'Drogueria', 'Droguería']} type="farmacia" limit={8} />;
+  return <StoreGrid categories={PHARMACY_CATEGORIES} type="farmacia" limit={8} />;
 }

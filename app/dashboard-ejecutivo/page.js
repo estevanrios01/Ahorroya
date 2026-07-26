@@ -19,7 +19,9 @@ export default function DashboardOperacionalPage() {
       }
     }
     fetchData();
-    const interval = setInterval(fetchData, 15000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchData();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Store, Package, Search, ShieldCheck } from 'lucide-react';
 import Header from '../../../components/layout/Header';
@@ -96,7 +96,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
   }, [hasMore, loading, page, store.slug]);
 
   const logo = storeLogos[store.slug] || { initials: store.name.slice(0, 2).toUpperCase(), gradient: 'from-zinc-600 to-zinc-800' };
-  const displayed = allProducts.map((item) => {
+  const displayed = useMemo(() => allProducts.map((item) => {
     if (item.store_products?.length) {
       const availablePrices = item.store_products
         .filter((entry) => entry.available !== false && entry.price != null)
@@ -121,7 +121,7 @@ export default function StoreClient({ store, products: initialProducts, totalPro
       bestPrice: item.price,
       storesCount: 1,
     };
-  });
+  }), [allProducts]);
   const displayedCount = degraded ? displayed.length : (totalCount || displayed.length);
 
   return (
@@ -182,8 +182,8 @@ export default function StoreClient({ store, products: initialProducts, totalPro
               {displayed.map((p, index) => (
                 <ProductCardPremium key={p.id} eager={index < 4} product={{
                   ...p,
-                  price: p.price || p.storePrice?.price || p.bestPrice,
-                  oldPrice: p.oldPrice || p.storePrice?.oldPrice,
+                  price: p.price ?? p.storePrice?.price ?? p.bestPrice,
+                  oldPrice: p.oldPrice ?? p.storePrice?.oldPrice,
                   storesCount: p.storesCount || 1,
                   image: p.image,
                 }} />
