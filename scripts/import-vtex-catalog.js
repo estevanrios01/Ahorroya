@@ -20,6 +20,21 @@ const SKIP_PRICE_HISTORY = process.env.IMPORT_SKIP_PRICE_HISTORY === '1';
 const ALLOW_INSECURE_TLS = process.env.VTEX_ALLOW_INSECURE_TLS === '1';
 const insecureDispatcher = ALLOW_INSECURE_TLS ? new Agent({ connect: { rejectUnauthorized: false } }) : undefined;
 
+// Names must match exactly what the frontend's city filter already sends
+// (Hero.jsx / /buscar's city dropdown), since search_products_by_city does
+// `br.city ilike p_city` -- an accent mismatch here would silently make a
+// whole city's listings unfindable by filter even though the rows exist.
+const CITY_INFO = {
+  cali: { name: 'Cali', department: 'Valle del Cauca' },
+  bogota: { name: 'Bogotá', department: 'Bogotá D.C.' },
+  medellin: { name: 'Medellín', department: 'Antioquia' },
+};
+const TARGET_CITIES = (process.env.VTEX_TARGET_CITIES || 'cali,bogota,medellin')
+  .split(',')
+  .map((slugKey) => slugKey.trim().toLowerCase())
+  .filter((slugKey) => CITY_INFO[slugKey])
+  .map((slugKey) => ({ slug: slugKey, ...CITY_INFO[slugKey] }));
+
 const STORES = {
   exito: {
     name: 'Exito',
@@ -28,7 +43,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.exito.com',
     endpoint: 'https://exitocol.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   carulla: {
     name: 'Carulla',
@@ -37,7 +52,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.carulla.com',
     endpoint: 'https://www.carulla.com/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   olimpica: {
     name: 'Olimpica',
@@ -46,7 +61,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.olimpica.com',
     endpoint: 'https://olimpica.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   jumbo: {
     name: 'Jumbo',
@@ -55,7 +70,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.tiendasjumbo.co',
     endpoint: 'https://jumbocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   metro: {
     name: 'Metro',
@@ -64,7 +79,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.tiendasmetro.co',
     endpoint: 'https://metrocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   larebaja: {
     name: 'La Rebaja',
@@ -73,7 +88,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.larebajavirtual.com',
     endpoint: 'https://www.larebajavirtual.com/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   colsubsidio: {
     name: 'Droguerias Colsubsidio',
@@ -82,7 +97,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.drogueriascolsubsidio.com',
     endpoint: 'https://www.drogueriascolsubsidio.com/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   locatel: {
     name: 'Locatel',
@@ -91,7 +106,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.locatelcolombia.com',
     endpoint: 'https://www.locatelcolombia.com/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   medipiel: {
     name: 'Medipiel',
@@ -156,7 +171,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.farmaciaspasteur.com.co',
     endpoint: 'https://www.farmaciaspasteur.com.co/api/catalog_system/pub/products/search',
-    caliPresence: true,
+    cities: TARGET_CITIES,
   },
   easy: {
     name: 'Easy',
@@ -369,24 +384,24 @@ async function getStore(config) {
 // prices or availability. But without ANY branch_id, these listings are
 // invisible to search_products_by_city -- which only returns store_products
 // joined through a branch -- even though these chains have real, confirmed
-// physical stores in the Cali pilot. caliPresence is only set on config
-// entries for chains with verifiable Cali stores (see STORES above); the
-// rest keep branch_id: null rather than guessing at a presence we can't
-// confirm.
-async function getCaliBranch(store, config) {
-  if (!config.caliPresence) return null;
-  const rows = await upsertBatch('branches', [{
-    id: cryptoId(`branch:${store.id}:cali`),
+// physical stores in every pilot city (Cali, Bogotá, Medellín). `cities` is
+// only set on config entries for chains with verifiable presence in all of
+// them (see STORES above); the rest keep branch_id: null rather than
+// guessing at a presence we can't confirm.
+async function getCityBranches(store, config) {
+  if (!config.cities?.length) return [null];
+  const rows = await upsertBatch('branches', config.cities.map((city) => ({
+    id: cryptoId(`branch:${store.id}:${city.slug}`),
     store_id: store.id,
-    name: `${config.name} - Cali`,
-    code: `${config.slug}-CALI`,
-    city: 'Cali',
-    department: 'Valle del Cauca',
+    name: `${config.name} - ${city.name}`,
+    code: `${config.slug}-${city.slug.toUpperCase()}`,
+    city: city.name,
+    department: city.department,
     country: 'Colombia',
     status: 'active',
     updated_at: new Date().toISOString(),
-  }], 'id');
-  return rows[0] || null;
+  })), 'id');
+  return rows;
 }
 
 async function main() {
@@ -417,7 +432,7 @@ async function main() {
   }
   const normalized = [...new Map(bySlug.map((product) => [product.slug, product])).values()];
   const store = await getStore(config);
-  const caliBranch = await getCaliBranch(store, config);
+  const cityBranches = await getCityBranches(store, config);
 
   const brands = await upsertBatch('brands', [...new Map(normalized.map((product) => [slug(product.brand), {
     name: product.brand,
@@ -463,20 +478,27 @@ async function main() {
   }
 
   const now = new Date().toISOString();
-  const listings = normalized.map((product) => ({
-    id: cryptoId(`${config.slug}:${product.sourceProductId}:${store.id}`),
-    master_product_id: masterBySlug[product.slug]?.id,
-    store_id: store.id,
-    branch_id: caliBranch?.id || null,
-    sku: product.sku,
-    price: product.price,
-    original_price: product.originalPrice,
-    available: product.available,
-    stock: product.stock,
-    url: product.url,
-    captured_at: now,
-    updated_at: now,
-  })).filter((row) => row.master_product_id);
+  // One listing per (product, city branch) -- the retailer's product id
+  // alone isn't unique enough once a store spans multiple cities, since the
+  // same product/store pair now legitimately needs a separate row per city.
+  const listings = normalized.flatMap((product) => {
+    const masterProductId = masterBySlug[product.slug]?.id;
+    if (!masterProductId) return [];
+    return cityBranches.map((branch) => ({
+      id: cryptoId(`${config.slug}:${product.sourceProductId}:${store.id}:${branch?.id || 'none'}`),
+      master_product_id: masterProductId,
+      store_id: store.id,
+      branch_id: branch?.id || null,
+      sku: product.sku,
+      price: product.price,
+      original_price: product.originalPrice,
+      available: product.available,
+      stock: product.stock,
+      url: product.url,
+      captured_at: now,
+      updated_at: now,
+    }));
+  });
 
   const reconciledListings = await reconcileListingIds(listings, store);
   const existingListings = await fetchExistingListings(reconciledListings.map((row) => row.id));

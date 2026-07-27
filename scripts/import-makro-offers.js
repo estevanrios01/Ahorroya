@@ -42,6 +42,21 @@ const DEPARTMENTS_BY_CITY = {
   Valledupar: 'Cesar',
 };
 
+// normalizeCity() strips accents defensively (the retailer's API isn't
+// consistent about them), but the frontend's city filter sends accented
+// names (Hero.jsx's dropdown, search_products_by_city's ilike match) --
+// storing the stripped form as-is silently made every Bogotá/Medellín
+// branch unmatchable by that filter even though the rows existed. This
+// restores the correct accented display name after stripping, using the
+// stripped form only as an internal lookup key.
+const CANONICAL_CITY_NAMES = {
+  Bogota: 'Bogotá',
+  Medellin: 'Medellín',
+  Ibague: 'Ibagué',
+  Cucuta: 'Cúcuta',
+  Monteria: 'Montería',
+};
+
 if (!SUPABASE_URL || !SERVICE_KEY) {
   throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
 }
@@ -70,6 +85,11 @@ function normalizeCity(value) {
 function normalizeDepartment(city) {
   if (!city) return null;
   return DEPARTMENTS_BY_CITY[city] || null;
+}
+
+function canonicalCityName(strippedCity) {
+  if (!strippedCity) return null;
+  return CANONICAL_CITY_NAMES[strippedCity] || strippedCity;
 }
 
 async function fetchExistingListings(ids) {
@@ -167,7 +187,8 @@ async function getStore() {
 }
 
 function buildBranchRow(store, branch) {
-  const city = normalizeCity(branch.province);
+  const strippedCity = normalizeCity(branch.province);
+  const city = canonicalCityName(strippedCity);
   return {
     id: cryptoId(`branch:${store.id}:${branch.storeNo}`),
     store_id: store.id,
@@ -175,7 +196,7 @@ function buildBranchRow(store, branch) {
     code: `MAKRO-${branch.storeNo}`,
     address: branch.address || null,
     city,
-    department: normalizeDepartment(city),
+    department: normalizeDepartment(strippedCity),
     country: 'Colombia',
     latitude: branch.latitude ? Number(branch.latitude) : null,
     longitude: branch.longitude ? Number(branch.longitude) : null,

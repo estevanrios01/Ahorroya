@@ -29,17 +29,25 @@ const ALGOLIA_API_KEY = 'eb9544fe7bfe7ec4c1aa5e5bf7740feb';
 const ALGOLIA_INDEX = 'products-colombia';
 const ALGOLIA_URL = `https://${ALGOLIA_APP_ID.toLowerCase()}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
 
+// Names must match exactly what the frontend's city filter sends (Hero.jsx
+// / /buscar's city dropdown, search_products_by_city's ilike match) --
+// these were stored unaccented, which silently made every Bogotá/Medellín
+// branch (and Ibagué/Cúcuta/Montería) unmatchable by that filter even
+// though the rows existed and this importer runs every cycle. Note: there
+// is no Cali code here because Farmatodo's own city-price API (this map is
+// reverse-engineered from its real cityCode values) doesn't expose one --
+// not something to invent a code for.
 const CITY_BY_CODE = {
   ARM: ['Armenia', 'Quindio'],
   BAR: ['Barranquilla', 'Atlantico'],
-  BOG: ['Bogota', 'Cundinamarca'],
+  BOG: ['Bogotá', 'Cundinamarca'],
   BUC: ['Bucaramanga', 'Santander'],
   CTG: ['Cartagena', 'Bolivar'],
-  CUT: ['Cucuta', 'Norte de Santander'],
+  CUT: ['Cúcuta', 'Norte de Santander'],
   DOS: ['Dosquebradas', 'Risaralda'],
   ENV: ['Envigado', 'Antioquia'],
-  IBA: ['Ibague', 'Tolima'],
-  MED: ['Medellin', 'Antioquia'],
+  IBA: ['Ibagué', 'Tolima'],
+  MED: ['Medellín', 'Antioquia'],
   PER: ['Pereira', 'Risaralda'],
   SMR: ['Santa Marta', 'Magdalena'],
   SOA: ['Soacha', 'Cundinamarca'],

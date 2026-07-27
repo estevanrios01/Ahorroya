@@ -5,8 +5,8 @@ on:
   # project's schedule ran every 30 minutes with no rotation/bounds and
   # exceeded the free tier's space budget). This one runs far less often
   # and every step below is already bounded (rotating subsets of
-  # stores/terms, fixed product/page caps, Makro scoped to the Cali pilot),
-  # so recurring runs shouldn't reproduce that problem.
+  # stores/terms, fixed product/page caps, Makro scoped to the pilot
+  # cities), so recurring runs shouldn't reproduce that problem.
   schedule:
     - cron: "0 */5 * * *"
   workflow_dispatch:
@@ -51,8 +51,8 @@ jobs:
           # falls back to importing every Makro branch nationally (potentially
           # 700-1000+), which is exactly the write volume that pushed the
           # original Supabase project over its free-tier space budget. Scoped
-          # to the pilot city agreed with the team.
-          MAKRO_CITIES: "Cali"
+          # to the pilot cities agreed with the team (Cali, Bogotá, Medellín).
+          MAKRO_CITIES: "Cali,Bogota,Medellin"
           IMPORT_BATCH_SIZE: "25"
           IMPORT_SKIP_PRODUCT_IMAGES: "1"
           IMPORT_SKIP_PRICE_HISTORY: "0"
