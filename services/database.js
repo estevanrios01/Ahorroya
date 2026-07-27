@@ -40,12 +40,20 @@ async function attachPrices(products) {
   if (!isDatabaseAvailable(supabase) || !products?.length) return products || [];
   const ids = products.map((product) => product.id).filter(Boolean);
   if (ids.length === 0) return products;
+  // This limit applies to the WHOLE result set across all requested
+  // products combined, not per product -- with no ORDER BY, a handful of
+  // products with many listings (e.g. Farmatodo now writes one row per
+  // city/branch, up to 17 per product) can consume the entire cap and starve
+  // every other product in the batch of its price data, even though real
+  // rows exist. ids.length is already bounded by the page-size limit
+  // validated upstream (max 100), so a generous per-product allowance still
+  // keeps this query small instead of silently truncating results.
   const { data, error } = await supabase
     .from('store_products')
     .select('price, original_price, store_id, available, url, master_product_id, stores!inner(website)')
     .in('master_product_id', ids)
     .eq('available', true)
-    .limit(ids.length * 8);
+    .limit(ids.length * 50);
   if (error) return products.map((product) => ({ ...product, store_products: [] }));
   const byProduct = new Map();
   for (const row of data || []) {
