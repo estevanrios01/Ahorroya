@@ -1,16 +1,22 @@
 name: Scrapers
 
 on:
-  # Schedule intentionally NOT enabled yet. A first manual run against D1 and
-  # Cruz Verde (the two chains this script covers that aren't already better
-  # covered by the VTEX/Algolia/offers-API importers in live-prices.yml)
-  # showed both are blocked: D1's fetch fails outright (possibly a TLS trust
-  # issue, see SCRAPE_ALLOW_INSECURE_TLS below) and Cruz Verde returns a page
-  # with zero extractable products (likely bot-check/client-rendered shell,
-  # not something a plain fetch+cheerio scrape can get past). Running this on
-  # a schedule against sites that can't be reached would just burn CI minutes
-  # for zero data. Trigger manually (workflow_dispatch) to test fixes; only
-  # re-enable the schedule once a run actually writes real rows for d1/cruz-verde.
+  # Schedule intentionally NOT enabled. Diagnosed via two manual runs against
+  # D1 and Cruz Verde (the two chains this script covers that aren't already
+  # better covered by the VTEX/Algolia/offers-API importers in
+  # live-prices.yml):
+  #   - D1: fetch fails outright even with SCRAPE_ALLOW_INSECURE_TLS, which
+  #     rules out a TLS trust problem. Most likely the runner's IP range is
+  #     blocked at the network level -- not something fixable by changing
+  #     this script.
+  #   - Cruz Verde: the request succeeds (real 3.3KB response) but the body
+  #     is an empty client-rendered app shell (<title></title>, no product
+  #     data, no JSON-LD, no __NEXT_DATA__) -- the real page only exists
+  #     after client-side JS runs. A fetch+cheerio scrape can never read
+  #     this; it would need a real headless browser (Playwright) driving the
+  #     page, which is a separate, bigger piece of work than this script.
+  # Re-enable the schedule only once a manual run actually writes real
+  # d1/cruz-verde rows.
   workflow_dispatch:
 
 jobs:

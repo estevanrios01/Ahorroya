@@ -18,6 +18,22 @@ function sanitizeOrFilterTerm(value) {
   return String(value ?? '').replace(/[,()]/g, ' ').trim();
 }
 
+// getAllCities and getProductBySlug are the two calls in this file that
+// production logs actually show failing with "schema cache" errors (a
+// transient PostgREST state, not a real data problem) with no retry --
+// unlike services/database.js's identical fix, this module has its own
+// Supabase client and doesn't share that helper, so it's duplicated here
+// rather than reaching across module boundaries for a 10-line function.
+async function withRetry(run, attempts = 2) {
+  let result;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    result = await run();
+    if (!result.error) break;
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+  }
+  return result;
+}
+
 function completeFirst(products, limit) {
   const ordered = [...(products || [])].sort((left, right) => {
     const leftImage = left.image || left.master_products?.image ? 1 : 0;
@@ -45,7 +61,7 @@ export async function getAllProducts({ q, category, page = 1, limit = 20 } = {})
 
 export async function getProductBySlug(slug) {
   if (!isDatabaseAvailable(supabase)) return { product: null };
-  const { data, error } = await supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single();
+  const { data, error } = await withRetry(() => supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single());
   if (error) { handleError(error, 'getProductBySlug'); return { product: null, error: error.message }; }
   const [{ data: prices }, { data: imageRows }] = await Promise.all([
     supabase.from('store_products').select('*, stores!inner(name, slug, logo, website)').eq('master_product_id', data.id).eq('available', true).order('price'),
@@ -136,11 +152,11 @@ export async function getProductsByBrand(brandSlug, { page = 1, limit = 20 } = {
 
 export async function getAllCities() {
   if (!isDatabaseAvailable(supabase)) return { cities: [] };
-  const { data, error } = await supabase
+  const { data, error } = await withRetry(() => supabase
     .from('branches')
     .select('city, department, store_id, stores(category)')
     .eq('status', 'active')
-    .not('city', 'is', null);
+    .not('city', 'is', null));
   if (error) { handleError(error, 'getAllCities'); return { cities: [] }; }
   const map = new Map();
   for (const row of data || []) {
