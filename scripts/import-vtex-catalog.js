@@ -327,10 +327,30 @@ async function getStore(config) {
 async function main() {
   const config = STORES[STORE_SLUG];
   const raw = await fetchSourceProducts(config);
-  const normalized = [...new Map(raw
+  const bySlug = [...new Map(raw
     .map(normalizeProduct)
     .filter((product) => product.name && product.price > 0 && product.slug && product.image)
     .map((product) => [product.slug, product])).values()];
+
+  // The retailer's own linkText (source of product.slug) isn't stable per
+  // physical product -- the same barcode can show up under two different
+  // URLs (seen for real: a normal product page and a "kit-" prefixed
+  // duplicate), and since master_products upserts on_conflict=slug, that
+  // created two separate rows for one item, with only one of them ending
+  // up with an active price. Resolve to the slug of whatever row already
+  // exists for that EAN before upserting, so repeat imports converge onto
+  // a single master_products row instead of accumulating duplicates.
+  const eans = [...new Set(bySlug.map((product) => product.ean).filter(Boolean))];
+  if (eans.length) {
+    const existingByEan = await rest(`master_products?ean=in.(${eans.join(',')})&select=slug,ean`);
+    const slugByEan = new Map((existingByEan || []).map((row) => [row.ean, row.slug]));
+    for (const product of bySlug) {
+      if (product.ean && slugByEan.has(product.ean)) {
+        product.slug = slugByEan.get(product.ean);
+      }
+    }
+  }
+  const normalized = [...new Map(bySlug.map((product) => [product.slug, product])).values()];
   const store = await getStore(config);
 
   const brands = await upsertBatch('brands', [...new Map(normalized.map((product) => [slug(product.brand), {
