@@ -11,10 +11,8 @@ async function handleGet() {
       data: fallbackCategories.map((category) => ({ ...category, productCount: null })),
     });
   }
-  const withCounts = await Promise.all((result.data || []).map(async (cat) => {
-    const count = await withTimeout(db.categories.getProductCount(cat.id), 900, 'category count timeout').catch(() => null);
-    return { ...cat, productCount: count };
-  }));
+  const counts = await withTimeout(db.categories.getAllProductCounts(), 1200, 'category counts timeout').catch(() => null);
+  const withCounts = (result.data || []).map((cat) => ({ ...cat, productCount: counts ? (counts.get(cat.id) ?? 0) : null }));
   return cachedJson({ success: true, data: withCounts });
 }
 

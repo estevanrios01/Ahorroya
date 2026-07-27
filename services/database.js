@@ -298,6 +298,19 @@ export const db = {
       if (error) return 0;
       return count || 0;
     },
+
+    // One grouped aggregate instead of one COUNT query per category (299
+    // live today) -- see the count_products_by_category migration for why
+    // that per-item version doesn't scale. Returns null (not an empty Map)
+    // on failure so callers can tell "we don't know this count" apart from
+    // "this category genuinely has zero active products" (the GROUP BY
+    // simply omits those).
+    async getAllProductCounts() {
+      if (!isDatabaseAvailable(supabase)) return null;
+      const { data, error } = await supabase.rpc('count_products_by_category');
+      if (error) return null;
+      return new Map((data || []).map((row) => [row.category_id, row.product_count]));
+    },
   },
 
   brands: {
@@ -320,6 +333,19 @@ export const db = {
       const { count, error } = await supabase.from('master_products').select('*', { count: 'planned', head: true }).eq('brand_id', brandId).eq('status', 'active');
       if (error) return 0;
       return count || 0;
+    },
+
+    // One grouped aggregate instead of one COUNT query per brand (1,216
+    // live today) -- see the count_products_by_brand migration for why that
+    // per-item version doesn't scale. Returns null (not an empty Map) on
+    // failure so callers can tell "we don't know this count" apart from
+    // "this brand genuinely has zero active products" (the GROUP BY simply
+    // omits those).
+    async getAllProductCounts() {
+      if (!isDatabaseAvailable(supabase)) return null;
+      const { data, error } = await supabase.rpc('count_products_by_brand');
+      if (error) return null;
+      return new Map((data || []).map((row) => [row.brand_id, row.product_count]));
     },
   },
 

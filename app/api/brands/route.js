@@ -13,10 +13,8 @@ async function handleGet() {
       .map((brand) => [brand.slug, { ...brand, productCount: null }])).values()];
     return cachedJson({ success: true, degraded: true, data: brands });
   }
-  const withCounts = await Promise.all((result.data || []).map(async (brand) => {
-    const count = await withTimeout(db.brands.getProductCount(brand.id), 900, 'brand count timeout').catch(() => null);
-    return { ...brand, productCount: count };
-  }));
+  const counts = await withTimeout(db.brands.getAllProductCounts(), 1200, 'brand counts timeout').catch(() => null);
+  const withCounts = (result.data || []).map((brand) => ({ ...brand, productCount: counts ? (counts.get(brand.id) ?? 0) : null }));
   return cachedJson({ success: true, data: withCounts });
 }
 
