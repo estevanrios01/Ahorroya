@@ -371,7 +371,7 @@ export const db = {
       const map = new Map();
       for (const row of data || []) {
         if (!row.city) continue;
-        const key = row.city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const key = row.city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, '-');
         if (!map.has(key)) {
           map.set(key, { name: row.city, slug: key, department: row.department || '', stores: new Set(), products: 0 });
         }
