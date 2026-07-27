@@ -40,7 +40,12 @@ function normalizeProduct(product) {
     .filter(Boolean);
 
   const sortedPrices = [...prices].sort((left, right) => left.price - right.price);
-  const best = sortedPrices[0];
+  // "Best price" must mean a price you can actually pay today -- an out-of-
+  // stock listing that happens to be cheapest is not a deal, it's a dead
+  // end. Only fall back to the sold-out price when every store is agotado,
+  // so the page still shows a number instead of nothing.
+  const availablePrices = sortedPrices.filter((price) => price.available);
+  const best = availablePrices[0] || sortedPrices[0];
   const highest = sortedPrices[sortedPrices.length - 1];
   const brand = product.brand || product.brands?.name || '';
   const category = product.category || product.categories?.name || 'Mercado';
@@ -62,6 +67,7 @@ function normalizeProduct(product) {
     images,
     prices: sortedPrices,
     bestStore: best?.store,
+    bestPrice: best?.price ?? null,
     totalStores: new Set(sortedPrices.map((price) => price.storeSlug)).size,
     savingsPercent,
     presentation: { weight: product.unit || product.short_name || '' },
@@ -99,7 +105,7 @@ export async function generateMetadata({ params }) {
   const product = await loadProduct(id) || { name: id.replace(/-/g, ' '), slug: id, prices: [] };
 
   const prices = product.prices || [];
-  const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;
+  const bestPrice = product.bestPrice ?? null;
   const priceText = bestPrice ? ` Desde ${formatPrice(bestPrice)}.` : '';
 
   return {

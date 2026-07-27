@@ -37,10 +37,16 @@ export default function ProductDetailClient({ product }) {
 
   const images = product.images?.length > 0 ? product.images : product.image ? [product.image] : [];
   const prices = product.prices || [];
-  const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;
+  // An "agotado" listing isn't a price you can actually pay, so it can't be
+  // the best/min/max/average -- only fall back to the full set when every
+  // store is sold out, so the page still shows a number instead of nothing.
+  const availablePrices = prices.filter((p) => p.available);
+  const pricesForStats = availablePrices.length > 0 ? availablePrices : prices;
+  const bestPrice = pricesForStats.length > 0 ? Math.min(...pricesForStats.map(p => p.price)) : null;
+  const bestPriceEntry = pricesForStats.find((p) => p.price === bestPrice) || null;
   const minPrice = bestPrice;
-  const maxPrice = prices.length > 0 ? Math.max(...prices.map(p => p.price)) : null;
-  const avgPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p.price, 0) / prices.length) : null;
+  const maxPrice = pricesForStats.length > 0 ? Math.max(...pricesForStats.map(p => p.price)) : null;
+  const avgPrice = pricesForStats.length > 0 ? Math.round(pricesForStats.reduce((s, p) => s + p.price, 0) / pricesForStats.length) : null;
 
   const history = (product.history || product.priceHistory || [])
     .map((entry) => ({
@@ -67,7 +73,7 @@ export default function ProductDetailClient({ product }) {
       name: product.name,
       brand: product.brand,
       price: bestPrice,
-      oldPrice: product.prices?.find((price) => price.price === bestPrice)?.oldPrice,
+      oldPrice: bestPriceEntry?.oldPrice,
       image: product.image,
     });
   }
@@ -217,12 +223,12 @@ export default function ProductDetailClient({ product }) {
               </div>
               <div className="flex items-baseline gap-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400">{bestPrice ? formatPrice(bestPrice) : 'Sin precio disponible'}</span>
-                {bestPrice && product.prices?.find(p => p.price === bestPrice)?.oldPrice > bestPrice && (
+                {bestPrice && bestPriceEntry?.oldPrice > bestPrice && (
                   <>
                     <span className="text-base text-zinc-500 line-through">
-                      {formatPrice(product.prices.find(p => p.price === bestPrice).oldPrice)}
+                      {formatPrice(bestPriceEntry.oldPrice)}
                     </span>
-                    <DiscountBadge percent={Math.round(((product.prices.find(p => p.price === bestPrice).oldPrice - bestPrice) / product.prices.find(p => p.price === bestPrice).oldPrice) * 100)} />
+                    <DiscountBadge percent={Math.round(((bestPriceEntry.oldPrice - bestPrice) / bestPriceEntry.oldPrice) * 100)} />
                   </>
                 )}
               </div>
@@ -261,7 +267,10 @@ export default function ProductDetailClient({ product }) {
               <span className="text-xs text-zinc-500">{product.prices?.length || 0} {product.prices?.length === 1 ? 'comercio' : 'comercios'}</span>
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {[...(product.prices || [])].sort((a, b) => a.price - b.price).map((p, i) => (
+              {[...(product.prices || [])].sort((a, b) => {
+                if (a.available !== b.available) return a.available ? -1 : 1;
+                return a.price - b.price;
+              }).map((p, i) => (
                 <motion.div
                   key={p.id || p.storeSlug}
                   initial={{ opacity: 0, x: -10 }}

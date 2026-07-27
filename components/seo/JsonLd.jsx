@@ -2,8 +2,10 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.ap
 
 export function ProductJsonLd({ product }) {
   const prices = product.prices || [];
-  const bestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : undefined;
-  const highPrice = prices.length > 0 ? Math.max(...prices.map(p => p.price)) : undefined;
+  const availablePrices = prices.filter((p) => p.available);
+  const pricesForRange = availablePrices.length > 0 ? availablePrices : prices;
+  const bestPrice = prices.length > 0 ? Math.min(...pricesForRange.map(p => p.price)) : undefined;
+  const highPrice = prices.length > 0 ? Math.max(...pricesForRange.map(p => p.price)) : undefined;
 
   const schema = {
     '@context': 'https://schema.org',
@@ -19,7 +21,7 @@ export function ProductJsonLd({ product }) {
       lowPrice: bestPrice,
       highPrice: highPrice,
       offerCount: prices.length,
-      availability: 'https://schema.org/InStock',
+      availability: availablePrices.length > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       offers: prices.map(p => ({
         '@type': 'Offer',
         price: p.price,
