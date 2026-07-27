@@ -12,7 +12,12 @@ const staticRoutes = [
   { url: '/departamentos', priority: 0.7, freq: 'weekly' },
   { url: '/buscar', priority: 0.5, freq: 'monthly' },
   { url: '/favoritos', priority: 0.3, freq: 'monthly' },
-  { url: '/dashboard-ejecutivo', priority: 0.4, freq: 'weekly' },
+  // /dashboard-ejecutivo deliberately excluded: it's an internal ops
+  // dashboard (scraper health, failure counts, pipeline metrics), not a
+  // customer-facing page. It has no auth gate at all today, which is a
+  // separate, bigger question (see security review), but actively telling
+  // Google to index it is never correct regardless of how that gets
+  // resolved.
   { url: '/legal', priority: 0.4, freq: 'monthly' },
   { url: '/legal/privacidad', priority: 0.3, freq: 'monthly' },
   { url: '/legal/terminos', priority: 0.3, freq: 'monthly' },
