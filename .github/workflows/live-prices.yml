@@ -1,11 +1,14 @@
 name: Live Prices
 
 on:
-  # Emergency pause: Supabase exceeded the Free Plan database space
-  # and is running out of Disk IO budget. Re-enable this schedule only
-  # after cleanup/upgrade and after lowering write volume.
-  # schedule:
-  #   - cron: "*/30 * * * *"
+  # Re-enabled on a fresh, empty free-tier Supabase project (the original
+  # project's schedule ran every 30 minutes with no rotation/bounds and
+  # exceeded the free tier's space budget). This one runs far less often
+  # and every step below is already bounded (rotating subsets of
+  # stores/terms, fixed product/page caps, Makro scoped to the Cali pilot),
+  # so recurring runs shouldn't reproduce that problem.
+  schedule:
+    - cron: "0 */5 * * *"
   workflow_dispatch:
 
 concurrency:
