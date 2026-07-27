@@ -32,8 +32,14 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LIVE_SYNC_ALLOW_INSECURE_TLS: "1"
           LIVE_SYNC_PRODUCTS_PER_TERM: "180"
-          LIVE_SYNC_STORES_PER_RUN: "4"
-          LIVE_SYNC_TERMS_PER_RUN: "3"
+          # Bumped from 4/3 to 7/5 (checked first: DB is at 42MB of the
+          # free tier's 500MB, ~8.4%, plenty of headroom) so the 14-store
+          # rotation covers half its stores per run instead of under a
+          # third, reaching full coverage roughly twice as fast. Per-request
+          # size (LIVE_SYNC_PRODUCTS_PER_TERM) is unchanged, so this doesn't
+          # change how aggressive any single scrape looks to a retailer.
+          LIVE_SYNC_STORES_PER_RUN: "7"
+          LIVE_SYNC_TERMS_PER_RUN: "5"
           LIVE_SYNC_BATCH_SIZE: "20"
           LIVE_SYNC_SKIP_IMAGES: "1"
           LIVE_SYNC_STORES: "exito,carulla,olimpica,jumbo,metro,mercaldas,megatiendas,euro,larebaja,colsubsidio,locatel,medipiel,bellapiel,pasteur"
