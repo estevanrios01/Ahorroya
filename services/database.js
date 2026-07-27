@@ -18,6 +18,16 @@ function getAdminClient() {
 export const supabase = getClient();
 export const supabaseAdmin = getAdminClient();
 
+// PostgREST's `.or()` filter DSL treats ',' and '()' as structural
+// delimiters between column.operator.value clauses -- interpolating raw
+// user input into an .or() template string lets a value containing those
+// characters break out of its intended ilike clause and inject additional
+// conditions. Search terms never legitimately need them, so stripping is
+// safe and avoids reimplementing PostgREST's own value-quoting rules.
+function sanitizeOrFilterTerm(value) {
+  return String(value ?? '').replace(/[,()]/g, ' ').trim();
+}
+
 function handleError(error, context) {
   if (!error) return null;
   markDatabaseFailure(error);
@@ -203,7 +213,8 @@ export const db = {
 
     async search(query, { page = 1, limit = 20 } = {}) {
       if (!isDatabaseAvailable(supabase)) return { data: [], total: 0 };
-      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+      const term = sanitizeOrFilterTerm(query);
+      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).or(`name.ilike.%${term}%,short_name.ilike.%${term}%,barcode.ilike.%${term}%,ean.ilike.%${term}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
       if (error) return handleError(error, 'products.search');
       return { data: data || [], total: count || 0 };
     },

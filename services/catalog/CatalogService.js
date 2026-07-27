@@ -8,6 +8,16 @@ function handleError(error, context) {
   return error.message;
 }
 
+// PostgREST's `.or()` filter DSL treats ',' and '()' as structural
+// delimiters between column.operator.value clauses -- interpolating raw
+// user input into an .or() template string lets a value containing those
+// characters break out of its intended ilike clause and inject additional
+// conditions. Search terms never legitimately need them, so stripping is
+// safe and avoids reimplementing PostgREST's own value-quoting rules.
+function sanitizeOrFilterTerm(value) {
+  return String(value ?? '').replace(/[,()]/g, ' ').trim();
+}
+
 function completeFirst(products, limit) {
   const ordered = [...(products || [])].sort((left, right) => {
     const leftImage = left.image || left.master_products?.image ? 1 : 0;
@@ -21,7 +31,10 @@ function completeFirst(products, limit) {
 export async function getAllProducts({ q, category, page = 1, limit = 20 } = {}) {
   if (!isDatabaseAvailable(supabase)) return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
   let query = supabase.from('master_products').select('*', { count: 'exact' }).eq('status', 'active');
-  if (q) query = query.or(`name.ilike.%${q}%,short_name.ilike.%${q}%,barcode.ilike.%${q}%,ean.ilike.%${q}%`);
+  if (q) {
+    const term = sanitizeOrFilterTerm(q);
+    query = query.or(`name.ilike.%${term}%,short_name.ilike.%${term}%,barcode.ilike.%${term}%,ean.ilike.%${term}%`);
+  }
   if (category) query = query.eq('category_id', category);
   const from = (page - 1) * limit;
   if (!q) query = query.not('image', 'is', null);
@@ -244,7 +257,8 @@ export async function getDepartment(slug) {
 
 export async function searchProducts(query, { page = 1, limit = 20 } = {}) {
   if (!isDatabaseAvailable(supabase)) return { results: [], total: 0 };
-  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${query}%,short_name.ilike.%${query}%,barcode.ilike.%${query}%,ean.ilike.%${query}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
+  const term = sanitizeOrFilterTerm(query);
+  const { data, count, error } = await supabase.from('master_products').select('*', { count: 'exact' }).or(`name.ilike.%${term}%,short_name.ilike.%${term}%,barcode.ilike.%${term}%,ean.ilike.%${term}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
   if (error) { handleError(error, 'searchProducts'); return { results: [], total: 0 }; }
   return { results: data || [], total: count || 0 };
 }
