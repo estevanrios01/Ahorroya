@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { storeSlugSchema } from '@/lib/zod';
 import { getFallbackStore, withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 async function handleGet(request, { params }) {
   const { slug } = await params;
@@ -17,7 +17,7 @@ async function handleGet(request, { params }) {
     return NextResponse.json({ success: false, error: 'Tienda no encontrada' }, { status: 404 });
   }
   const { data: branches } = await withTimeout(db.stores.getBranches(store.id), 1200, 'branches timeout').catch(() => ({ data: [] }));
-  return NextResponse.json({ success: true, data: { ...store, branches } });
+  return cachedJson({ success: true, data: { ...store, branches } });
 }
 
 export const GET = withErrorHandling(handleGet);

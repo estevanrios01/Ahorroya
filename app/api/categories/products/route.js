@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getProductsByCategory } from '../../../../services/catalog/CatalogService';
 import { getLiveFallbackProducts } from '../../../../services/liveFallbackProducts';
 import { withTimeout } from '../../../../services/fallbackCatalog';
-import { withErrorHandling } from '../../../../lib/api-handler';
+import { withErrorHandling, cachedJson } from '../../../../lib/api-handler';
 
 const CATEGORY_SEARCH_TERMS = {
   mercado: 'arroz',
@@ -63,7 +63,7 @@ async function handleGet(request) {
       .slice(0, limit);
     return NextResponse.json({ success: true, degraded: true, data: fallback });
   }
-  return NextResponse.json({ success: true, data: products });
+  return cachedJson({ success: true, data: products });
 }
 
 export const GET = withErrorHandling(handleGet);

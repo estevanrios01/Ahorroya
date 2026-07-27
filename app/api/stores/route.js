@@ -1,19 +1,18 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { fallbackStores, withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 async function handleGet() {
   const result = await withTimeout(db.stores.list({ limit: 200 }), 700, 'stores timeout').catch((error) => ({ error }));
   if (result.error || !result.data?.length) {
-    return NextResponse.json({
+    return cachedJson({
       success: true,
       degraded: true,
       data: fallbackStores,
       pagination: { page: 1, limit: fallbackStores.length, total: fallbackStores.length, pages: 1 },
     });
   }
-  return NextResponse.json({ success: true, data: result.data, pagination: result.pagination });
+  return cachedJson({ success: true, data: result.data, pagination: result.pagination });
 }
 
 export const GET = withErrorHandling(handleGet);

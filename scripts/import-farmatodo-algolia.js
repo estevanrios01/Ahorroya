@@ -142,7 +142,12 @@ async function fetchSourceProducts() {
 
 function normalizeProduct(hit) {
   const id = String(hit.id || hit.objectID || '').trim();
-  const name = String(hit.mediaDescription || '').trim().replace(/\s+/g, ' ');
+  // Farmatodo's own mediaDescription field occasionally leaks leading
+  // separator noise (seen live: "//Pasabocas Tosh...") -- a stray
+  // slash/pipe prefix is never legitimately part of a product name, unlike
+  // digits or punctuation that could be, so only that narrow pattern is
+  // stripped rather than guessing at broader "junk" characters.
+  const name = String(hit.mediaDescription || '').trim().replace(/\s+/g, ' ').replace(/^[/\\|]+\s*/, '');
   const price = numberOrNull(hit.offerPrice) || numberOrNull(hit.fullPrice);
   const originalPrice = numberOrNull(hit.fullPrice);
   const image = hit.mediaImageUrl || hit.listUrlImages?.[0] || null;

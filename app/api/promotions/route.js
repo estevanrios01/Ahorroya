@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 // A product is "on promotion" when the retailer's own listed/original price
 // is higher than what they're currently charging -- the same signal that
@@ -14,7 +14,7 @@ async function handleGet(request) {
   if (result.error) {
     return NextResponse.json({ success: true, degraded: true, data: [] });
   }
-  return NextResponse.json({ success: true, data: result.data });
+  return cachedJson({ success: true, data: result.data });
 }
 
 export const GET = withErrorHandling(handleGet);

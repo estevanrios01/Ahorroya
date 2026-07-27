@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 import { searchSchema, sanitize } from '@/lib/zod';
 
 async function handleGet(request) {
@@ -33,7 +33,7 @@ async function handleGet(request) {
     });
   }
 
-  return NextResponse.json({ success: true, query: q, results: result.data, total: result.total });
+  return cachedJson({ success: true, query: q, results: result.data, total: result.total });
 }
 
 export const GET = withErrorHandling(handleGet);

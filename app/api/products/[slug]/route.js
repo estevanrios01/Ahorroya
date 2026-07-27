@@ -3,7 +3,7 @@ import { db } from '@/services/database';
 import { productSlugSchema } from '@/lib/zod';
 import { getLiveFallbackProductBySlug } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 async function handleGet(request, { params }) {
   const { slug } = await params;
@@ -23,7 +23,7 @@ async function handleGet(request, { params }) {
     withTimeout(db.products.getPrices(product.id), 1800, 'prices timeout').catch(() => ({ data: [] })),
     withTimeout(db.products.getPriceHistory(product.id), 1800, 'history timeout').catch(() => ({ data: [] })),
   ]);
-  return NextResponse.json({ success: true, data: { ...product, prices, history } });
+  return cachedJson({ success: true, data: { ...product, prices, history } });
 }
 
 export const GET = withErrorHandling(handleGet);
