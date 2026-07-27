@@ -40,7 +40,9 @@ const ALGOLIA_URL = `https://${ALGOLIA_APP_ID.toLowerCase()}-dsn.algolia.net/1/i
 const CITY_BY_CODE = {
   ARM: ['Armenia', 'Quindio'],
   BAR: ['Barranquilla', 'Atlantico'],
-  BOG: ['Bogotá', 'Cundinamarca'],
+  // Bogotá D.C. is its own Distrito Capital, not part of Cundinamarca
+  // department (Cundinamarca's own capital happens to also be Bogotá).
+  BOG: ['Bogotá', 'Bogotá D.C.'],
   BUC: ['Bucaramanga', 'Santander'],
   CTG: ['Cartagena', 'Bolivar'],
   CUT: ['Cúcuta', 'Norte de Santander'],

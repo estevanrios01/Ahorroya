@@ -26,7 +26,10 @@ const MAKRO_OFFERS_URL = 'https://makro.com.co/totem/api/?controller=product&act
 const MAKRO_STORES_URL = 'https://as-mco-co-cap-api-prd.azurewebsites.net/catalog/stores/allstores';
 
 const DEPARTMENTS_BY_CITY = {
-  Bogota: 'Cundinamarca',
+  // Bogotá D.C. is its own Distrito Capital, administratively separate from
+  // Cundinamarca (whose own capital happens to also be Bogotá) - do not map
+  // it to Cundinamarca even though that's an easy mix-up.
+  Bogota: 'Bogotá D.C.',
   Cali: 'Valle del Cauca',
   Medellin: 'Antioquia',
   Barranquilla: 'Atlantico',
