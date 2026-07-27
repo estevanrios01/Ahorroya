@@ -1,22 +1,27 @@
 const cheerio = require('cheerio');
-const { loadEnv, rest } = require('./lib/supabase-rest');
+const { loadEnv, rest, upsertBatch, makeCryptoId } = require('./lib/supabase-rest');
 
 loadEnv();
+
+const cryptoId = makeCryptoId('ahorroya-scrape');
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// caliPresence marks retailers with a verified physical presence in Cali
+// (the pilot city) -- see the Cali-branch note on getOrCreateBranch() below
+// for why this can't just default to true for every entry.
 const RETAILERS = [
-  { name: 'exito', label: 'Éxito', type: 'supermarket', baseUrl: 'https://www.exito.com', searchUrl: 'https://www.exito.com/buscar?q={q}', query: 'arroz' },
-  { name: 'd1', label: 'D1', type: 'supermarket', baseUrl: 'https://www.tiendasd1.com', searchUrl: 'https://www.tiendasd1.com/buscar?q={q}', query: 'leche' },
-  { name: 'jumbo', label: 'Jumbo', type: 'supermarket', baseUrl: 'https://www.jumbo.com.co', searchUrl: 'https://www.jumbo.com.co/buscar?q={q}', query: 'aceite' },
-  { name: 'ara', label: 'Ara', type: 'supermarket', baseUrl: 'https://www.ara.com.co', searchUrl: 'https://www.ara.com.co/buscar?q={q}', query: 'huevos' },
-  { name: 'carulla', label: 'Carulla', type: 'supermarket', baseUrl: 'https://www.carulla.com', searchUrl: 'https://www.carulla.com/buscar?q={q}', query: 'cafe' },
-  { name: 'olimpica', label: 'Olímpica', type: 'supermarket', baseUrl: 'https://www.olimpica.com', searchUrl: 'https://www.olimpica.com/buscar?q={q}', query: 'azucar' },
-  { name: 'makro', label: 'Makro', type: 'supermarket', baseUrl: 'https://www.makro.com.co', searchUrl: 'https://www.makro.com.co/buscar?q={q}', query: 'detergente' },
-  { name: 'farmatodo', label: 'Farmatodo', type: 'pharmacy', baseUrl: 'https://www.farmatodo.com.co', searchUrl: 'https://www.farmatodo.com.co/buscar?q={q}', query: 'acetaminofen' },
-  { name: 'cruz-verde', label: 'Cruz Verde', type: 'pharmacy', baseUrl: 'https://www.cruzverde.com.co', searchUrl: 'https://www.cruzverde.com.co/buscar?q={q}', query: 'ibuprofeno' },
-  { name: 'larebaja', label: 'La Rebaja', type: 'pharmacy', baseUrl: 'https://www.larebaja.com.co', searchUrl: 'https://www.larebaja.com.co/buscar?q={q}', query: 'vitamina' },
+  { name: 'exito', label: 'Éxito', type: 'supermarket', baseUrl: 'https://www.exito.com', searchUrl: 'https://www.exito.com/buscar?q={q}', query: 'arroz', caliPresence: true },
+  { name: 'd1', label: 'D1', type: 'supermarket', baseUrl: 'https://www.tiendasd1.com', searchUrl: 'https://www.tiendasd1.com/buscar?q={q}', query: 'leche', caliPresence: true },
+  { name: 'jumbo', label: 'Jumbo', type: 'supermarket', baseUrl: 'https://www.jumbo.com.co', searchUrl: 'https://www.jumbo.com.co/buscar?q={q}', query: 'aceite', caliPresence: true },
+  { name: 'ara', label: 'Ara', type: 'supermarket', baseUrl: 'https://www.ara.com.co', searchUrl: 'https://www.ara.com.co/buscar?q={q}', query: 'huevos', caliPresence: true },
+  { name: 'carulla', label: 'Carulla', type: 'supermarket', baseUrl: 'https://www.carulla.com', searchUrl: 'https://www.carulla.com/buscar?q={q}', query: 'cafe', caliPresence: true },
+  { name: 'olimpica', label: 'Olímpica', type: 'supermarket', baseUrl: 'https://www.olimpica.com', searchUrl: 'https://www.olimpica.com/buscar?q={q}', query: 'azucar', caliPresence: true },
+  { name: 'makro', label: 'Makro', type: 'supermarket', baseUrl: 'https://www.makro.com.co', searchUrl: 'https://www.makro.com.co/buscar?q={q}', query: 'detergente', caliPresence: true },
+  { name: 'farmatodo', label: 'Farmatodo', type: 'pharmacy', baseUrl: 'https://www.farmatodo.com.co', searchUrl: 'https://www.farmatodo.com.co/buscar?q={q}', query: 'acetaminofen', caliPresence: true },
+  { name: 'cruz-verde', label: 'Cruz Verde', type: 'pharmacy', baseUrl: 'https://www.cruzverde.com.co', searchUrl: 'https://www.cruzverde.com.co/buscar?q={q}', query: 'ibuprofeno', caliPresence: true },
+  { name: 'larebaja', label: 'La Rebaja', type: 'pharmacy', baseUrl: 'https://www.larebaja.com.co', searchUrl: 'https://www.larebaja.com.co/buscar?q={q}', query: 'vitamina', caliPresence: true },
 ];
 
 function assertEnv() {
@@ -217,7 +222,29 @@ async function getOrCreateStore(retailer) {
   }, 'slug');
 }
 
-async function persistProduct(retailer, store, product) {
+// This scraper reads a single national search-results page (one price per
+// SKU, no store selector), so it can't know per-branch prices. But without
+// any branch_id, search_products_by_city -- which only returns
+// store_products joined through a branch -- would never surface these
+// listings for the Cali pilot, even for chains with real Cali stores. Only
+// attach a Cali branch for retailers verified to actually operate there
+// (caliPresence on the RETAILERS entry); otherwise leave branch_id null
+// rather than guessing at a presence that isn't confirmed.
+async function getOrCreateBranch(retailer, store) {
+  if (!retailer.caliPresence) return null;
+  return upsert('branches', {
+    id: cryptoId(`branch:${store.id}:cali`),
+    store_id: store.id,
+    name: `${retailer.label} - Cali`,
+    code: `${retailer.name}-CALI`,
+    city: 'Cali',
+    department: 'Valle del Cauca',
+    country: 'Colombia',
+    status: 'active',
+  }, 'id');
+}
+
+async function persistProduct(retailer, store, branch, product) {
   const [brandId, categoryId] = await Promise.all([
     getOrCreateBrand(product.brand),
     getOrCreateCategory(product.category),
@@ -261,7 +288,7 @@ async function persistProduct(retailer, store, product) {
   const storeProduct = await selectOne('store_products', {
     master_product_id: `eq.${master.id}`,
     store_id: `eq.${store.id}`,
-    branch_id: 'is.null',
+    branch_id: branch ? `eq.${branch.id}` : 'is.null',
   });
 
   if (storeProduct) {
@@ -298,6 +325,7 @@ async function persistProduct(retailer, store, product) {
   const created = await insert('store_products', {
     master_product_id: master.id,
     store_id: store.id,
+    branch_id: branch?.id || null,
     sku: product.sku,
     price: product.price,
     original_price: product.originalPrice,
@@ -357,9 +385,10 @@ async function runRetailer(retailer) {
     const products = parseProducts(html, retailer, 100);
     stats.productsFound = products.length;
     const store = await getOrCreateStore(retailer);
+    const branch = await getOrCreateBranch(retailer, store);
     for (const product of products) {
       try {
-        const result = await persistProduct(retailer, store, product);
+        const result = await persistProduct(retailer, store, branch, product);
         seenIds.add(result.storeProductId);
         if (result.inserted) stats.productsInserted++;
         if (result.updated) stats.productsUpdated++;

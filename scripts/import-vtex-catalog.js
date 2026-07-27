@@ -28,6 +28,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.exito.com',
     endpoint: 'https://exitocol.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   carulla: {
     name: 'Carulla',
@@ -36,6 +37,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.carulla.com',
     endpoint: 'https://www.carulla.com/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   olimpica: {
     name: 'Olimpica',
@@ -44,6 +46,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.olimpica.com',
     endpoint: 'https://olimpica.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   jumbo: {
     name: 'Jumbo',
@@ -52,6 +55,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.tiendasjumbo.co',
     endpoint: 'https://jumbocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   metro: {
     name: 'Metro',
@@ -60,6 +64,7 @@ const STORES = {
     category: 'Supermercado',
     website: 'https://www.tiendasmetro.co',
     endpoint: 'https://metrocolombiaio.vtexcommercestable.com.br/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   larebaja: {
     name: 'La Rebaja',
@@ -68,6 +73,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.larebajavirtual.com',
     endpoint: 'https://www.larebajavirtual.com/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   colsubsidio: {
     name: 'Droguerias Colsubsidio',
@@ -76,6 +82,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.drogueriascolsubsidio.com',
     endpoint: 'https://www.drogueriascolsubsidio.com/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   locatel: {
     name: 'Locatel',
@@ -84,6 +91,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.locatelcolombia.com',
     endpoint: 'https://www.locatelcolombia.com/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   medipiel: {
     name: 'Medipiel',
@@ -148,6 +156,7 @@ const STORES = {
     category: 'Farmacia',
     website: 'https://www.farmaciaspasteur.com.co',
     endpoint: 'https://www.farmaciaspasteur.com.co/api/catalog_system/pub/products/search',
+    caliPresence: true,
   },
   easy: {
     name: 'Easy',
@@ -324,6 +333,31 @@ async function getStore(config) {
   }], 'slug'))[0];
 }
 
+// This importer hits each retailer's general online catalog (one national
+// price per SKU, no store locator), so it has no way to know per-branch
+// prices or availability. But without ANY branch_id, these listings are
+// invisible to search_products_by_city -- which only returns store_products
+// joined through a branch -- even though these chains have real, confirmed
+// physical stores in the Cali pilot. caliPresence is only set on config
+// entries for chains with verifiable Cali stores (see STORES above); the
+// rest keep branch_id: null rather than guessing at a presence we can't
+// confirm.
+async function getCaliBranch(store, config) {
+  if (!config.caliPresence) return null;
+  const rows = await upsertBatch('branches', [{
+    id: cryptoId(`branch:${store.id}:cali`),
+    store_id: store.id,
+    name: `${config.name} - Cali`,
+    code: `${config.slug}-CALI`,
+    city: 'Cali',
+    department: 'Valle del Cauca',
+    country: 'Colombia',
+    status: 'active',
+    updated_at: new Date().toISOString(),
+  }], 'id');
+  return rows[0] || null;
+}
+
 async function main() {
   const config = STORES[STORE_SLUG];
   const raw = await fetchSourceProducts(config);
@@ -352,6 +386,7 @@ async function main() {
   }
   const normalized = [...new Map(bySlug.map((product) => [product.slug, product])).values()];
   const store = await getStore(config);
+  const caliBranch = await getCaliBranch(store, config);
 
   const brands = await upsertBatch('brands', [...new Map(normalized.map((product) => [slug(product.brand), {
     name: product.brand,
@@ -401,7 +436,7 @@ async function main() {
     id: cryptoId(`${config.slug}:${product.sourceProductId}:${store.id}`),
     master_product_id: masterBySlug[product.slug]?.id,
     store_id: store.id,
-    branch_id: null,
+    branch_id: caliBranch?.id || null,
     sku: product.sku,
     price: product.price,
     original_price: product.originalPrice,
