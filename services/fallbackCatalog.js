@@ -28,7 +28,9 @@ export const fallbackCategories = [
 
 export const fallbackCities = [
   { name: 'Cali', slug: 'cali', department: 'Valle del Cauca' },
-  { name: 'Bogota', slug: 'bogota', department: 'Cundinamarca' },
+  // Bogotá D.C. is its own Distrito Capital, not part of Cundinamarca
+  // department (Cundinamarca's own capital happens to also be Bogotá).
+  { name: 'Bogota', slug: 'bogota', department: 'Bogotá D.C.' },
   { name: 'Medellin', slug: 'medellin', department: 'Antioquia' },
   { name: 'Barranquilla', slug: 'barranquilla', department: 'Atlantico' },
   { name: 'Cartagena', slug: 'cartagena', department: 'Bolivar' },

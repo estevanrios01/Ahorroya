@@ -28,7 +28,7 @@ export default function AuthPage() {
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Volver
           </button>
-          <AuthModal onClose={() => router.push('/')} />
+          <AuthModal inline onClose={() => router.push('/')} />
         </div>
       </div>
       <Footer />

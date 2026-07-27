@@ -6,7 +6,7 @@ import { useSupermarketStore } from '../../store/useSupermarketStore';
 import { X, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 import { useFocusTrap } from '../../lib/useFocusTrap';
 
-export default function AuthModal({ onClose }) {
+export default function AuthModal({ onClose, inline = false }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,9 +49,17 @@ export default function AuthModal({ onClose }) {
     }
   };
 
+  // inline mode (the standalone /auth page) skips the fixed full-screen
+  // backdrop -- that positioning is only correct when this renders as a
+  // popup over other page content (Header's login button). Reusing it
+  // unchanged on /auth covered that page's own "Volver" button and Footer
+  // with an unclickable dark overlay.
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}>
-      <div ref={trapRef} className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+    <div
+      className={inline ? 'w-full' : 'fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'}
+      {...(inline ? {} : { role: 'dialog', 'aria-modal': true, 'aria-label': isLogin ? 'Iniciar sesión' : 'Crear cuenta' })}
+    >
+      <div ref={trapRef} className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative mx-auto">
         <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-100 transition-colors" aria-label="Cerrar">
           <X size={24} />
         </button>
