@@ -1,3 +1,5 @@
+import { fallbackStores, fallbackCategories, fallbackCities } from '../services/fallbackCatalog';
+
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
 const staticRoutes = [
@@ -11,7 +13,6 @@ const staticRoutes = [
   { url: '/buscar', priority: 0.5, freq: 'monthly' },
   { url: '/favoritos', priority: 0.3, freq: 'monthly' },
   { url: '/dashboard-ejecutivo', priority: 0.4, freq: 'weekly' },
-  { url: '/admin', priority: 0.2, freq: 'monthly' },
   { url: '/legal', priority: 0.4, freq: 'monthly' },
   { url: '/legal/privacidad', priority: 0.3, freq: 'monthly' },
   { url: '/legal/terminos', priority: 0.3, freq: 'monthly' },
@@ -20,43 +21,68 @@ const staticRoutes = [
   { url: '/legal/contacto', priority: 0.3, freq: 'monthly' },
 ];
 
-const dynamicSlugs = {
-  '/producto/': ['arroz-diana-premium', 'arroz-roa-fortificado', 'leche-entera-colanta', 'aceite-gourmet-900ml', 'pan-bimbo-artesano', 'acetaminofen-mk-500mg', 'jabon-liquido-rey', 'ibuprofeno-mk-400mg', 'detergente-fab-1kg', 'cafe-sello-rojo-500g', 'huevos-santa-reyes-x30', 'coca-cola-25l'],
-  '/supermercado/': ['exito', 'd1', 'jumbo', 'olimpica', 'ara', 'carulla', 'makro'],
-  '/farmacia/': ['cruz-verde', 'farmatodo', 'larebaja'],
-  '/categoria/': ['despensa', 'farmacia', 'lacteos', 'panaderia', 'aseo', 'medicamentos-otc', 'bebidas', 'mercado', 'carnes', 'bebes', 'mascotas'],
-  '/marca/': ['diana', 'colanta', 'gourmet', 'bimbo', 'mk', 'roa', 'sello-rojo', 'coca-cola', 'rey', 'fab', 'santa-reyes', 'familia'],
-  '/ciudad/': ['cali', 'bogota', 'medellin', 'barranquilla', 'cartagena', 'bucaramanga', 'pereira', 'manizales', 'ibague', 'cucuta', 'villavicencio', 'santa-marta', 'neiva', 'pasto', 'armenia'],
-  '/departamento/': ['valle-del-cauca', 'cundinamarca', 'antioquia', 'atlantico', 'bolivar', 'santander'],
-};
-
-const priorities = {
-  '/producto/': 0.9, '/supermercado/': 0.8, '/farmacia/': 0.8,
-  '/categoria/': 0.7, '/marca/': 0.6, '/ciudad/': 0.5, '/departamento/': 0.4,
-};
-
-const frequencies = {
-  '/producto/': 'daily', '/supermercado/': 'weekly', '/farmacia/': 'weekly',
-  '/categoria/': 'weekly', '/marca/': 'weekly', '/ciudad/': 'monthly', '/departamento/': 'monthly',
-};
-
+// producto/[id] and marca/[slug] are deliberately absent: both are unbounded,
+// DB-driven catalogs (real products/brands come from live scraping, not a
+// fixed list) with no static set of slugs that's actually guaranteed to
+// exist -- the same reasoning generateStaticParams already uses for these
+// two routes. This sitemap previously hardcoded 12 invented product slugs
+// and 12 invented brand slugs (things like "arroz-diana-premium", "gourmet")
+// that don't correspond to real catalog rows; submitting them told Google to
+// crawl URLs that 404. Everything below instead comes from the same fixed
+// lists services/fallbackCatalog.js already uses for generateStaticParams,
+// so the sitemap can't drift out of sync with what the site actually serves.
 export default function sitemap() {
-  const entries = staticRoutes.map(r => ({
+  const entries = staticRoutes.map((r) => ({
     url: `${BASE}${r.url}`,
     lastModified: new Date(),
     changeFrequency: r.freq,
     priority: r.priority,
   }));
 
-  for (const [prefix, slugs] of Object.entries(dynamicSlugs)) {
-    for (const slug of slugs) {
-      entries.push({
-        url: `${BASE}${prefix}${slug}`,
-        lastModified: new Date(),
-        changeFrequency: frequencies[prefix],
-        priority: priorities[prefix],
-      });
-    }
+  for (const store of fallbackStores) {
+    const prefix = store.type === 'farmacia' ? '/farmacia/' : '/supermercado/';
+    entries.push({
+      url: `${BASE}${prefix}${store.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: store.type === 'farmacia' ? 0.8 : 0.8,
+    });
+  }
+
+  for (const category of fallbackCategories) {
+    entries.push({
+      url: `${BASE}/categoria/${category.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
+
+  for (const city of fallbackCities) {
+    entries.push({
+      url: `${BASE}/ciudad/${city.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    });
+  }
+
+  const departmentSlugs = new Set();
+  for (const city of fallbackCities) {
+    const slug = city.department
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    if (departmentSlugs.has(slug)) continue;
+    departmentSlugs.add(slug);
+    entries.push({
+      url: `${BASE}/departamento/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    });
   }
 
   return entries;

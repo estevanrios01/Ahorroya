@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.ap
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug;
-  const department = await getDepartment(slug);
+  const { department } = await getDepartment(slug);
   if (!department) return { title: 'No encontrado - AhorroYa' };
 
   return {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }) {
 
 export default async function DepartmentPage({ params }) {
   const slug = (await params).slug;
-  const department = await getDepartment(slug);
+  const { department } = await getDepartment(slug);
   if (!department) notFound();
 
   return (
