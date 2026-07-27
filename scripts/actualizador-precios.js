@@ -1,4 +1,5 @@
 const cheerio = require('cheerio');
+const { Agent } = require('undici');
 const { loadEnv, rest, upsertBatch, makeCryptoId } = require('./lib/supabase-rest');
 
 loadEnv();
@@ -7,6 +8,13 @@ const cryptoId = makeCryptoId('ahorroya-scrape');
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Same escape hatch import-vtex-catalog.js already uses: some Colombian
+// retailer sites serve a certificate chain Node's default trust store
+// rejects (undici's "fetch failed" gives no detail beyond that), even
+// though a browser accepts it. Opt-in only, never the default.
+const insecureDispatcher = process.env.SCRAPE_ALLOW_INSECURE_TLS === '1'
+  ? new Agent({ connect: { rejectUnauthorized: false } })
+  : undefined;
 
 // caliPresence marks retailers with a verified physical presence in Cali
 // (the pilot city) -- see the Cali-branch note on getOrCreateBranch() below
@@ -70,6 +78,7 @@ async function fetchHtml(url) {
         'Accept-Language': 'es-CO,es;q=0.9,en;q=0.7',
       },
       signal: controller.signal,
+      dispatcher: insecureDispatcher,
     });
     if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
     return response.text();
@@ -384,6 +393,13 @@ async function runRetailer(retailer) {
     const html = await fetchHtml(url);
     const products = parseProducts(html, retailer, 100);
     stats.productsFound = products.length;
+    if (products.length === 0) {
+      // Diagnostic only, printed to CI logs: distinguishes "got a normal
+      // page but our selectors/JSON extraction missed it" from "got a bot
+      // check / consent wall / empty app shell instead of the real page",
+      // without which a silent zero is a dead end to debug from.
+      console.log(`[${retailer.name}] 0 productos -- html length=${html.length}, snippet=${JSON.stringify(html.slice(0, 400))}`);
+    }
     const store = await getOrCreateStore(retailer);
     const branch = await getOrCreateBranch(retailer, store);
     for (const product of products) {
@@ -403,6 +419,19 @@ async function runRetailer(retailer) {
     // full-catalog crawl, otherwise a blocked/short search would hide valid
     // products from the database.
     stats.productsRemoved = retailer.fullCatalog ? await markMissingUnavailable(store, seenIds) : 0;
+    // A search for a common term (leche, ibuprofeno, arroz...) returning
+    // zero products essentially never means "this store has none" -- in
+    // practice it means the fetch got a page (no thrown error) but the site
+    // blocked the request, served a bot-check/app shell, or changed its
+    // markup so parseProducts couldn't find anything. Recording this as
+    // "ok" hid exactly that failure mode: a scheduled run can go green
+    // indefinitely while silently writing zero real data.
+    if (stats.productsFound === 0) {
+      stats.failed = true;
+      await recordRun(retailer, stats, 'failed', 'La búsqueda no devolvió productos (posible bloqueo o cambio de estructura del sitio)');
+      console.error(`[${retailer.name}] 0 productos encontrados -- tratado como fallo`, stats);
+      return stats;
+    }
     await recordRun(retailer, stats);
     console.log(`[${retailer.name}] ok`, stats);
     return stats;

@@ -1,16 +1,16 @@
 name: Scrapers
 
 on:
-  # Re-enabled on the fresh, bounded Supabase project -- scoped to only the
-  # two chains this script covers that the VTEX/Algolia/offers-API importers
-  # in live-prices.yml don't: D1 and Cruz Verde, both major chains with real
-  # Cali stores. The other RETAILERS entries (Exito, Jumbo, Ara, Carulla,
-  # Olimpica, Makro, Farmatodo, La Rebaja) already get better, fuller-catalog
-  # coverage from those dedicated importers, so running this generic
-  # single-search-page scraper for them too would just add noisy duplicate
-  # writes against the same store rows.
-  schedule:
-    - cron: "30 */5 * * *"
+  # Schedule intentionally NOT enabled yet. A first manual run against D1 and
+  # Cruz Verde (the two chains this script covers that aren't already better
+  # covered by the VTEX/Algolia/offers-API importers in live-prices.yml)
+  # showed both are blocked: D1's fetch fails outright (possibly a TLS trust
+  # issue, see SCRAPE_ALLOW_INSECURE_TLS below) and Cruz Verde returns a page
+  # with zero extractable products (likely bot-check/client-rendered shell,
+  # not something a plain fetch+cheerio scrape can get past). Running this on
+  # a schedule against sites that can't be reached would just burn CI minutes
+  # for zero data. Trigger manually (workflow_dispatch) to test fixes; only
+  # re-enable the schedule once a run actually writes real rows for d1/cruz-verde.
   workflow_dispatch:
 
 jobs:
@@ -27,3 +27,4 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SCRAPE_ALLOW_INSECURE_TLS: "1"
