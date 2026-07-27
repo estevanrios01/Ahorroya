@@ -221,6 +221,37 @@ function listingChanged(previous, next) {
     || Boolean(previous.available) !== Boolean(next.available);
 }
 
+// A listing's id is derived from the retailer's own product id
+// (sourceProductId), which is normally stable across runs -- but retailers
+// sometimes serve the same physical product (same master_product_id) under
+// a different internal id later (a re-listing, a promo SKU, ...). When that
+// happens the freshly computed id doesn't match the row already sitting in
+// the DB for this exact (master_product_id, store_id, branch_id), and the
+// insert collides with the real uniqueness constraint
+// (store_products_unique_listing) instead of updating that row -- this hit
+// live on 2026-07-27 (jumbo/gato, metro/gato both failed their entire batch
+// this way). Resolve each listing to whatever id already owns that
+// (master_product_id, branch_id) slot before upserting, the same way EANs
+// get reconciled to an existing master_products slug above.
+async function reconcileListingIds(listings, store) {
+  const masterProductIds = [...new Set(listings.map((row) => row.master_product_id))];
+  if (!masterProductIds.length) return listings;
+  const existing = await rest(`store_products?master_product_id=in.(${masterProductIds.join(',')})&store_id=eq.${store.id}&select=id,master_product_id,branch_id`);
+  const idBySlot = new Map((existing || []).map((row) => [`${row.master_product_id}|${row.branch_id || ''}`, row.id]));
+  const remapped = listings.map((row) => {
+    const existingId = idBySlot.get(`${row.master_product_id}|${row.branch_id || ''}`);
+    return existingId ? { ...row, id: existingId } : row;
+  });
+  // Remapping can make two listings collide on the same existing id (two
+  // different sourceProductIds this run both resolved to one DB row) --
+  // keep the cheaper price, same tie-break already used by import-ara-offers.js.
+  return [...remapped.reduce((accumulator, row) => {
+    const current = accumulator.get(row.id);
+    if (!current || Number(row.price) < Number(current.price)) accumulator.set(row.id, row);
+    return accumulator;
+  }, new Map()).values()];
+}
+
 async function fetchVtexPage(store, from, to) {
   const params = new URLSearchParams({ _from: String(from), _to: String(to) });
   if (SEARCH_TERM) params.set('ft', SEARCH_TERM);
@@ -447,8 +478,9 @@ async function main() {
     updated_at: now,
   })).filter((row) => row.master_product_id);
 
-  const existingListings = await fetchExistingListings(listings.map((row) => row.id));
-  const changedListings = listings.filter((row) => listingChanged(existingListings.get(row.id), row));
+  const reconciledListings = await reconcileListingIds(listings, store);
+  const existingListings = await fetchExistingListings(reconciledListings.map((row) => row.id));
+  const changedListings = reconciledListings.filter((row) => listingChanged(existingListings.get(row.id), row));
   logPriceAnomalies(changedListings, existingListings, config.slug);
   const historyRows = SKIP_PRICE_HISTORY ? [] : changedListings
     .filter((row) => listingChanged(existingListings.get(row.id), row))
