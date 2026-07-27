@@ -374,17 +374,25 @@ export const db = {
 
     async toggle(userId, productId) {
       if (!supabaseAdmin) return { error: 'DB not configured' };
-      const { data: existing } = await supabaseAdmin.from('basket_items').select('id, basket_id').eq('basket_id', userId).eq('master_product_id', productId).maybeSingle();
-      if (existing) {
-        await supabaseAdmin.from('basket_items').delete().eq('id', existing.id);
-        return { favorited: false };
-      }
       let { data: basket } = await supabaseAdmin.from('baskets').select('id').eq('user_id', userId).eq('favorite', true).maybeSingle();
       if (!basket) {
         const { data: newBasket } = await supabaseAdmin.from('baskets').insert({ user_id: userId, name: 'Favoritos', favorite: true }).select().single();
         basket = newBasket;
       }
-      await supabaseAdmin.from('basket_items').insert({ basket_id: basket.id, master_product_id: productId, quantity: 1 });
+      // basket_items has no user_id column, only basket_id (a baskets.id FK) --
+      // this used to check basket_id against the raw userId, which is never
+      // equal to a basket's own id, so it never found the existing row. The
+      // toggle could only ever insert, and the second insert of the same
+      // product silently violated basket_items' UNIQUE(basket_id,
+      // master_product_id) constraint since the insert's error was never
+      // checked -- un-favoriting was completely broken.
+      const { data: existing } = await supabaseAdmin.from('basket_items').select('id').eq('basket_id', basket.id).eq('master_product_id', productId).maybeSingle();
+      if (existing) {
+        await supabaseAdmin.from('basket_items').delete().eq('id', existing.id);
+        return { favorited: false };
+      }
+      const { error } = await supabaseAdmin.from('basket_items').insert({ basket_id: basket.id, master_product_id: productId, quantity: 1 });
+      if (error) return handleError(error, 'favorites.toggle');
       return { favorited: true };
     },
   },
