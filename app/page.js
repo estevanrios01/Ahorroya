@@ -10,6 +10,9 @@ import Hero from '../components/home/Hero';
 import { SupermarketCarousel, PharmacyCarousel } from '../components/home/StoreCarousel';
 import CategoryGrid from '../components/home/CategoryGrid';
 import HomeProductSections from '../components/home/HomeProductSections';
+import { db } from '../services/database';
+import { getLiveFallbackProducts } from '../services/liveFallbackProducts';
+import { withTimeout } from '../services/fallbackCatalog';
 
 const cityLinks = [
   { name: 'Cali', slug: 'cali', detail: 'Valle del Cauca' },
@@ -26,7 +29,18 @@ const trustItems = [
   { icon: TrendingDown, title: 'Comparacion util', text: 'Ordenamos por menor precio y comercios disponibles.' },
 ];
 
-export default function Home() {
+async function loadHomeProducts() {
+  const result = await withTimeout(db.products.list({ limit: 16 }), 2500, 'home products timeout').catch(() => ({ error: true }));
+  if (!result.error && result.data?.length) {
+    return { rawProducts: result.data, degraded: false };
+  }
+  const fallback = await getLiveFallbackProducts({ limit: 16 }).catch(() => []);
+  return { rawProducts: fallback, degraded: true };
+}
+
+export default async function Home() {
+  const { rawProducts, degraded } = await loadHomeProducts();
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <WebSiteJsonLd />
@@ -44,7 +58,7 @@ export default function Home() {
           ))}
         </div>
 
-        <HomeProductSections />
+        <HomeProductSections rawProducts={rawProducts} degraded={degraded} />
 
         <Divider />
 

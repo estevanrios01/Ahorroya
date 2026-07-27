@@ -1,6 +1,3 @@
-'use client';
-
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import ProductGrid from '../product/ProductGrid';
@@ -29,9 +26,9 @@ function toProductCard(product) {
   };
 }
 
-function ProductSectionBody({ loading, products }) {
-  if (loading || products.length > 0) {
-    return <ProductGrid products={products} loading={loading} />;
+function ProductSectionBody({ products }) {
+  if (products.length > 0) {
+    return <ProductGrid products={products} loading={false} />;
   }
 
   return (
@@ -43,42 +40,14 @@ function ProductSectionBody({ loading, products }) {
   );
 }
 
-export default function HomeProductSections() {
-  const [products, setProducts] = useState([]);
-  const [degraded, setDegraded] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadProducts() {
-      try {
-        const response = await fetch('/api/products?limit=16', { cache: 'no-store' });
-        const payload = await response.json();
-        if (active) {
-          setProducts((payload.data || []).map(toProductCard).filter((product) => product.image));
-          setDegraded(Boolean(payload.degraded));
-        }
-      } catch {
-        if (active) {
-          setProducts([]);
-          setDegraded(true);
-        }
-      } finally {
-        if (active) setLoadingProducts(false);
-      }
-    }
-
-    loadProducts();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const discountedProducts = useMemo(
-    () => products.filter((product) => product.oldPrice && product.price).slice(0, 8),
-    [products]
-  );
+// Fetched server-side in app/page.js and passed in as props -- this used to
+// fetch its own data client-side via useEffect after hydration, which meant
+// the homepage's main product content (the whole reason to land here) was
+// never in the initial HTML: an extra round trip, a loading skeleton flash,
+// and nothing for a crawler that doesn't execute JS to see.
+export default function HomeProductSections({ rawProducts, degraded }) {
+  const products = (rawProducts || []).map(toProductCard).filter((product) => product.image);
+  const discountedProducts = products.filter((product) => product.oldPrice && product.price).slice(0, 8);
 
   return (
     <>
@@ -93,7 +62,7 @@ export default function HomeProductSections() {
         subtitle="Referencias con imagen comercial, precio publicado y comercio de menor precio"
         action={<Link href="/buscar" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Explorar <ArrowRight size={14} /></Link>}
       >
-        <ProductSectionBody loading={loadingProducts} products={products.slice(0, 8)} />
+        <ProductSectionBody products={products.slice(0, 8)} />
       </Section>
 
       {discountedProducts.length > 0 && (
@@ -102,7 +71,7 @@ export default function HomeProductSections() {
           subtitle="Productos con descuento detectado frente al precio anterior"
           action={<Link href="/buscar?q=ofertas" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">Ver ofertas <ArrowRight size={14} /></Link>}
         >
-          <ProductSectionBody loading={loadingProducts} products={discountedProducts} />
+          <ProductSectionBody products={discountedProducts} />
         </Section>
       )}
     </>
