@@ -62,7 +62,16 @@ export async function getAllProducts({ q, category, page = 1, limit = 20 } = {})
 export async function getProductBySlug(slug) {
   if (!isDatabaseAvailable(supabase)) return { product: null };
   const { data, error } = await withRetry(() => supabase.from('master_products').select('*').eq('slug', slug).eq('status', 'active').single());
-  if (error) { handleError(error, 'getProductBySlug'); return { product: null, error: error.message }; }
+  if (error) {
+    // PGRST116 ("Cannot coerce the result to a single JSON object") is what
+    // .single() returns for zero matching rows -- an ordinary "this slug
+    // doesn't exist" outcome (a stale link, a slug an earlier import
+    // reconciled away, a bot probing a made-up URL), not an infrastructure
+    // problem. Logging it as an error buried real failures in the noise;
+    // only genuine errors go through handleError now.
+    if (error.code !== 'PGRST116') handleError(error, 'getProductBySlug');
+    return { product: null, error: error.code === 'PGRST116' ? null : error.message };
+  }
   const [{ data: prices }, { data: imageRows }] = await Promise.all([
     supabase.from('store_products').select('*, stores!inner(name, slug, logo, website)').eq('master_product_id', data.id).eq('available', true).order('price'),
     supabase.from('product_images').select('url,thumbnail_url,is_primary,alt').eq('master_product_id', data.id).order('is_primary', { ascending: false }),
@@ -89,7 +98,7 @@ export async function getAllStores({ page = 1, limit = 50 } = {}) {
 export async function getStoreBySlug(slug) {
   if (!isDatabaseAvailable(supabase)) return { store: null };
   const { data, error } = await supabase.from('stores').select('*').eq('slug', slug).single();
-  if (error) { handleError(error, 'getStoreBySlug'); return { store: null }; }
+  if (error) { if (error.code !== 'PGRST116') handleError(error, 'getStoreBySlug'); return { store: null }; }
   return { store: data };
 }
 
@@ -110,7 +119,7 @@ export async function getAllCategories() {
 export async function getCategoryBySlug(slug) {
   if (!isDatabaseAvailable(supabase)) return { category: null };
   const { data, error } = await supabase.from('categories').select('*').eq('slug', slug).single();
-  if (error) { handleError(error, 'getCategoryBySlug'); return { category: null }; }
+  if (error) { if (error.code !== 'PGRST116') handleError(error, 'getCategoryBySlug'); return { category: null }; }
   const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('category_id', data.id).eq('status', 'active');
   return { category: { ...data, productCount: count || 0 } };
 }
@@ -135,7 +144,7 @@ export async function getAllBrands() {
 export async function getBrandBySlug(slug) {
   if (!isDatabaseAvailable(supabase)) return { brand: null };
   const { data, error } = await supabase.from('brands').select('*').eq('slug', slug).single();
-  if (error) { handleError(error, 'getBrandBySlug'); return { brand: null }; }
+  if (error) { if (error.code !== 'PGRST116') handleError(error, 'getBrandBySlug'); return { brand: null }; }
   const { count } = await supabase.from('master_products').select('*', { count: 'exact', head: true }).eq('brand_id', data.id).eq('status', 'active');
   return { brand: { ...data, productCount: count || 0 } };
 }
