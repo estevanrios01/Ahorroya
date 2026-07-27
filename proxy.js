@@ -16,7 +16,7 @@ const PUBLIC_EXACT_PATHS = new Set([
   '/api/categories', '/api/brands', '/api/cities', '/api/departments', '/api/ai/suggest',
   '/api/quality/report', '/api/analytics/events', '/api/geo/nearby',
   '/api/observability/health', '/api/observability/metrics',
-  '/api/scrapers/status', '/api/categories/products',
+  '/api/categories/products',
 ]);
 
 // Genuine path-parameter prefixes (/api/products/[slug], etc.) -- each must
@@ -27,12 +27,17 @@ function isPublicPath(pathname) {
   return PUBLIC_EXACT_PATHS.has(pathname) || PUBLIC_PREFIX_PATHS.some(p => pathname.startsWith(p));
 }
 
-// /api/observability/dashboard backs the internal ops dashboard (scraper
-// health, failure counts, job queues) -- not customer-facing, so it needs
-// a real session rather than being fetchable by anyone who finds the URL.
+// /api/observability/dashboard and /api/scrapers/status both back internal
+// ops views (scraper health, failure counts, job queues, raw run history
+// including error_message text) -- not customer-facing, so they need a
+// real session rather than being fetchable by anyone who finds the URL.
+// /api/scrapers/status used to sit in PUBLIC_EXACT_PATHS while dashboard
+// was gated, which meant the dashboard's login requirement protected
+// nothing -- the same underlying data was one unauthenticated request away
+// through its sibling route.
 const AUTH_REQUIRED_PATHS = [
   '/api/favorites', '/api/images/upload', '/api/images/', '/api/scrape', '/api/scrapers/trigger',
-  '/api/observability/dashboard',
+  '/api/observability/dashboard', '/api/scrapers/status',
 ];
 
 // Every route downstream trusts x-user-id/x-user-role as "this request was
