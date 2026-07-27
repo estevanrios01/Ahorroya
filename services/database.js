@@ -120,9 +120,10 @@ export const db = {
         .eq('status', 'active');
       if (!q) query = query.not('image', 'is', null);
       if (q) {
-        const filters = [`name.ilike.%${q}%`, `short_name.ilike.%${q}%`];
-        if (/^\d+$/.test(q)) {
-          filters.push(`barcode.ilike.%${q}%`, `ean.ilike.%${q}%`);
+        const term = sanitizeOrFilterTerm(q);
+        const filters = [`name.ilike.%${term}%`, `short_name.ilike.%${term}%`];
+        if (/^\d+$/.test(term)) {
+          filters.push(`barcode.ilike.%${term}%`, `ean.ilike.%${term}%`);
         }
         query = query.or(filters.join(','));
       }
