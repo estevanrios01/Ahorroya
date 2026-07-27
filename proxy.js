@@ -15,8 +15,8 @@ const PUBLIC_EXACT_PATHS = new Set([
   '/api/health', '/api/products', '/api/search', '/api/stores', '/api/promotions',
   '/api/categories', '/api/brands', '/api/cities', '/api/departments', '/api/ai/suggest',
   '/api/quality/report', '/api/analytics/events', '/api/geo/nearby',
-  '/api/observability/health', '/api/observability/metrics', '/api/observability/dashboard',
-  '/api/scrapers/status', '/api/categories/products', '/dashboard-ejecutivo',
+  '/api/observability/health', '/api/observability/metrics',
+  '/api/scrapers/status', '/api/categories/products',
 ]);
 
 // Genuine path-parameter prefixes (/api/products/[slug], etc.) -- each must
@@ -27,8 +27,12 @@ function isPublicPath(pathname) {
   return PUBLIC_EXACT_PATHS.has(pathname) || PUBLIC_PREFIX_PATHS.some(p => pathname.startsWith(p));
 }
 
+// /api/observability/dashboard backs the internal ops dashboard (scraper
+// health, failure counts, job queues) -- not customer-facing, so it needs
+// a real session rather than being fetchable by anyone who finds the URL.
 const AUTH_REQUIRED_PATHS = [
   '/api/favorites', '/api/images/upload', '/api/images/', '/api/scrape', '/api/scrapers/trigger',
+  '/api/observability/dashboard',
 ];
 
 // Every route downstream trusts x-user-id/x-user-role as "this request was

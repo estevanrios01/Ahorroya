@@ -1,29 +1,69 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useSupermarketStore } from '../../store/useSupermarketStore';
+import AuthModal from '../../components/ui/AuthModal';
 
+// This shows internal pipeline metrics (scraper health, failure counts,
+// job queues) -- not customer-facing content, so it's gated behind a real
+// session instead of being fetchable by anyone who finds the URL. The API
+// route enforces this (proxy.js requires a valid Bearer token for
+// /api/observability/dashboard); this component just needs to actually
+// send one, which it never did before.
 export default function DashboardOperacionalPage() {
+  const user = useSupermarketStore((state) => state.user);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+
     async function fetchData() {
       try {
-        const res = await fetch('/api/observability/dashboard');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (!token) {
+          if (active) setError('Sesión no válida. Vuelve a iniciar sesión.');
+          return;
+        }
+        const res = await fetch('/api/observability/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`Error ${res.status} al consultar el dashboard`);
         const json = await res.json();
-        setData(json.data);
+        if (active) setData(json.data);
       } catch (e) {
-        setError(e.message);
+        if (active) setError(e.message);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
+
     fetchData();
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') fetchData();
     }, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-zinc-200 mb-2">Inicia sesión para ver el dashboard</h2>
+          <p className="text-zinc-500 mb-6">Esta información es operativa e interna, así que solo se muestra con una cuenta autenticada.</p>
+          <button onClick={() => setAuthModalOpen(true)} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-colors">Iniciar sesión</button>
+        </div>
+        {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
+      </div>
+    );
+  }
 
   if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" /></div>;
 
