@@ -38,6 +38,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Without MAKRO_CITIES or MAKRO_STORE_IDS set, import-makro-offers.js
+          # falls back to importing every Makro branch nationally (potentially
+          # 700-1000+), which is exactly the write volume that pushed the
+          # original Supabase project over its free-tier space budget. Scoped
+          # to the pilot city agreed with the team.
+          MAKRO_CITIES: "Cali"
           IMPORT_BATCH_SIZE: "25"
           IMPORT_SKIP_PRODUCT_IMAGES: "1"
           IMPORT_SKIP_PRICE_HISTORY: "0"
