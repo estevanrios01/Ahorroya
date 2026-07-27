@@ -22,6 +22,30 @@ import { getHistoricalMin, getHistoricalMax, getTrend } from '../../../lib/price
 
 const PHARMACY_SLUGS = new Set(['farmatodo', 'cruz-verde', 'larebaja', 'locatel', 'pasteur', 'colsubsidio']);
 
+// product.presentation.weight is really just product.unit (or a name
+// fallback) -- for weight/volume-labeled products that's a real string like
+// "500g" or "400ml", but for the largest single group in the catalog it's
+// "un" (sold by unit, not weight -- eggs, diapers, ...) or Farmatodo's own
+// garbage label "Gramos a $". The previous parseFloat(weight) || 1 fallback
+// silently treated both of those as "1", so "un" products showed a
+// nonsensical "Precio referente: ~$<same price> / kg" instead of nothing,
+// and ml-denominated liquids got mislabeled "/ kg" since the naive
+// .includes('g') check matches any string containing a lowercase g
+// (including "500ml"... no, but plenty of product names do). Only render a
+// reference price when the unit is actually parseable as a weight/volume.
+function getUnitPriceReference(price, unitLabel) {
+  if (!price || !unitLabel) return null;
+  const match = String(unitLabel).trim().match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml)\b/i);
+  if (!match) return null;
+  const amount = parseFloat(match[1].replace(',', '.'));
+  if (!amount) return null;
+  const unit = match[2].toLowerCase();
+  if (unit === 'g') return { value: Math.round((price / amount) * 1000), label: '/ kg' };
+  if (unit === 'kg') return { value: Math.round(price / amount), label: '/ kg' };
+  if (unit === 'ml') return { value: Math.round((price / amount) * 1000), label: '/ L' };
+  return { value: Math.round(price / amount), label: '/ L' };
+}
+
 function storeHref(storeSlug) {
   const route = PHARMACY_SLUGS.has(storeSlug) ? 'farmacia' : 'supermercado';
   return `/${route}/${storeSlug}`;
@@ -60,6 +84,7 @@ export default function ProductDetailClient({ product }) {
   const historicalMax = getHistoricalMax(history);
 
   const similarProducts = product.similar || [];
+  const unitReference = getUnitPriceReference(bestPrice, product.presentation?.weight);
 
   useEffect(() => {
     const stores = product.totalStores || product.prices?.length || 0;
@@ -232,8 +257,8 @@ export default function ProductDetailClient({ product }) {
                   </>
                 )}
               </div>
-              {bestPrice && product.presentation?.weight && (
-                <p className="text-xs text-zinc-500 mt-1">Precio referente: ~{formatPrice(Math.round(bestPrice / (parseFloat(product.presentation.weight) || 1) * (product.presentation.weight.includes('g') && !product.presentation.weight.includes('kg') ? 1000 : 1)))} / kg</p>
+              {unitReference && (
+                <p className="text-xs text-zinc-500 mt-1">Precio referente: ~{formatPrice(unitReference.value)} {unitReference.label}</p>
               )}
             </div>
 
