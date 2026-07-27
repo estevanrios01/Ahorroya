@@ -314,11 +314,25 @@ export const db = {
   },
 
   brands: {
+    // Supabase's hosted PostgREST caps any single response at 1,000 rows
+    // (db-max-rows) regardless of a client-requested .limit() -- with 1,216
+    // brands already live, a plain unpaginated select silently truncated
+    // the catalog to the first 1,000 by name, dropping everything from
+    // roughly "N..." onward off /api/brands and the /marcas page entirely.
+    // Paginating in fixed-size pages keeps this correct as the catalog
+    // keeps growing instead of hitting the same wall again at a bigger
+    // number.
     async list() {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.from('brands').select('*').order('name');
-      if (error) return handleError(error, 'brands.list');
-      return { data: data || [] };
+      const pageSize = 1000;
+      const all = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase.from('brands').select('*').order('name').range(from, from + pageSize - 1);
+        if (error) return handleError(error, 'brands.list');
+        all.push(...(data || []));
+        if (!data || data.length < pageSize) break;
+      }
+      return { data: all };
     },
 
     async getBySlug(slug) {

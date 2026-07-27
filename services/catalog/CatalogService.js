@@ -104,7 +104,13 @@ export async function getStoreBySlug(slug) {
 
 export async function getAllPharmacies() {
   if (!isDatabaseAvailable(supabase)) return { stores: [] };
-  const { data, error } = await supabase.from('stores').select('*').eq('status', 'active').or('category.eq.Farmacia,category.eq.Droguer%C3%ADa').order('name');
+  // .or() is sent through URLSearchParams, which percent-encodes its input --
+  // a pre-encoded literal like "Droguer%C3%ADa" gets double-encoded (its '%'
+  // becomes '%25') and can never match a real "Droguería" row. No store
+  // uses that category today so this was a silent no-op, not a live bug,
+  // but the fix is to pass the actual character and let the client encode
+  // it exactly once.
+  const { data, error } = await supabase.from('stores').select('*').eq('status', 'active').or('category.eq.Farmacia,category.eq.Droguería').order('name');
   if (error) { handleError(error, 'getAllPharmacies'); return { stores: [] }; }
   return { stores: data || [] };
 }
