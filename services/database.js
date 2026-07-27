@@ -28,6 +28,24 @@ function sanitizeOrFilterTerm(value) {
   return String(value ?? '').replace(/[,()]/g, ' ').trim();
 }
 
+// Transient network errors ("fetch failed" from a dropped connection between
+// Vercel and Supabase) aren't PostgREST error codes, so databaseCircuit's
+// infrastructure-failure classifier doesn't catch them and nothing else here
+// retries -- the request just fails outright. search_products_by_city already
+// retries twice with a short backoff for this exact reason; this applies the
+// same protection to the other two Supabase queries seen failing in
+// production runtime logs with "TypeError: fetch failed" (products.list's
+// non-city path, cities.list).
+async function withRetry(run, attempts = 2) {
+  let result;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    result = await run();
+    if (!result.error) break;
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+  }
+  return result;
+}
+
 function handleError(error, context) {
   if (!error) return null;
   markDatabaseFailure(error);
@@ -138,7 +156,7 @@ export const db = {
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
-      const { data, error } = await query.order('name').range(from, to);
+      const { data, error } = await withRetry(() => query.order('name').range(from, to));
       if (error?.code === '57014') {
         markDatabaseFailure(error);
         return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
@@ -308,7 +326,7 @@ export const db = {
   cities: {
     async list() {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.from('branches').select('city, department, count:store_id').eq('status', 'active').not('city', 'is', null);
+      const { data, error } = await withRetry(() => supabase.from('branches').select('city, department, count:store_id').eq('status', 'active').not('city', 'is', null));
       if (error) return handleError(error, 'cities.list');
       const map = new Map();
       for (const row of data || []) {
