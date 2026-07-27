@@ -1,12 +1,11 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { fallbackCategories, withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 async function handleGet() {
   const result = await withTimeout(db.categories.list(), 700, 'categories timeout').catch((error) => ({ error }));
   if (result.error || !result.data?.length) {
-    return NextResponse.json({
+    return cachedJson({
       success: true,
       degraded: true,
       data: fallbackCategories.map((category) => ({ ...category, productCount: null })),
@@ -16,7 +15,7 @@ async function handleGet() {
     const count = await withTimeout(db.categories.getProductCount(cat.id), 900, 'category count timeout').catch(() => null);
     return { ...cat, productCount: count };
   }));
-  return NextResponse.json({ success: true, data: withCounts });
+  return cachedJson({ success: true, data: withCounts });
 }
 
 export const GET = withErrorHandling(handleGet);

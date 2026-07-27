@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { getLiveFallbackProducts } from '@/services/liveFallbackProducts';
 import { withTimeout } from '@/services/fallbackCatalog';
-import { withErrorHandling } from '@/lib/api-handler';
+import { withErrorHandling, cachedJson } from '@/lib/api-handler';
 
 async function handleGet() {
   const result = await withTimeout(db.brands.list(), 700, 'brands timeout').catch((error) => ({ error }));
@@ -12,13 +11,13 @@ async function handleGet() {
       .map((product) => product.brands)
       .filter((brand) => brand?.name && brand?.slug)
       .map((brand) => [brand.slug, { ...brand, productCount: null }])).values()];
-    return NextResponse.json({ success: true, degraded: true, data: brands });
+    return cachedJson({ success: true, degraded: true, data: brands });
   }
   const withCounts = await Promise.all((result.data || []).map(async (brand) => {
     const count = await withTimeout(db.brands.getProductCount(brand.id), 900, 'brand count timeout').catch(() => null);
     return { ...brand, productCount: count };
   }));
-  return NextResponse.json({ success: true, data: withCounts });
+  return cachedJson({ success: true, data: withCounts });
 }
 
 export const GET = withErrorHandling(handleGet);
