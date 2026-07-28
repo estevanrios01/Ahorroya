@@ -66,8 +66,21 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 
 function parsePrice(value) {
   if (value == null) return 0;
-  const normalized = String(value)
-    .replace(/\s/g, '')
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const str = String(value).replace(/\s/g, '');
+  if (!str) return 0;
+  // A single dot followed by exactly two trailing digits (e.g. "259900.00")
+  // is a real decimal point, not a Colombian thousands separator (those
+  // always precede a full 3-digit group, e.g. "259.900"). Blindly stripping
+  // every dot -- as this used to do -- turned "259900.00" into 25990000,
+  // a silent 100x inflation. This previously corrupted every Makro
+  // original_price (live-verified: all 729 rows were exactly 100x too high).
+  const singleDotDecimal = /^\d+\.\d{2}$/;
+  if (!str.includes(',') && singleDotDecimal.test(str)) {
+    const price = Number(str);
+    return Number.isFinite(price) ? price : 0;
+  }
+  const normalized = str
     .replace(/\./g, '')
     .replace(',', '.')
     .replace(/[^0-9.]/g, '');

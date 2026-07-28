@@ -24,8 +24,19 @@ function truncate(value, max) {
 }
 
 function parsePrice(value) {
-  const normalized = String(value || '')
-    .replace(/\s/g, '')
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : null;
+  const str = String(value || '').replace(/\s/g, '');
+  // A single dot followed by exactly two trailing digits (e.g. "259900.00")
+  // is a real decimal point, not a Colombian thousands separator (those
+  // always precede a full 3-digit group, e.g. "259.900"). Blindly stripping
+  // every dot turns "259900.00" into 25990000 -- a silent 100x inflation.
+  // Same bug confirmed live in import-makro-offers.js's copy of this
+  // function (all 729 Makro original_price rows were exactly 100x too high).
+  if (!str.includes(',') && /^\d+\.\d{2}$/.test(str)) {
+    const price = Number(str);
+    return Number.isFinite(price) && price > 0 ? price : null;
+  }
+  const normalized = str
     .replace(/\./g, '')
     .replace(',', '.')
     .replace(/[^0-9.]/g, '');
