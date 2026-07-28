@@ -112,6 +112,12 @@ function fixMojibake(value) {
     .replace(/\u00c3\u009a/g, '\u00da')
     .replace(/\u00c3\u0091/g, '\u00d1')
     .replace(/\u00c2/g, '')
+    // Some retailers' own catalog feeds (Pasteur's confirmed live: "+++TABCIN...",
+    // "++++TABCIN...") prefix names with internal tier/sort markers that leak
+    // straight into the scraped name. A prior cycle cleaned this up directly in
+    // the DB, but the next scrape just re-imported the same raw name and undid
+    // it -- fixing it at the source here instead so it can't regress again.
+    .replace(/^[\+\*"/\\|]+\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
