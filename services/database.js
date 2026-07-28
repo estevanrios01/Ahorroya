@@ -237,14 +237,6 @@ export const db = {
       if (error) return handleError(error, 'products.getPriceHistory');
       return { data: [...(data || [])].reverse() };
     },
-
-    async search(query, { page = 1, limit = 20 } = {}) {
-      if (!isDatabaseAvailable(supabase)) return { data: [], total: 0 };
-      const term = sanitizeOrFilterTerm(query);
-      const { data, count, error } = await supabase.from('master_products').select('*', { count: 'planned' }).or(`name.ilike.%${term}%,short_name.ilike.%${term}%,barcode.ilike.%${term}%,ean.ilike.%${term}%`).eq('status', 'active').range((page - 1) * limit, (page - 1) * limit + limit - 1).order('name');
-      if (error) return handleError(error, 'products.search');
-      return { data: data || [], total: count || 0 };
-    },
   },
 
   stores: {
