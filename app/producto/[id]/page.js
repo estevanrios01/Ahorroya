@@ -102,7 +102,8 @@ const loadProduct = cache(async function loadProduct(slug) {
 
 export async function generateMetadata({ params }) {
   const id = (await params).id;
-  const product = await loadProduct(id) || { name: id.replace(/-/g, ' '), slug: id, prices: [] };
+  const found = await loadProduct(id);
+  const product = found || { name: id.replace(/-/g, ' '), slug: id, prices: [] };
 
   const prices = product.prices || [];
   const bestPrice = product.bestPrice ?? null;
@@ -125,7 +126,7 @@ export async function generateMetadata({ params }) {
       title: `${product.name} - AhorroYa`,
       description: bestPrice ? `Mejor precio: ${formatPrice(bestPrice)} en ${product.bestStore || 'AhorroYa'}` : `Compara precios de ${product.name} en AhorroYa`,
     },
-    robots: { index: true, follow: true },
+    robots: found ? { index: true, follow: true } : { index: false, follow: false },
     alternates: { canonical: `${SITE_URL}/producto/${product.slug}` },
   };
 }
