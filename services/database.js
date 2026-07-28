@@ -95,7 +95,7 @@ export const db = {
   products: {
     async listPromotions({ limit = 20 } = {}) {
       if (!isDatabaseAvailable(supabase)) return { data: [] };
-      const { data, error } = await supabase.rpc('list_active_promotions', { p_limit: limit });
+      const { data, error } = await withRetry(() => supabase.rpc('list_active_promotions', { p_limit: limit }));
       if (error) return handleError(error, 'products.listPromotions');
       return { data: data || [] };
     },
