@@ -107,7 +107,14 @@ async function handleGet() {
     safeCount(client, 'categories'),
     safeCount(client, 'master_products', (query) => query.eq('status', 'active').is('brand_id', null)),
     safeCount(client, 'master_products', (query) => query.eq('status', 'active').is('category_id', null)),
-    safeCount(client, 'store_products', (query) => query.or('price.lte.0,price.gt.1000000')),
+    // Upper bound was 1,000,000 COP -- fine for groceries/pharmacy, but Makro
+    // (a wholesale retailer) legitimately sells appliances (fridges,
+    // freezers, washers) up to ~7.8M COP. That flagged 445 real, correctly
+    // priced listings as "anomalous" purely for being appliances, dragging
+    // the consistency score down for no real data-quality reason. 10M COP
+    // clears the real legitimate range with headroom while still catching
+    // genuinely corrupted values, which tend to be orders of magnitude off.
+    safeCount(client, 'store_products', (query) => query.or('price.lte.0,price.gt.10000000')),
     safeCount(client, 'product_images', (query) => query.is('url', null)),
     getLatestPriceCapturedAt(client),
   ]);
