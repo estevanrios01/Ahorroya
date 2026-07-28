@@ -162,7 +162,14 @@ export const db = {
         return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
       }
       if (error) return handleError(error, 'products.list');
-      const products = preferCompleteProducts(await attachPrices(data || []));
+      // A product with no available store_products has no price to compare --
+      // showing it anyway (as a card with a blank/missing price) contradicts
+      // the whole point of a price comparator. The city-filtered RPC branch
+      // above already excludes these naturally (it joins through store_products
+      // where available=true), but this plain branch fetched prices separately
+      // via attachPrices() and never dropped the ones that came back empty.
+      const withPrices = (await attachPrices(data || [])).filter((product) => product.store_products?.length > 0);
+      const products = preferCompleteProducts(withPrices);
       const total = from + products.length;
       return { data: products, pagination: { page, limit, total, pages: page } };
     },

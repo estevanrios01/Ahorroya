@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -77,31 +77,22 @@ function StoreCard({ store, type, index }) {
   );
 }
 
-function StoreGrid({ categories, type, limit }) {
-  const [stores, setStores] = useState(fallbackStores);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/stores', { cache: 'no-store' })
-      .then((response) => response.json())
-      .then((payload) => {
-        if (!active) return;
-        const incoming = Array.isArray(payload.data) && payload.data.length > 0 ? payload.data : fallbackStores;
-        setStores(incoming);
-      })
-      .catch(() => {
-        if (active) setStores(fallbackStores);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+function StoreGrid({ stores, categories, type, limit }) {
+  // Stores now come from the server-rendered parent (app/page.js already
+  // fetches db.stores.list() once, in parallel with the product list) instead
+  // of each carousel fetching /api/stores client-side with cache: 'no-store'
+  // after hydration. That used to show the same hardcoded 14-store fallback
+  // to every visitor first, then swap it out after a round trip -- a visible
+  // flash, an extra network hop on every page load, and a fully uncached
+  // request for data that barely changes, on a page that needs to hold up
+  // under a traffic spike.
+  const source = Array.isArray(stores) && stores.length > 0 ? stores : fallbackStores;
 
   const visible = useMemo(() => (
-    stores
+    source
       .filter((store) => categories.includes(store.category))
       .slice(0, limit)
-  ), [stores, categories, limit]);
+  ), [source, categories, limit]);
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -115,10 +106,10 @@ function StoreGrid({ categories, type, limit }) {
 const SUPERMARKET_CATEGORIES = ['Supermercado'];
 const PHARMACY_CATEGORIES = ['Farmacia', 'Drogueria', 'Droguería'];
 
-export function SupermarketCarousel() {
-  return <StoreGrid categories={SUPERMARKET_CATEGORIES} type="supermercado" limit={12} />;
+export function SupermarketCarousel({ stores }) {
+  return <StoreGrid stores={stores} categories={SUPERMARKET_CATEGORIES} type="supermercado" limit={12} />;
 }
 
-export function PharmacyCarousel() {
-  return <StoreGrid categories={PHARMACY_CATEGORIES} type="farmacia" limit={8} />;
+export function PharmacyCarousel({ stores }) {
+  return <StoreGrid stores={stores} categories={PHARMACY_CATEGORIES} type="farmacia" limit={8} />;
 }

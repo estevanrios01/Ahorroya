@@ -38,8 +38,13 @@ async function loadHomeProducts() {
   return { rawProducts: fallback, degraded: true };
 }
 
+async function loadStores() {
+  const result = await withTimeout(db.stores.list({ limit: 200 }), 700, 'home stores timeout').catch(() => ({ data: [] }));
+  return result.data || [];
+}
+
 export default async function Home() {
-  const { rawProducts, degraded } = await loadHomeProducts();
+  const [{ rawProducts, degraded }, stores] = await Promise.all([loadHomeProducts(), loadStores()]);
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -86,11 +91,11 @@ export default async function Home() {
         </Section>
 
         <Section title="Supermercados" subtitle="Cadenas nacionales y regionales incluidas en el catalogo">
-          <SupermarketCarousel />
+          <SupermarketCarousel stores={stores} />
         </Section>
 
         <Section title="Farmacias" subtitle="Precios de droguerias y farmacias con cobertura nacional">
-          <PharmacyCarousel />
+          <PharmacyCarousel stores={stores} />
         </Section>
 
         <Divider />
