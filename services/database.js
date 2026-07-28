@@ -73,13 +73,23 @@ async function attachPrices(products) {
     .eq('available', true)
     .limit(ids.length * 50);
   if (error) return products.map((product) => ({ ...product, store_products: [] }));
+  // This branch has no city context, so it fetches every available listing
+  // regardless of branch -- a chain with the same national price in Cali,
+  // Bogota and Medellin (the common case post multi-city expansion) shows up
+  // as 3 near-identical rows for the exact same store, which reads as
+  // repeated/duplicated listings and triples the payload for zero new
+  // information. Keep one row per store_id (the cheapest, in case branch
+  // pricing ever does differ) since branch-level detail is meaningless
+  // without the city label this query doesn't select.
   const byProduct = new Map();
   for (const row of data || []) {
     if (row.stores?.website && row.url === row.stores.website) continue;
-    if (!byProduct.has(row.master_product_id)) byProduct.set(row.master_product_id, []);
-    byProduct.get(row.master_product_id).push(row);
+    if (!byProduct.has(row.master_product_id)) byProduct.set(row.master_product_id, new Map());
+    const byStore = byProduct.get(row.master_product_id);
+    const existing = byStore.get(row.store_id);
+    if (!existing || Number(row.price) < Number(existing.price)) byStore.set(row.store_id, row);
   }
-  return products.map((product) => ({ ...product, store_products: byProduct.get(product.id) || [] }));
+  return products.map((product) => ({ ...product, store_products: [...(byProduct.get(product.id)?.values() || [])] }));
 }
 
 function preferCompleteProducts(products) {
