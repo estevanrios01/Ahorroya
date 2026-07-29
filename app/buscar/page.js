@@ -59,7 +59,15 @@ export default async function BuscarPage({ searchParams }) {
   const city = params?.city || '';
   const [{ data: cities }, result] = await Promise.allSettled([
     withTimeout(db.cities.list(), 700, 'cities timeout'),
-    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 1200, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
+    // 1200ms here was tighter than /api/products and /api/search give the
+    // identical db.products.list() call (2500ms) for no functional reason --
+    // this is the actual /buscar page real users hit, requesting more rows
+    // (48 vs the API's default 20) on top of that, so it had *less* budget
+    // for the same query doing *more* work. That's the likelier cause of
+    // real users seeing the "degraded" live-fallback notice more often than
+    // API-level testing (against the 2500ms routes) ever showed. Matching
+    // the budget already proven safe on those sibling routes.
+    query || city ? withTimeout(db.products.list({ q: query, city, limit: 48 }), 2500, 'search timeout') : Promise.resolve({ data: [], pagination: { total: 0 } }),
   ]).then(async ([citiesResult, productsResult]) => {
     const cityPayload = citiesResult.status === 'fulfilled' ? citiesResult.value : { data: fallbackCities };
     const databaseResult = productsResult.status === 'fulfilled' ? productsResult.value : null;
