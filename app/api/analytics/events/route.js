@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/services/database';
 import { withErrorHandling } from '@/lib/api-handler';
+import { analyticsEventSchema } from '@/lib/zod';
 
 async function handlePost(request) {
   const body = await request.json();
-  const { name, properties } = body;
-  if (!name || typeof name !== 'string') {
-    return NextResponse.json({ success: false, error: 'Nombre del evento requerido' }, { status: 400 });
+  const parsed = analyticsEventSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ success: false, error: 'Evento inválido' }, { status: 400 });
   }
   const event = {
     id: crypto.randomUUID(),
-    name: name.slice(0, 100),
-    properties: properties || {},
+    name: parsed.data.name,
+    properties: parsed.data.properties,
     timestamp: new Date().toISOString(),
   };
   await db.analytics.track(event);

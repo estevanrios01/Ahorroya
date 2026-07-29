@@ -230,6 +230,7 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
     .select('*, master_products!inner(*)', { count: 'planned' })
     .eq('store_id', store.id)
     .eq('available', true)
+    .eq('master_products.status', 'active')
     .neq('url', store.website || '')
     .not('master_products.image', 'is', null)
     .range(from, from + requestedLimit - 1)
@@ -241,6 +242,7 @@ export async function getProductsByStore(storeSlug, { page = 1, limit = 20 } = {
       .select('*, master_products!inner(*)')
       .eq('store_id', store.id)
       .eq('available', true)
+      .eq('master_products.status', 'active')
       .neq('url', store.website || '')
       .range(from, from + limit - 1)
       .order('price');
