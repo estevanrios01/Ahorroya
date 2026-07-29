@@ -152,7 +152,7 @@ export const db = {
       }
       let query = supabase
         .from('master_products')
-        .select('*, brands(name, slug), categories(name, slug)')
+        .select('*, brands(name, slug), categories(name, slug)', { count: 'planned' })
         .eq('status', 'active');
       if (!q) query = query.not('image', 'is', null);
       if (q) {
@@ -166,7 +166,7 @@ export const db = {
       if (category) query = query.eq('category_id', category);
       const from = (page - 1) * limit;
       const to = from + limit - 1;
-      const { data, error } = await withRetry(() => query.order('name').range(from, to));
+      const { data, count, error } = await withRetry(() => query.order('name').range(from, to));
       if (error?.code === '57014') {
         markDatabaseFailure(error);
         return { data: [], pagination: { page, limit, total: 0, pages: 0 } };
@@ -180,8 +180,17 @@ export const db = {
       // via attachPrices() and never dropped the ones that came back empty.
       const withPrices = (await attachPrices(data || [])).filter((product) => product.store_products?.length > 0);
       const products = preferCompleteProducts(withPrices);
-      const total = from + products.length;
-      return { data: products, pagination: { page, limit, total, pages: page } };
+      // count is master_products matching the filters, pre-price-availability --
+      // an approximation for the same reason search_products_by_city's own
+      // approximate_total is (a product-level count can't cheaply account for
+      // the per-row price join done above), but a real, roughly-accurate figure
+      // beats the previous `from + products.length`, which just echoed this
+      // page's own row count back as "total" and set pages to always equal the
+      // current page -- silently breaking "next page" for any consumer (this
+      // plain branch is what /api/products falls back to whenever it's called
+      // without a city, e.g. a national catalog browse).
+      const total = count || 0;
+      return { data: products, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
     },
 
     async getBySlug(slug) {
