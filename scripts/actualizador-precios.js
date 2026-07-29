@@ -188,7 +188,19 @@ function normalizeEAN(ean) {
 
 function normalizePrice(value) {
   if (typeof value === 'number') return Math.round(value * 100) / 100;
-  const cleaned = String(value || '').replace(/[^0-9.,]/g, '').replace(/\./g, '').replace(',', '.');
+  const str = String(value || '').replace(/\s/g, '');
+  // A single dot followed by exactly two trailing digits (e.g. "3900.00") is
+  // a real decimal point, not a Colombian thousands separator (those always
+  // precede a full 3-digit group, e.g. "3.900"). Blindly stripping every dot
+  // turns "3900.00" into 390000 -- a silent 100x inflation. Same bug already
+  // found and fixed in import-ara-offers.js / import-makro-offers.js
+  // (live-verified: 729 Makro original_price rows were exactly 100x too
+  // high); this script's own copy of the same logic never got the fix.
+  if (!str.includes(',') && /^\d+\.\d{2}$/.test(str)) {
+    const price = Number(str);
+    return Number.isFinite(price) ? Math.round(price * 100) / 100 : 0;
+  }
+  const cleaned = str.replace(/[^0-9.,]/g, '').replace(/\./g, '').replace(',', '.');
   const parsed = Number.parseFloat(cleaned);
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
 }
