@@ -29,7 +29,12 @@ async function handleGet(request) {
   // worse than its own fallback branch.
   const result = await withTimeout(db.products.list({ q, city, page, limit }), 2500, 'search timeout').catch((error) => ({ error }));
   if (result.error || (q && !result.data?.length)) {
-    const fallback = await getLiveFallbackProducts({ q, limit, page }).catch(() => []);
+    // See app/api/products/route.js's degradedResponse() for why this needs
+    // its own bound: getLiveFallbackProducts() can take 7-8s internally
+    // (Promise.allSettled across ~14 external retailer endpoints), which
+    // would otherwise turn this fallback response itself into a multi-second
+    // hang stacked on top of the already-timed-out primary query.
+    const fallback = await withTimeout(getLiveFallbackProducts({ q, limit, page }), 4000, 'live fallback timeout').catch(() => []);
     return NextResponse.json({
       success: true,
       degraded: true,

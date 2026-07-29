@@ -8,7 +8,16 @@ import { cachedJson } from '@/lib/api-handler';
 import logger from '@/lib/logger';
 
 async function degradedResponse({ page = 1, limit = 20, q = '', store = '', city = '' } = {}) {
-  const fallback = await getLiveFallbackProducts({ q, limit, store, page }).catch(() => []);
+  // getLiveFallbackProducts() races up to 14 external retailer endpoints with
+  // per-source timeouts of 7-8s each (Promise.allSettled waits for the
+  // slowest one to settle, not the average) -- without a bound here, a
+  // single slow retailer turns this "degraded" fallback response itself into
+  // an 8+ second wait on top of the already-timed-out primary query. Under a
+  // traffic spike where the DB is briefly struggling, every concurrent
+  // request would hit this same slow path at once, tying up serverless
+  // function instances for far longer than a degraded response should ever
+  // take. Capped to fail fast and return an honest empty result instead.
+  const fallback = await withTimeout(getLiveFallbackProducts({ q, limit, store, page }), 4000, 'live fallback timeout').catch(() => []);
   return NextResponse.json({
     success: true,
     degraded: true,

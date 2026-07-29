@@ -75,7 +75,13 @@ export default async function BuscarPage({ searchParams }) {
     if (databaseResult && !databaseResult.error && databaseResult.data?.length) {
       return [cityPayload, productsResult.value];
     }
-    const fallback = await getLiveFallbackProducts({ q: query, limit: 24 }).catch(() => []);
+    // getLiveFallbackProducts() races up to 14 external retailer endpoints
+    // with 7-8s per-source timeouts (Promise.allSettled waits for the
+    // slowest one, not the average) -- unbounded here, a real user landing
+    // on this page during a DB hiccup would wait 7+ seconds on top of the
+    // already-timed-out primary query before this "degraded" fallback even
+    // renders. Same fix as app/api/products/route.js's degradedResponse().
+    const fallback = await withTimeout(getLiveFallbackProducts({ q: query, limit: 24 }), 4000, 'live fallback timeout').catch(() => []);
     return [cityPayload, {
       data: fallback,
       degraded: true,
