@@ -1,5 +1,17 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ahorroya.vercel.app';
 
+// JSON.stringify() escapes quotes and control characters but not `<` -- a
+// scraped product/store/category name containing a literal "</script>"
+// (VTEX marketplaces let third-party sellers name their own listings, and
+// this app only cosmetically cleans scraped names, e.g. fixMojibake(), not
+// HTML-escapes them) would close this script tag early and let arbitrary
+// following markup execute in every visitor's browser. < is a valid
+// JSON/JS string escape for "<", so this can't change the schema's meaning,
+// only prevent it from ever containing a real "</script>" sequence.
+function toSafeJsonLdString(schema) {
+  return JSON.stringify(schema).replace(/</g, '\\u003c');
+}
+
 export function ProductJsonLd({ product }) {
   const prices = product.prices || [];
   const availablePrices = prices.filter((p) => p.available);
@@ -46,7 +58,7 @@ export function ProductJsonLd({ product }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(schema) }}
     />
   );
 }
@@ -65,7 +77,7 @@ export function StoreJsonLd({ store }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(schema) }}
     />
   );
 }
@@ -91,7 +103,7 @@ export function CategoryJsonLd({ category, products }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(schema) }}
     />
   );
 }
@@ -111,7 +123,7 @@ export function BreadcrumbJsonLd({ items }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(schema) }}
     />
   );
 }
@@ -135,7 +147,7 @@ export function WebSiteJsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(schema) }}
     />
   );
 }
