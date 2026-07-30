@@ -32,7 +32,7 @@ const loadBrandData = cache(async (slug) => {
   ]);
   if (brand && products?.length) return { brand, products: products.map(toCardProduct) };
 
-  const liveProducts = await getLiveFallbackProducts({ q: slug.replace(/-/g, ' '), limit: 24 }).catch(() => []);
+  const liveProducts = await withTimeout(getLiveFallbackProducts({ q: slug.replace(/-/g, ' '), limit: 24 }), 4000, 'live fallback timeout').catch(() => []);
   const matchingProducts = liveProducts
     .filter((product) => product.brands?.slug === slug)
     .map(toCardProduct);

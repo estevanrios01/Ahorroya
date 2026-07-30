@@ -28,7 +28,7 @@ async function loadStoreProducts(slug) {
     };
   }
 
-  const liveProducts = await getLiveFallbackProducts({ store: slug, limit: 24 }).catch(() => []);
+  const liveProducts = await withTimeout(getLiveFallbackProducts({ store: slug, limit: 24 }), 4000, 'live fallback timeout').catch(() => []);
   return {
     products: liveProducts,
     pagination: { total: liveProducts.length },

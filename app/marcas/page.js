@@ -15,7 +15,7 @@ async function loadBrands() {
   const result = await withTimeout(getAllBrands(), 700, 'brands timeout').catch(() => ({ brands: [] }));
   if (result.brands?.length) return result.brands;
 
-  const products = await getLiveFallbackProducts({ limit: 24 }).catch(() => []);
+  const products = await withTimeout(getLiveFallbackProducts({ limit: 24 }), 4000, 'live fallback timeout').catch(() => []);
   return [...new Map(products
     .map((product) => product.brands)
     .filter((brand) => brand?.name && brand?.slug)

@@ -34,7 +34,7 @@ async function loadHomeProducts() {
   if (!result.error && result.data?.length) {
     return { rawProducts: result.data, degraded: false };
   }
-  const fallback = await getLiveFallbackProducts({ limit: 16 }).catch(() => []);
+  const fallback = await withTimeout(getLiveFallbackProducts({ limit: 16 }), 4000, 'live fallback timeout').catch(() => []);
   return { rawProducts: fallback, degraded: true };
 }
 

@@ -62,10 +62,10 @@ async function loadCategoryProducts(slug) {
   const seen = new Set();
   const terms = CATEGORY_INCLUDE_TERMS[slug] || [slug];
   const excludedTerms = CATEGORY_EXCLUDE_TERMS[slug] || [];
-  const liveProducts = (await getLiveFallbackProducts({
+  const liveProducts = (await withTimeout(getLiveFallbackProducts({
     q: CATEGORY_SEARCH_TERMS[slug] || slug,
     limit: 24,
-  }).catch(() => []))
+  }), 4000, 'live fallback timeout').catch(() => []))
     .filter((product) => {
       const key = product.id || product.slug;
       if (!key || seen.has(key)) return false;
