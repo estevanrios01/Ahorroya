@@ -458,10 +458,24 @@ export const db = {
 
     async toggle(userId, productId) {
       if (!supabaseAdmin) return { error: 'DB not configured' };
-      let { data: basket } = await supabaseAdmin.from('baskets').select('id').eq('user_id', userId).eq('favorite', true).maybeSingle();
+      let { data: basket, error: basketError } = await supabaseAdmin.from('baskets').select('id').eq('user_id', userId).eq('favorite', true).maybeSingle();
+      if (basketError) return handleError(basketError, 'favorites.toggle.selectBasket');
       if (!basket) {
-        const { data: newBasket } = await supabaseAdmin.from('baskets').insert({ user_id: userId, name: 'Favoritos', favorite: true }).select().single();
-        basket = newBasket;
+        const { data: newBasket, error: insertError } = await supabaseAdmin.from('baskets').insert({ user_id: userId, name: 'Favoritos', favorite: true }).select().single();
+        // A unique index on baskets(user_id) where favorite -- guards the
+        // race where two near-simultaneous toggle() calls (e.g. a client
+        // retry) both saw no basket above and both tried to insert one.
+        // The loser gets a 23505 unique violation here, not a real error --
+        // fall back to selecting the winner's row instead of surfacing it.
+        if (insertError?.code === '23505') {
+          const { data: raceWinner, error: refetchError } = await supabaseAdmin.from('baskets').select('id').eq('user_id', userId).eq('favorite', true).maybeSingle();
+          if (refetchError || !raceWinner) return handleError(refetchError || new Error('favorite basket missing after race'), 'favorites.toggle.refetchBasket');
+          basket = raceWinner;
+        } else if (insertError || !newBasket) {
+          return handleError(insertError || new Error('favorite basket insert returned no data'), 'favorites.toggle.insertBasket');
+        } else {
+          basket = newBasket;
+        }
       }
       // basket_items has no user_id column, only basket_id (a baskets.id FK) --
       // this used to check basket_id against the raw userId, which is never
