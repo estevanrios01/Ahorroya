@@ -29,15 +29,15 @@ export default function DepartmentClient({ department }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="default" size="md"><Store size={12} className="mr-1" />{department.stores} comercios</Badge>
-            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{department.products.toLocaleString('es-CO')} productos</Badge>
+            <Badge variant="default" size="md"><Store size={12} className="mr-1" />{department.stores || 0} comercios</Badge>
+            <Badge variant="default" size="md"><Package size={12} className="mr-1" />{typeof department.products === 'number' ? `${department.products.toLocaleString('es-CO')} productos` : 'Precios en vivo'}</Badge>
           </div>
         </motion.div>
 
         <section>
           <h2 className="text-lg font-semibold text-zinc-200 mb-4">Ciudades en {department.name}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {department.cities.map((cityName, i) => {
+            {(department.cities || []).map((cityName, i) => {
               const slug = cityName
                 .toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')

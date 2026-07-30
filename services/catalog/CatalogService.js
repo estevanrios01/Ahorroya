@@ -269,16 +269,40 @@ export async function getCategory(slug) {
 
 export async function getAllDepartments() {
   if (!isDatabaseAvailable(supabase)) return { departments: [] };
-  const { data, error } = await supabase.from('branches').select('department').eq('status', 'active').not('department', 'is', null);
+  // Selecting store_id/city too (not just department) so this can populate
+  // the stores count and cities list DepartmentClient.jsx actually reads --
+  // it previously only fetched `department`, leaving department.stores,
+  // department.products and department.cities all undefined, and
+  // DepartmentClient called department.products.toLocaleString(...) and
+  // department.cities.map(...) unconditionally. That crashed every single
+  // /departamento/[slug] page load with a TypeError, not just an edge case.
+  const { data, error } = await supabase.from('branches').select('department, city, store_id').eq('status', 'active').not('department', 'is', null);
   if (error) { handleError(error, 'getAllDepartments'); return { departments: [] }; }
-  const seen = new Set();
-  const depts = [];
+  const map = new Map();
   for (const row of data || []) {
-    if (!row.department || seen.has(row.department.toLowerCase())) continue;
-    seen.add(row.department.toLowerCase());
-    const slug = row.department.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    depts.push({ name: row.department, slug });
+    if (!row.department) continue;
+    const key = row.department.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!map.has(key)) map.set(key, { name: row.department, slug: key, stores: new Set(), cities: new Set() });
+    const entry = map.get(key);
+    if (row.store_id) entry.stores.add(row.store_id);
+    if (row.city) entry.cities.add(row.city);
   }
+  const depts = [...map.values()].map((entry) => {
+    const cities = [...entry.cities].sort((a, b) => a.localeCompare(b, 'es'));
+    return {
+      name: entry.name,
+      slug: entry.slug,
+      stores: entry.stores.size,
+      // Not computed here for the same reason getAllCities() leaves its own
+      // productCount null -- an accurate per-department product count needs
+      // a join through store_products this listing-level query doesn't do.
+      // DepartmentClient already needs to handle this like CityClient does
+      // for the identical field.
+      products: null,
+      cities,
+      description: `${entry.name} cuenta con comercios verificados en ${cities.length} ${cities.length === 1 ? 'ciudad' : 'ciudades'} dentro de AhorroYa.`,
+    };
+  });
   return { departments: depts.sort((a, b) => a.name.localeCompare(b.name)) };
 }
 
